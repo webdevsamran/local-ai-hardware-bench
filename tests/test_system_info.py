@@ -30,3 +30,52 @@ def test_ram_is_plausible():
     ram = detect_system()["ram_gb"]
     if ram is not None:
         assert 0.5 <= ram <= 8192
+
+
+def test_parse_linux_cpuinfo_single_socket_hyperthreaded():
+    from benchmark.system_info import _parse_linux_cpuinfo
+
+    content = """
+processor	: 0
+model name	: AMD Ryzen 7 7800X3D 8-Core Processor
+physical id	: 0
+core id		: 0
+
+processor	: 1
+model name	: AMD Ryzen 7 7800X3D 8-Core Processor
+physical id	: 0
+core id		: 0
+
+processor	: 2
+model name	: AMD Ryzen 7 7800X3D 8-Core Processor
+physical id	: 0
+core id		: 1
+
+processor	: 3
+model name	: AMD Ryzen 7 7800X3D 8-Core Processor
+physical id	: 0
+core id		: 1
+"""
+    cpu, cores_physical = _parse_linux_cpuinfo(content)
+    assert cpu == "AMD Ryzen 7 7800X3D 8-Core Processor"
+    assert cores_physical == 2
+
+
+def test_parse_linux_cpuinfo_dual_socket():
+    from benchmark.system_info import _parse_linux_cpuinfo
+
+    content = """
+processor	: 0
+model name	: Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz
+physical id	: 0
+core id		: 0
+
+processor	: 1
+model name	: Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz
+physical id	: 1
+core id		: 0
+"""
+    cpu, cores_physical = _parse_linux_cpuinfo(content)
+    assert cpu == "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz"
+    assert cores_physical == 2
+

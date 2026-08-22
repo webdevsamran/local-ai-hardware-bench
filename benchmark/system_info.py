@@ -107,6 +107,36 @@ def get_ram_gb() -> float | None:
     return None
 
 
+def _parse_linux_cpuinfo(content: str) -> tuple[str | None, int | None]:
+    """Extract CPU model name and physical core count from /proc/cpuinfo content."""
+    names: list[str] = []
+    physical_cores: set[tuple[str, str]] = set()
+    current_physical_id: str = "0"
+    current_core_id: str | None = None
+
+    for line in content.splitlines():
+        line = line.strip()
+        if not line:
+            if current_core_id is not None:
+                physical_cores.add((current_physical_id, current_core_id))
+            current_physical_id = "0"
+            current_core_id = None
+            continue
+        if line.startswith("model name"):
+            names.append(line.split(":", 1)[1].strip())
+        elif line.startswith("physical id"):
+            current_physical_id = line.split(":", 1)[1].strip()
+        elif line.startswith("core id"):
+            current_core_id = line.split(":", 1)[1].strip()
+
+    if current_core_id is not None:
+        physical_cores.add((current_physical_id, current_core_id))
+
+    cpu_name = names[0] if names else None
+    cores_physical = len(physical_cores) if physical_cores else None
+    return cpu_name, cores_physical
+
+
 def get_cpu_info() -> dict[str, Any]:
     """CPU model and core counts."""
     info: dict[str, Any] = {
@@ -134,21 +164,15 @@ def get_cpu_info() -> dict[str, Any]:
             info["cpu_cores_physical"] = int(cores.strip())
     elif system == "Linux":
         cpuinfo = "/proc/cpuinfo"
-        names: list[str] = []
-        physical_ids: set[str] = set()
         try:
             with open(cpuinfo, encoding="ascii") as fh:
-                for line in fh:
-                    if line.startswith("model name"):
-                        names.append(line.split(":", 1)[1].strip())
-                    elif line.startswith("physical id"):
-                        physical_ids.add(line.split(":", 1)[1].strip())
+                cpu_name, cores_physical = _parse_linux_cpuinfo(fh.read())
+            if cpu_name:
+                info["cpu"] = cpu_name
+            if cores_physical:
+                info["cpu_cores_physical"] = cores_physical
         except OSError:
             pass
-        if names:
-            info["cpu"] = names[0]
-        if physical_ids:
-            info["cpu_cores_physical"] = len(physical_ids)
     else:
         info["cpu"] = platform.processor() or None
     return info

@@ -10,8 +10,10 @@ Benchmark results are public artifacts. Never include:
 - Serial numbers or confidential hardware IDs
 - NDA-covered information
 
-Detection output produced by `aihwbench` is sanitized by design, but you are
-responsible for anything you paste into issues or results files.
+Detection output produced by `aihwbench` is sanitized by design, and a
+fail-closed privacy scanner (`benchmark/sanitize.py`) checks published
+artifacts for accidental exposure. You remain responsible for anything
+you paste into issues or results files.
 
 ## Reporting vulnerabilities
 
@@ -30,8 +32,18 @@ happy to help reproduce.
 | --- | --- |
 | 0.1.x | Yes |
 
-## CI security
+## CI & supply chain
 
-- Workflows use pinned action versions and minimal permissions (`contents: read`).
+- GitHub Actions are pinned to **immutable commit SHAs** (not mutable tags).
+- Workflows use minimal permissions (`contents: read`).
+- Dependabot monitors both GitHub Actions and pip dependencies (weekly).
 - No secrets are required to build or test the project.
 - Model downloads never happen in CI.
+- Release artifacts should ship with checksums; SBOM generation is on the
+  roadmap (see ROADMAP.md).
+
+## Secret scanning
+
+Enable GitHub secret scanning and push protection on your fork. Never
+commit tokens; if one leaks, revoke it immediately before history
+cleanup.

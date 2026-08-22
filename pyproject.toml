@@ -5,11 +5,16 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "aihwbench"
 version = "0.1.0"
-description = "Open Local AI Hardware Benchmark - vendor-neutral benchmarking of local AI runtimes across CPUs, GPUs, NPUs, and edge accelerators"
+description = "AIHWBench - vendor-neutral benchmarking of local AI runtimes across CPUs, GPUs, NPUs, and edge accelerators"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
-authors = [{ name = "Open Local AI Hardware Benchmark contributors" }]
+authors = [
+    { name = "webdevsamran (Original Creator / Lead Maintainer)" },
+]
+maintainers = [
+    { name = "webdevsamran" },
+]
 keywords = [
     "benchmark", "llm", "inference", "ollama", "llama.cpp",
     "onnxruntime", "openvino", "npu", "gpu", "edge-ai",
@@ -17,6 +22,7 @@ keywords = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
@@ -25,8 +31,15 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: System :: Benchmark",
+    "Topic :: Scientific/Engineering",
 ]
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/webdevsamran/local-ai-hardware-bench"
+Repository = "https://github.com/webdevsamran/local-ai-hardware-bench"
+Issues = "https://github.com/webdevsamran/local-ai-hardware-bench/issues"
+Changelog = "https://github.com/webdevsamran/local-ai-hardware-bench/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 telemetry = ["psutil>=5.9"]
@@ -42,6 +55,10 @@ aihwbench = "benchmark.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["benchmark*"]
+
+[tool.setuptools.package-data]
+benchmark = ["py.typed"]
+"benchmark.backends" = ["py.typed"]
 
 [tool.ruff]
 line-length = 100

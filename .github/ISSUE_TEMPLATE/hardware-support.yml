@@ -1,0 +1,32 @@
+name: Hardware support
+description: Report detection issues on your hardware or request support for a platform (AI PC, mini PC, edge device, ...).
+labels: ["hardware"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - Detection bug (wrong/missing hardware)
+        - New hardware class request
+        - NPU / accelerator not detected
+        - Telemetry unavailable
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      placeholder: "e.g. Intel Core Ultra 7 155H laptop / Snapdragon X Elite mini PC"
+    validations:
+      required: true
+  - type: textarea
+    id: detect-output
+    attributes:
+      label: Sanitized `aihwbench system-info` output
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should be detected?

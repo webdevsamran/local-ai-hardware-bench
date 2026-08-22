@@ -1,0 +1,36 @@
+name: Runtime backend
+description: Report a runtime backend issue or propose a new backend (Ollama, llama.cpp, ONNX Runtime, OpenVINO, ROCm, QNN, TensorRT, HailoRT, ...).
+labels: ["runtime"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - Bug in an existing backend
+        - New backend proposal
+        - Detection improvement
+        - Telemetry improvement
+    validations:
+      required: true
+  - type: input
+    id: runtime
+    attributes:
+      label: Runtime and version
+      placeholder: "e.g. Ollama 0.32.15 / llama.cpp b4123"
+    validations:
+      required: true
+  - type: textarea
+    id: detail
+    attributes:
+      label: Details
+      description: What is broken or what should the new backend support? Include sanitized detection output if relevant.
+    validations:
+      required: true
+  - type: checkboxes
+    id: honesty
+    attributes:
+      label: Honesty policy
+      options:
+        - label: I understand a backend may only be marked "Tested" after a real benchmark executes on real hardware.
+          required: true

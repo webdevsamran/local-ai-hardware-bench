@@ -52,3 +52,16 @@ def test_unavailable_backend_run_raises_backend_error():
         assert "not available" in str(exc) or "planned" in str(exc).lower()
     else:
         raise AssertionError("expected BackendError")
+
+
+def test_save_result_writes_expected_file(tmp_path):
+    import json
+    from benchmark.runner import save_result
+
+    result = {"run_id": "test-run-123-abc", "schema_version": "1.0.0"}
+    path = save_result(result, tmp_path)
+    assert path.exists()
+    assert path.name == "test-run-123-abc.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["run_id"] == "test-run-123-abc"
+

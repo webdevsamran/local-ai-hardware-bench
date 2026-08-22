@@ -12,6 +12,7 @@ import json
 import time
 import urllib.error
 import urllib.request
+import uuid
 from typing import Any
 
 from ..telemetry import TelemetrySampler
@@ -175,7 +176,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "schema_version": SCHEMA_VERSION,
-        "run_id": f"ollama-{int(time.time())}",
+        "run_id": f"ollama-{int(time.time())}-{uuid.uuid4().hex[:6]}",
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "system": system,
         "runtime": {

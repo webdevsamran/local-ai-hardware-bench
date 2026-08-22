@@ -253,6 +253,7 @@ def detect_system() -> dict[str, Any]:
         "cpu_cores_logical": cpu["cpu_cores_logical"],
         "gpu": gpu["gpu"],
         "gpu_vram_mb": gpu["gpu_vram_mb"],
+        "gpu_driver_version": gpu.get("gpu_driver_version"),
         "npu": npu,
         "ram_gb": ram,
         "platform_name": get_platform_name(),

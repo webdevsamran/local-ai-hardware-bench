@@ -42,6 +42,7 @@ _SYSTEM_FIELDS = {
     "cpu_cores_logical": int,
     "gpu": str,
     "gpu_vram_mb": int,
+    "gpu_driver_version": str,
     "npu": str,
     "ram_gb": (int, float),
     "platform_name": str,

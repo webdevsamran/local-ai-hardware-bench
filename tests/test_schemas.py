@@ -22,8 +22,13 @@ def make_valid_result() -> dict:
             "platform_name": "Test Platform",
         },
         "runtime": {"name": "ollama", "version": "0.1.0", "backend": "http", "device": "cuda"},
-        "model": {"name": "m", "format": "gguf", "quantization": "q4_K_M",
-                  "parameters": "0.5B", "checksum": "abc"},
+        "model": {
+            "name": "m",
+            "format": "gguf",
+            "quantization": "q4_K_M",
+            "parameters": "0.5B",
+            "checksum": "abc",
+        },
         "metrics": {
             "ttft_ms": 12.5,
             "generation_tokens_per_second": 40.0,

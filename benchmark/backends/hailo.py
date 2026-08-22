@@ -25,14 +25,18 @@ def detect() -> BackendInfo:
         if importlib.util.find_spec("hailo_platform") is None:
             raise ImportError
         return BackendInfo(
-            "hailo", RuntimeStatus.HARDWARE_REQUIRED, None,
+            "hailo",
+            RuntimeStatus.HARDWARE_REQUIRED,
+            None,
             "HailoRT python package present but no accelerator detected",
         )
     except ImportError:
         pass
     note = "" if platform.system() == "Windows" else ""
     return BackendInfo(
-        "hailo", RuntimeStatus.HARDWARE_REQUIRED, None,
+        "hailo",
+        RuntimeStatus.HARDWARE_REQUIRED,
+        None,
         ("Requires Hailo-8/8L/10H hardware and HailoRT. " + note).strip(),
     )
 

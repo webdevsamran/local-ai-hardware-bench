@@ -55,8 +55,7 @@ def cmd_benchmark(args: argparse.Namespace) -> int:
         print("ERROR: --model is required for the ollama runtime", file=sys.stderr)
         return 2
     if args.runtime in ("llama.cpp", "onnxruntime", "openvino") and not args.model_path:
-        print(f"ERROR: --model-path is required for the {args.runtime} runtime",
-              file=sys.stderr)
+        print(f"ERROR: --model-path is required for the {args.runtime} runtime", file=sys.stderr)
         return 2
     config = BenchmarkConfig(
         model=args.model or "",
@@ -123,8 +122,12 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("system-info", help="Print detected hardware").set_defaults(func=cmd_system_info)
-    sub.add_parser("detect", help="Full system + runtime detection as JSON").set_defaults(func=cmd_detect)
-    sub.add_parser("runtimes", help="List runtime backends and status").set_defaults(func=cmd_runtimes)
+    sub.add_parser("detect", help="Full system + runtime detection as JSON").set_defaults(
+        func=cmd_detect
+    )
+    sub.add_parser("runtimes", help="List runtime backends and status").set_defaults(
+        func=cmd_runtimes
+    )
 
     bench = sub.add_parser("benchmark", help="Run a real benchmark")
     bench.add_argument("--runtime", required=True, choices=sorted(BACKENDS))

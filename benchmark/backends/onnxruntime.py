@@ -23,7 +23,9 @@ def detect() -> BackendInfo:
         import onnxruntime  # type: ignore[import-untyped]
     except ImportError:
         return BackendInfo(
-            "onnxruntime", RuntimeStatus.NOT_INSTALLED, None,
+            "onnxruntime",
+            RuntimeStatus.NOT_INSTALLED,
+            None,
             "pip install onnxruntime (CPU/DirectML) or onnxruntime-gpu (CUDA)",
         )
     providers = list(onnxruntime.get_available_providers())
@@ -65,9 +67,7 @@ def _numpy():
 
         return numpy
     except ImportError as exc:
-        raise BackendError(
-            "numpy is required to run ONNX benchmarks: pip install numpy"
-        ) from exc
+        raise BackendError("numpy is required to run ONNX benchmarks: pip install numpy") from exc
 
 
 def _make_inputs(session: Any) -> dict[str, Any]:
@@ -165,7 +165,9 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
         "max_temperature_c": telemetry["max_temperature_c"],
         "average_power_watts": telemetry["average_power_watts"],
         # Throughput for graph models is inferences/second, not tokens/second.
-        "performance_per_watt": performance_per_watt(throughput_ips, telemetry["average_power_watts"]),
+        "performance_per_watt": performance_per_watt(
+            throughput_ips, telemetry["average_power_watts"]
+        ),
         "throughput_inferences_per_second": round(throughput_ips, 2) if throughput_ips else None,
     }
 

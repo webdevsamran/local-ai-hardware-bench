@@ -45,7 +45,9 @@ def detect() -> BackendInfo:
         api = _api_get("/api/version")
         if api is None:
             return BackendInfo(
-                "ollama", RuntimeStatus.CONFIGURATION_REQUIRED, version,
+                "ollama",
+                RuntimeStatus.CONFIGURATION_REQUIRED,
+                version,
                 "CLI installed but server not responding on localhost:11434",
             )
         return BackendInfo("ollama", RuntimeStatus.AVAILABLE, version)
@@ -53,8 +55,12 @@ def detect() -> BackendInfo:
     api = _api_get("/api/version")
     if api and "version" in api:
         return BackendInfo("ollama", RuntimeStatus.AVAILABLE, str(api["version"]))
-    return BackendInfo("ollama", RuntimeStatus.NOT_INSTALLED, None,
-                       "Install from https://ollama.com or via 'winget install Ollama.Ollama'")
+    return BackendInfo(
+        "ollama",
+        RuntimeStatus.NOT_INSTALLED,
+        None,
+        "Install from https://ollama.com or via 'winget install Ollama.Ollama'",
+    )
 
 
 def list_models() -> list[str]:

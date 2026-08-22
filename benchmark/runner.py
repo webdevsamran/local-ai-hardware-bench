@@ -17,8 +17,11 @@ def git_commit() -> str | None:
     try:
         proc = subprocess.run(
             ["git", "rev-parse", "HEAD"],
-            capture_output=True, text=True, timeout=5.0,
-            encoding="utf-8", errors="replace",
+            capture_output=True,
+            text=True,
+            timeout=5.0,
+            encoding="utf-8",
+            errors="replace",
         )
         if proc.returncode == 0:
             return proc.stdout.strip()
@@ -34,8 +37,11 @@ def power_profile() -> str | None:
     try:
         proc = subprocess.run(
             ["powercfg", "/getactivescheme"],
-            capture_output=True, text=True, timeout=5.0,
-            encoding="utf-8", errors="replace",
+            capture_output=True,
+            text=True,
+            timeout=5.0,
+            encoding="utf-8",
+            errors="replace",
         )
         if proc.returncode == 0 and proc.stdout.strip():
             return proc.stdout.strip().splitlines()[-1]

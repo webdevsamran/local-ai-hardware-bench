@@ -12,7 +12,15 @@ from typing import Any
 SCHEMA_VERSION = "1.0"
 
 # Fields that must be present at the top level of every result document.
-_TOP_LEVEL_REQUIRED = ("schema_version", "run_id", "timestamp", "system", "runtime", "model", "metrics")
+_TOP_LEVEL_REQUIRED = (
+    "schema_version",
+    "run_id",
+    "timestamp",
+    "system",
+    "runtime",
+    "model",
+    "metrics",
+)
 
 # Metric fields. A metric that could not be measured MUST be null, never
 # an estimate. Types are enforced: numbers must be int/float (bool excluded),
@@ -64,7 +72,9 @@ _MODEL_FIELDS = {
 }
 
 
-def _check_fields(section: dict[str, Any], spec: dict[str, Any], prefix: str, errors: list[str]) -> None:
+def _check_fields(
+    section: dict[str, Any], spec: dict[str, Any], prefix: str, errors: list[str]
+) -> None:
     for key, expected in spec.items():
         if key not in section:
             continue  # optional fields may be omitted; present fields must be valid

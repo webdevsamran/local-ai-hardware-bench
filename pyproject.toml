@@ -80,3 +80,10 @@ no_strict_optional = true
 [[tool.mypy.overrides]]
 module = ["psutil.*", "tensorrt.*", "onnxruntime.*", "openvino.*"]
 ignore_missing_imports = true
+
+# Platform-specific modules branch on sys.platform/OS at runtime; the
+# Windows-only attribute accesses (ctypes.windll, winreg) are guarded by
+# runtime checks that static analysis cannot narrow cross-platform.
+[[tool.mypy.overrides]]
+module = ["benchmark.system_info", "benchmark.telemetry"]
+disable_error_code = ["attr-defined"]

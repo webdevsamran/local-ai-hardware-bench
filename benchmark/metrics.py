@@ -6,7 +6,8 @@ for a derived metric is missing, the derived metric is None.
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 
 def percentile(values: Sequence[float], pct: float) -> float | None:

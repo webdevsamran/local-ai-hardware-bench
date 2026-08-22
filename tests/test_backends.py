@@ -1,6 +1,13 @@
 """Tests for backend detection and unavailable-backend handling."""
 
-from benchmark.backends import BACKENDS, BackendError, BenchmarkConfig, RuntimeStatus, detect_all, resolve
+from benchmark.backends import (
+    BACKENDS,
+    BackendError,
+    BenchmarkConfig,
+    RuntimeStatus,
+    detect_all,
+    resolve,
+)
 from benchmark.backends.base import BackendInfo
 
 

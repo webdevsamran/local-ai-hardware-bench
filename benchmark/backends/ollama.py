@@ -154,9 +154,9 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     sampler.start()
     iterations: list[dict[str, Any]] = []
     try:
-        for i in range(config.warmup_runs):
+        for _ in range(config.warmup_runs):
             _generate_stream(config.model, config.prompt, config)
-        for i in range(config.iterations):
+        for _ in range(config.iterations):
             iterations.append(_generate_stream(config.model, config.prompt, config))
     finally:
         sampler.stop()

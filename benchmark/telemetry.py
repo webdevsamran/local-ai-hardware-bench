@@ -10,7 +10,8 @@ from __future__ import annotations
 import subprocess
 import threading
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 
 def _nvidia_smi_sample() -> dict[str, float | None] | None:

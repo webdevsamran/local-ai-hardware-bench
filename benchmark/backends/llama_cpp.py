@@ -86,7 +86,7 @@ class LlamaServerHandle:
         self.base_url = f"http://127.0.0.1:{port}"
         self.proc: subprocess.Popen[bytes] | None = None
 
-    def __enter__(self) -> "LlamaServerHandle":
+    def __enter__(self) -> LlamaServerHandle:
         cmd = [
             self.binary,
             "-m", self.model_path,

@@ -94,6 +94,10 @@ def aggregate_iteration_metrics(iterations: list[dict[str, Any]]) -> dict[str, A
     def hi(values: Sequence[float]) -> float | None:
         return round(max(values), 2) if values else None
 
+    def pct(values: Sequence[float], q: float) -> float | None:
+        v = percentile(values, q)
+        return round(v, 2) if v is not None else None
+
     gen_tps_mean = mean(gen_tps)
     power_mean = mean(
         [float(v) for it in iterations if (v := it.get("average_power_watts")) is not None]
@@ -105,10 +109,10 @@ def aggregate_iteration_metrics(iterations: list[dict[str, Any]]) -> dict[str, A
         "prompt_tokens_per_second": median(prompt_tps),
         "generation_tokens_per_second": gen_tps_mean,
         "total_latency_ms": median(latencies) if latencies else mean([float(v) for v in latencies]),
-        "p50_latency_ms": round(percentile(latencies, 50), 2) if latencies else None,
-        "p90_latency_ms": round(percentile(latencies, 90), 2) if latencies else None,
-        "p95_latency_ms": round(percentile(latencies, 95), 2) if latencies else None,
-        "p99_latency_ms": round(percentile(latencies, 99), 2) if latencies else None,
+        "p50_latency_ms": pct(latencies, 50) if latencies else None,
+        "p90_latency_ms": pct(latencies, 90) if latencies else None,
+        "p95_latency_ms": pct(latencies, 95) if latencies else None,
+        "p99_latency_ms": pct(latencies, 99) if latencies else None,
         "latency_stddev_ms": stddev(latencies),
         "latency_min_ms": lo(latencies),
         "latency_max_ms": hi(latencies),

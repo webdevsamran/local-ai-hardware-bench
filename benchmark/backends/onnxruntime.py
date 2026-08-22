@@ -13,8 +13,6 @@ import time
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-
 from ..telemetry import TelemetrySampler
 from .base import BackendError, BackendInfo, BenchmarkConfig, RuntimeStatus
 
@@ -60,8 +58,21 @@ def _available_providers() -> list[str]:
     return list(onnxruntime.get_available_providers())
 
 
+def _numpy():
+    """Import numpy lazily; it is only needed when actually benchmarking."""
+    try:
+        import numpy
+
+        return numpy
+    except ImportError as exc:
+        raise BackendError(
+            "numpy is required to run ONNX benchmarks: pip install numpy"
+        ) from exc
+
+
 def _make_inputs(session: Any) -> dict[str, Any]:
     """Build deterministic zero inputs matching the model's declared shapes."""
+    np = _numpy()
     inputs: dict[str, Any] = {}
     for meta in session.get_inputs():
         shape = []

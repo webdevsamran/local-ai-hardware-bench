@@ -26,6 +26,7 @@ from .base import (
     BackendInfo,
     BenchmarkConfig,
     RuntimeStatus,
+    new_run_id,
     run_command,
     which,
 )
@@ -42,7 +43,10 @@ def _find_binary(name: str) -> str | None:
     if found:
         return found
     for directory in _COMMON_DIRS:
-        for candidate in (directory / f"{name}.exe", directory / "build" / "bin" / "Release" / f"{name}.exe"):
+        for candidate in (
+            directory / f"{name}.exe",
+            directory / "build" / "bin" / "Release" / f"{name}.exe",
+        ):
             if candidate.is_file():
                 return str(candidate)
     return None
@@ -53,7 +57,9 @@ def detect() -> BackendInfo:
     server = _find_binary("llama-server")
     if server is None:
         return BackendInfo(
-            "llama.cpp", RuntimeStatus.NOT_INSTALLED, None,
+            "llama.cpp",
+            RuntimeStatus.NOT_INSTALLED,
+            None,
             "Build from https://github.com/ggml-org/llama.cpp or download a CUDA release",
         )
     code, out = run_command([server, "--version"], timeout=15.0)
@@ -79,7 +85,9 @@ def _file_sha256(path: Path, chunk_size: int = 1 << 20) -> str:
 class LlamaServerHandle:
     """Managed llama-server subprocess."""
 
-    def __init__(self, binary: str, model_path: str, config: BenchmarkConfig, port: int = 8123) -> None:
+    def __init__(
+        self, binary: str, model_path: str, config: BenchmarkConfig, port: int = 8123
+    ) -> None:
         self.binary = binary
         self.model_path = model_path
         self.config = config
@@ -90,10 +98,14 @@ class LlamaServerHandle:
     def __enter__(self) -> LlamaServerHandle:
         cmd = [
             self.binary,
-            "-m", self.model_path,
-            "--port", str(self.port),
-            "-c", str(self.config.context_length),
-            "-ngl", "99" if self.config.device in ("auto", "cuda", "gpu") else "0",
+            "-m",
+            self.model_path,
+            "--port",
+            str(self.port),
+            "-c",
+            str(self.config.context_length),
+            "-ngl",
+            "99" if self.config.device in ("auto", "cuda", "gpu") else "0",
             "--no-webui",
         ]
         self.proc = subprocess.Popen(
@@ -198,9 +210,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
 
     model_path = config.extra.get("model_path")
     if not model_path or not Path(model_path).is_file():
-        raise BackendError(
-            "llama.cpp backend requires --model-path pointing to a local .gguf file"
-        )
+        raise BackendError("llama.cpp backend requires --model-path pointing to a local .gguf file")
 
     from .. import SCHEMA_VERSION
     from ..metrics import aggregate_iteration_metrics
@@ -231,7 +241,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "schema_version": SCHEMA_VERSION,
-        "run_id": f"llamacpp-{int(time.time())}",
+        "run_id": new_run_id("llamacpp"),
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "system": system,
         "runtime": {
@@ -256,9 +266,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "context_length": config.context_length,
             "warmup_runs": config.warmup_runs,
             "iterations": config.iterations,
-            "command": (
-                f"aihwbench benchmark --runtime llama.cpp --model-path {model_path}"
-            ),
+            "command": (f"aihwbench benchmark --runtime llama.cpp --model-path {model_path}"),
         },
         "iterations": iterations,
     }

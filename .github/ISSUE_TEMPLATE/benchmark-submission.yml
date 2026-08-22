@@ -1,0 +1,38 @@
+name: Benchmark result submission
+description: Submit a benchmark result for publication (attach the PR, do not paste raw metrics here).
+labels: ["benchmark"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Results are published via PR to `results/published/` after CI
+        validation and maintainer review. Use this issue to link the PR
+        and provide context. Never paste serial numbers, MAC addresses,
+        tokens, or personal paths.
+  - type: input
+    id: pr
+    attributes:
+      label: Link to result PR
+      placeholder: "https://github.com/webdevsamran/local-ai-hardware-bench/pull/..."
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Hardware platform, runtime version, power profile, anything a reviewer should know.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission checklist
+      options:
+        - label: The result file passes `aihwbench validate`.
+          required: true
+        - label: The result file passes the privacy scan (no PII/secrets).
+          required: true
+        - label: A platform note under `platforms/<vendor>/` is included in the PR.
+          required: true
+        - label: The compatibility matrix row is updated only for what was actually tested.
+          required: true

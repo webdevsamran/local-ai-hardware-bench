@@ -53,11 +53,14 @@ def render_report(result: dict[str, Any]) -> str:
     lines.append("")
     lines.append(f"- **OS:** {_fmt(system.get('os'))} ({_fmt(system.get('os_version'))})")
     lines.append(f"- **Platform:** {_fmt(system.get('platform_name'))}")
-    lines.append(f"- **CPU:** {_fmt(system.get('cpu'))} "
-                 f"({_fmt(system.get('cpu_cores_physical'))}C/"
-                 f"{_fmt(system.get('cpu_cores_logical'))}T)")
-    lines.append(f"- **GPU:** {_fmt(system.get('gpu'))} "
-                 f"({_fmt(system.get('gpu_vram_mb'), ' MB')} VRAM)")
+    lines.append(
+        f"- **CPU:** {_fmt(system.get('cpu'))} "
+        f"({_fmt(system.get('cpu_cores_physical'))}C/"
+        f"{_fmt(system.get('cpu_cores_logical'))}T)"
+    )
+    lines.append(
+        f"- **GPU:** {_fmt(system.get('gpu'))} ({_fmt(system.get('gpu_vram_mb'), ' MB')} VRAM)"
+    )
     npu = system.get("npu") or "none detected"
     lines.append(f"- **NPU:** {npu}")
     lines.append(f"- **RAM:** {_fmt(system.get('ram_gb'), ' GB')}")
@@ -66,8 +69,10 @@ def render_report(result: dict[str, Any]) -> str:
     lines.append("")
     lines.append(f"- **Runtime:** {_fmt(runtime.get('name'))} {_fmt(runtime.get('version'))}")
     lines.append(f"- **Backend:** {_fmt(runtime.get('backend'))} on {_fmt(runtime.get('device'))}")
-    lines.append(f"- **Model:** {_fmt(model.get('name'))} "
-                 f"(format: {_fmt(model.get('format'))}, quantization: {_fmt(model.get('quantization'))})")
+    lines.append(
+        f"- **Model:** {_fmt(model.get('name'))} "
+        f"(format: {_fmt(model.get('format'))}, quantization: {_fmt(model.get('quantization'))})"
+    )
     checksum = model.get("checksum")
     if checksum:
         lines.append(f"- **Checksum:** `{checksum}`")
@@ -104,14 +109,20 @@ def render_report(result: dict[str, Any]) -> str:
     lines.append("```")
     lines.append("")
     lines.append(f"- Prompt: {repro.get('prompt', 'n/a')!r}")
-    lines.append(f"- Max tokens: {repro.get('max_tokens', 'n/a')}, "
-                 f"temperature: {repro.get('temperature', 'n/a')}, seed: {repro.get('seed', 'n/a')}")
-    lines.append(f"- Context length: {repro.get('context_length', 'n/a')}, "
-                 f"warm-up runs: {repro.get('warmup_runs', 'n/a')}, "
-                 f"measured iterations: {repro.get('iterations', 'n/a')}")
+    lines.append(
+        f"- Max tokens: {repro.get('max_tokens', 'n/a')}, "
+        f"temperature: {repro.get('temperature', 'n/a')}, seed: {repro.get('seed', 'n/a')}"
+    )
+    lines.append(
+        f"- Context length: {repro.get('context_length', 'n/a')}, "
+        f"warm-up runs: {repro.get('warmup_runs', 'n/a')}, "
+        f"measured iterations: {repro.get('iterations', 'n/a')}"
+    )
     lines.append("")
-    lines.append("> Metrics reported as 'not measured' could not be captured reliably "
-                 "on this platform; they are never estimated.")
+    lines.append(
+        "> Metrics reported as 'not measured' could not be captured reliably "
+        "on this platform; they are never estimated."
+    )
     return NL.join(lines)
 
 

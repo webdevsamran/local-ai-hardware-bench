@@ -14,13 +14,13 @@ jobs:
     name: Lint & format check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
       - run: pip install ruff
       - run: ruff check benchmark tests
-      - run: ruff format --check benchmark tests || true
+      - run: ruff format --check benchmark tests
 
   test:
     name: Unit tests (${{ matrix.os }}, py${{ matrix.python }})
@@ -28,55 +28,105 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python: ["3.10", "3.12"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.10", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: ${{ matrix.python }}
       - run: pip install -e ".[dev]"
       - run: pytest
 
+  coverage:
+    name: Test coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]" pytest-cov
+      - run: pytest --cov=benchmark --cov-report=term --cov-fail-under=55
+
+  types:
+    name: Type check (mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]" mypy
+      - run: mypy benchmark
+
   package:
     name: Build package
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
       - run: pip install build twine
       - run: python -m build
       - run: twine check dist/*
 
-  schema:
-    name: Validate committed results
+  docs:
+    name: Docs link check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
-      - name: Validate all published result files against schema 1.0
+      - run: python scripts/check_docs_links.py
+
+  results:
+    name: Result pipeline (schema + privacy + duplicates)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: Validate schema, scan privacy, detect duplicate fingerprints
         shell: python
         run: |
           import json, pathlib, sys
           sys.path.insert(0, ".")
+          from benchmark.fingerprint import result_fingerprint
+          from benchmark.sanitize import scan_object
           from benchmark.schemas import validate_result
           failures = []
-          for pattern in ("results/published/*.json", "results/normalized/*.json"):
-              for path in sorted(pathlib.Path(".").glob(pattern)):
-                  data = json.loads(path.read_text(encoding="utf-8"))
-                  errors = validate_result(data)
-                  status = "OK" if not errors else "FAIL"
-                  print(f"{status}: {path}")
-                  if errors:
-                      failures.append((path, errors))
+          fingerprints = {}
+          checked = 0
+          patterns = ("results/published/*.json", "results/normalized/*.json")
+          files = [p for pat in patterns for p in sorted(pathlib.Path(".").glob(pat))]
+          for path in files:
+              data = json.loads(path.read_text(encoding="utf-8"))
+              errors = validate_result(data)
+              clean, privacy = scan_object(data)
+              fp = result_fingerprint(data)
+              dup = fingerprints.get(fp)
+              fingerprints.setdefault(fp, str(path))
+              checked += 1
+              status = "OK"
+              detail = []
+              if errors:
+                  status = "FAIL"
+                  detail.extend(errors)
+              if privacy:
+                  status = "PRIVACY_FAIL"
+                  detail.extend(privacy)
+              if dup:
+                  status = "DUPLICATE"
+                  detail.append(f"duplicate fingerprint of {dup}")
+              print(f"{status}: {path}")
+              failures.extend((str(path), d) for d in detail)
           if failures:
-              for path, errors in failures:
-                  print()
-                  print(f"{path}:")
-                  for e in errors:
-                      print(f"  - {e}")
+              print()
+              for path, msg in failures:
+                  print(f"{path}: {msg}")
               sys.exit(1)
+          print(f"Pipeline-checked {checked} result file(s): schema OK, no privacy issues, no duplicates.")

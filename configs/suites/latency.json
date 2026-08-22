@@ -1,0 +1,15 @@
+{
+  "name": "latency",
+  "description": "Latency focus: single steady-state requests with low concurrency; TTFT and percentile latencies.",
+  "workload": {
+    "prompt": "Explain what a token is in large language models, in three sentences.",
+    "max_tokens": 64,
+    "temperature": 0.0,
+    "seed": 42,
+    "context_length": 2048,
+    "warmup_runs": 2,
+    "iterations": 30,
+    "concurrency": 1
+  },
+  "model_tier": "standard"
+}

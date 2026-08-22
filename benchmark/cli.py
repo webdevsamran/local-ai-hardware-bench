@@ -1,14 +1,4 @@
-"""aihwbench command-line interface.
-
-Subcommands:
-  system-info   Print detected hardware
-  detect        Print full system + runtime detection (JSON)
-  runtimes      List runtime backends and their status
-  benchmark     Run a real benchmark and save a result document
-  validate      Validate a result JSON file against the schema
-  report        Render a human-readable report from a result file
-  compare       Compare two result files
-"""
+"""aihwbench command-line interface."""
 
 from __future__ import annotations
 
@@ -18,26 +8,70 @@ import sys
 from pathlib import Path
 
 from . import __version__
-from .backends import BACKENDS, BackendError, BenchmarkConfig, detect_all, resolve
-from .compare import compare_results, render_comparison
+from .backends import (
+    BACKENDS,
+    BackendError,
+    BenchmarkConfig,
+    detect_all,
+    resolve,
+)
+from .compare import NOT_COMPARABLE, compare_results, render_comparison
+from .exit_codes import (
+    EXIT_CONFIGURATION_ERROR,
+    EXIT_NOT_COMPARABLE,
+    EXIT_OK,
+    EXIT_REGRESSION_DETECTED,
+    EXIT_USAGE_ERROR,
+    EXIT_VALIDATION_ERROR,
+)
+from .export import export_dataset
+from .regression import RegressionThresholds, evaluate_regression
 from .report import render_report
 from .runner import run_benchmark, save_result
+from .suites import list_suites, load_suite, run_suite
 from .system_info import detect_system
 from .validate import load_result, validate_file
 
 
-def _print_json(data: object) -> None:
-    print(json.dumps(data, indent=2))
+def _json(data: object) -> None:
+    print(json.dumps(data, indent=2, default=str))
 
 
 def cmd_system_info(_args: argparse.Namespace) -> int:
-    _print_json(detect_system())
-    return 0
+    _json(detect_system())
+    return EXIT_OK
 
 
 def cmd_detect(_args: argparse.Namespace) -> int:
-    _print_json({"system": detect_system(), "runtimes": detect_all()})
-    return 0
+    _json({"system": detect_system(), "runtimes": detect_all()})
+    return EXIT_OK
+
+
+def cmd_doctor(_args: argparse.Namespace) -> int:
+    """Actionable hardware/runtime preconditions report."""
+    system = detect_system()
+    problems: list[str] = []
+    if not system.get("cpu"):
+        problems.append("CPU detection failed")
+    if not system.get("gpu"):
+        problems.append("No GPU detected")
+    print("== System ==")
+    for key, value in system.items():
+        print(f"  {key}: {value}")
+    print()
+    print("== Runtimes ==")
+    for info in detect_all():
+        status = info["status"]
+        print(f"  {info['name']:<14} {status:<24} {info.get('version') or '-'}")
+        if info.get("detail"):
+            print(f"  {'':<14} {info['detail']}")
+    print()
+    if problems:
+        print("Recommendations:")
+        for p in problems:
+            print(f"  - {p}")
+        return EXIT_CONFIGURATION_ERROR
+    return EXIT_OK
 
 
 def cmd_runtimes(_args: argparse.Namespace) -> int:
@@ -47,17 +81,16 @@ def cmd_runtimes(_args: argparse.Namespace) -> int:
         print(f"{info['name']:<14} {status:<24} {version}")
         if info.get("detail"):
             print(f"{'':<14} {info['detail']}")
-    return 0
+    return EXIT_OK
 
 
 def cmd_benchmark(args: argparse.Namespace) -> int:
     if args.runtime == "ollama" and not args.model:
         print("ERROR: --model is required for the ollama runtime", file=sys.stderr)
-        return 2
+        return EXIT_USAGE_ERROR
     if args.runtime in ("llama.cpp", "onnxruntime", "openvino") and not args.model_path:
-        print(f"ERROR: --model-path is required for the {args.runtime} runtime",
-              file=sys.stderr)
-        return 2
+        print(f"ERROR: --model-path is required for the {args.runtime} runtime", file=sys.stderr)
+        return EXIT_USAGE_ERROR
     config = BenchmarkConfig(
         model=args.model or "",
         max_tokens=args.max_tokens,
@@ -74,7 +107,7 @@ def cmd_benchmark(args: argparse.Namespace) -> int:
         result = run_benchmark(args.runtime, config)
     except BackendError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
-        return 2
+        return EXIT_USAGE_ERROR
 
     out_dir = Path(args.output)
     raw_path = save_result(result, out_dir / "raw")
@@ -84,47 +117,158 @@ def cmd_benchmark(args: argparse.Namespace) -> int:
     print(f"Report saved to: {report_path}")
     print()
     print(render_report(result))
-    return 0
+    return EXIT_OK
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
     valid, errors = validate_file(Path(args.result))
     if valid:
         print(f"VALID: {args.result}")
-        return 0
+        return EXIT_OK
     print(f"INVALID: {args.result}", file=sys.stderr)
     for error in errors:
         print(f"  - {error}", file=sys.stderr)
-    return 1
+    return EXIT_VALIDATION_ERROR
 
 
 def cmd_report(args: argparse.Namespace) -> int:
-    result = load_result(Path(args.result))
-    print(render_report(result))
-    return 0
+    try:
+        result = load_result(Path(args.result))
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION_ERROR
+    if args.output:
+        Path(args.output).write_text(render_report(result), encoding="utf-8")
+    else:
+        print(render_report(result))
+    return EXIT_OK
 
 
 def cmd_compare(args: argparse.Namespace) -> int:
-    a = load_result(Path(args.result_a))
-    b = load_result(Path(args.result_b))
-    comparison = compare_results(a, b)
+    try:
+        a = load_result(Path(args.result_a))
+        b = load_result(Path(args.result_b))
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION_ERROR
+    comparison = compare_results(a, b, force=args.force)
     print(render_comparison(comparison))
     if args.json:
-        _print_json(comparison)
-    return 0
+        _json(comparison)
+    if comparison["classification"] == NOT_COMPARABLE and not args.force:
+        return EXIT_NOT_COMPARABLE
+    return EXIT_OK
+
+
+def cmd_suite(args: argparse.Namespace) -> int:
+    """Run a versioned benchmark suite profile."""
+    if args.list:
+        for name in list_suites():
+            print(name)
+        return EXIT_OK
+    try:
+        suite = load_suite(args.name)
+    except FileNotFoundError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_USAGE_ERROR
+    workload = suite["workload"]
+    print(f"Suite: {suite['name']} - {suite['description']}")
+    print(f"Workload: max_tokens={workload['max_tokens']} iterations={workload['iterations']}")
+    paths = run_suite(args.name, args.runtime, args.model_path or args.model, Path(args.output))
+    for p in paths:
+        print(f"Result saved to: {p}")
+    return EXIT_OK
+
+
+def cmd_export(args: argparse.Namespace) -> int:
+    """Generate dataset views (JSON/CSV/Markdown) from published results."""
+    results_dir = Path(args.results_dir)
+    if not results_dir.is_dir():
+        print(f"ERROR: {results_dir} is not a directory", file=sys.stderr)
+        return EXIT_USAGE_ERROR
+    outputs = export_dataset(results_dir, Path(args.output))
+    for p in outputs:
+        print(f"Written: {p}")
+    return EXIT_OK
+
+
+def cmd_baseline(args: argparse.Namespace) -> int:
+    """Save a result as a named baseline for regression checks."""
+    try:
+        result = load_result(Path(args.result))
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION_ERROR
+    baselines_dir = Path(args.baselines_dir)
+    baselines_dir.mkdir(parents=True, exist_ok=True)
+    path = baselines_dir / f"{args.name}.json"
+    path.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    print(f"Baseline saved: {path}")
+    return EXIT_OK
+
+
+def cmd_regression(args: argparse.Namespace) -> int:
+    """Compare a candidate result against a saved baseline."""
+    baseline_path = Path(args.baselines_dir) / f"{args.baseline}.json"
+    if not baseline_path.is_file():
+        print(
+            f"ERROR: baseline {args.baseline!r} not found at {baseline_path}",
+            file=sys.stderr,
+        )
+        return EXIT_USAGE_ERROR
+    try:
+        baseline = load_result(baseline_path)
+        candidate = load_result(Path(args.candidate))
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION_ERROR
+    thresholds = RegressionThresholds(
+        throughput_max_regression_pct=args.throughput_pct,
+        ttft_max_increase_ms=args.ttft_ms,
+        ttft_max_increase_pct=args.ttft_pct,
+        latency_p95_max_regression_pct=args.latency_pct,
+        memory_max_increase_mb=args.memory_mb,
+        memory_max_increase_pct=args.memory_pct,
+        power_max_increase_watts=args.power_w,
+        power_max_increase_pct=args.power_pct,
+    )
+    report = evaluate_regression(baseline, candidate, thresholds)
+    if args.json:
+        _json(report.to_dict())
+    else:
+        print(f"Classification: {report.classification}")
+        print(f"Status: {report.status}")
+        for c in report.checks:
+            print(
+                f"  {c.status:<8} {c.metric:<32} "
+                f"base={c.baseline} cand={c.candidate} "
+                f"delta={c.delta} ({c.delta_pct}%)"
+            )
+            if c.reason:
+                print(f"           {c.reason}")
+    if report.status == "FAIL":
+        return EXIT_REGRESSION_DETECTED
+    return EXIT_OK
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="aihwbench",
-        description="Open Local AI Hardware Benchmark - vendor-neutral local AI runtime benchmarking",
+        description="AIHWBench - vendor-neutral local AI runtime benchmarking",
     )
     parser.add_argument("--version", action="version", version=f"aihwbench {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("system-info", help="Print detected hardware").set_defaults(func=cmd_system_info)
-    sub.add_parser("detect", help="Full system + runtime detection as JSON").set_defaults(func=cmd_detect)
-    sub.add_parser("runtimes", help="List runtime backends and status").set_defaults(func=cmd_runtimes)
+    sub.add_parser("detect", help="Full system + runtime detection as JSON").set_defaults(
+        func=cmd_detect
+    )
+    sub.add_parser("doctor", help="Diagnose hardware/runtime preconditions").set_defaults(
+        func=cmd_doctor
+    )
+    sub.add_parser("runtimes", help="List runtime backends and status").set_defaults(
+        func=cmd_runtimes
+    )
 
     bench = sub.add_parser("benchmark", help="Run a real benchmark")
     bench.add_argument("--runtime", required=True, choices=sorted(BACKENDS))
@@ -146,13 +290,52 @@ def build_parser() -> argparse.ArgumentParser:
 
     rep = sub.add_parser("report", help="Render a markdown report")
     rep.add_argument("result")
+    rep.add_argument("--output", default=None, help="Write report to file")
     rep.set_defaults(func=cmd_report)
 
     cmp_ = sub.add_parser("compare", help="Compare two result files")
     cmp_.add_argument("result_a")
     cmp_.add_argument("result_b")
     cmp_.add_argument("--json", action="store_true", help="Also print structured JSON")
+    cmp_.add_argument("--force", action="store_true", help="Compare even when NOT_COMPARABLE")
     cmp_.set_defaults(func=cmd_compare)
+
+    suite_p = sub.add_parser("suite", help="Run a versioned benchmark suite profile")
+    suite_p.add_argument("name", nargs="?", default=None, help="Suite name (e.g. smoke)")
+    suite_p.add_argument("--list", action="store_true", help="List available suites")
+    suite_p.add_argument("--runtime", default="ollama")
+    suite_p.add_argument("--model", default=None, help="Model identifier (ollama tag)")
+    suite_p.add_argument(
+        "--model-path", default=None, help="Local model file path (llama.cpp/ONNX/OpenVINO)"
+    )
+    suite_p.add_argument("--output", default="results")
+    suite_p.set_defaults(func=cmd_suite)
+
+    exp = sub.add_parser("export", help="Generate dataset views from published results")
+    exp.add_argument("results_dir", nargs="?", default="results/published")
+    exp.add_argument("--output", default="results/dataset")
+    exp.set_defaults(func=cmd_export)
+
+    base_p = sub.add_parser("baseline", help="Save a result as a named baseline")
+    base_p.add_argument("result")
+    base_p.add_argument("--name", required=True)
+    base_p.add_argument("--baselines-dir", default="results/baselines")
+    base_p.set_defaults(func=cmd_baseline)
+
+    reg = sub.add_parser("regression", help="Check candidate vs baseline")
+    reg.add_argument("--baseline", required=True)
+    reg.add_argument("candidate")
+    reg.add_argument("--baselines-dir", default="results/baselines")
+    reg.add_argument("--throughput-pct", type=float, default=10.0)
+    reg.add_argument("--ttft-ms", type=float, default=250.0)
+    reg.add_argument("--ttft-pct", type=float, default=50.0)
+    reg.add_argument("--latency-pct", type=float, default=25.0)
+    reg.add_argument("--memory-mb", type=float, default=1024.0)
+    reg.add_argument("--memory-pct", type=float, default=50.0)
+    reg.add_argument("--power-w", type=float, default=15.0)
+    reg.add_argument("--power-pct", type=float, default=50.0)
+    reg.add_argument("--json", action="store_true")
+    reg.set_defaults(func=cmd_regression)
 
     return parser
 

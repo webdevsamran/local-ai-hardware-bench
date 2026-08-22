@@ -1,0 +1,21 @@
+name: Documentation
+description: Report inaccurate, missing, or unclear documentation.
+labels: ["documentation"]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Location
+      placeholder: "e.g. README.md section 'Quick start' or docs/methodology.md"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested improvement

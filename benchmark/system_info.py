@@ -128,27 +128,43 @@ def get_cpu_info() -> dict[str, Any]:
                 info["cpu"] = winreg.QueryValueEx(key, "ProcessorNameString")[0].strip()
         except OSError:
             info["cpu"] = platform.processor() or None
-        cores = _run(["powershell", "-NoProfile", "-Command",
-                      "(Get-CimInstance Win32_Processor).NumberOfCores"])
+        cores = _run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-Command",
+                "(Get-CimInstance Win32_Processor).NumberOfCores",
+            ]
+        )
         if cores and cores.strip().isdigit():
             info["cpu_cores_physical"] = int(cores.strip())
     elif system == "Linux":
         cpuinfo = "/proc/cpuinfo"
         names: list[str] = []
-        physical_ids: set[str] = set()
+        # Unique (physical id, core id) pairs = physical cores.
+        core_pairs: set[tuple[str, str]] = set()
+        current: dict[str, str] = {}
         try:
             with open(cpuinfo, encoding="ascii") as fh:
                 for line in fh:
                     if line.startswith("model name"):
                         names.append(line.split(":", 1)[1].strip())
                     elif line.startswith("physical id"):
-                        physical_ids.add(line.split(":", 1)[1].strip())
+                        current["physical"] = line.split(":", 1)[1].strip()
+                    elif line.startswith("core id"):
+                        current["core"] = line.split(":", 1)[1].strip()
+                    elif not line.strip() and current:
+                        if "physical" in current and "core" in current:
+                            core_pairs.add((current["physical"], current["core"]))
+                        current = {}
         except OSError:
             pass
+        if current and "physical" in current and "core" in current:
+            core_pairs.add((current["physical"], current["core"]))
         if names:
             info["cpu"] = names[0]
-        if physical_ids:
-            info["cpu_cores_physical"] = len(physical_ids)
+        if core_pairs:
+            info["cpu_cores_physical"] = len(core_pairs)
     else:
         info["cpu"] = platform.processor() or None
     return info
@@ -156,11 +172,13 @@ def get_cpu_info() -> dict[str, Any]:
 
 def get_nvidia_gpus() -> list[dict[str, Any]]:
     """Query NVIDIA GPUs via nvidia-smi. Returns [] when unavailable."""
-    out = _run([
-        "nvidia-smi",
-        "--query-gpu=name,memory.total,driver_version,compute_cap",
-        "--format=csv,noheader,nounits",
-    ])
+    out = _run(
+        [
+            "nvidia-smi",
+            "--query-gpu=name,memory.total,driver_version,compute_cap",
+            "--format=csv,noheader,nounits",
+        ]
+    )
     gpus: list[dict[str, Any]] = []
     if not out:
         return gpus
@@ -196,8 +214,9 @@ def get_gpu_info() -> dict[str, Any]:
         }
     # Fall back to WMI on Windows (reports iGPU or unknown VRAM).
     if platform.system() == "Windows":
-        out = _run(["powershell", "-NoProfile", "-Command",
-                    "(Get-CimInstance Win32_VideoController).Name"])
+        out = _run(
+            ["powershell", "-NoProfile", "-Command", "(Get-CimInstance Win32_VideoController).Name"]
+        )
         if out:
             names = [n.strip() for n in out.splitlines() if n.strip()]
             if names:
@@ -209,8 +228,7 @@ def get_npu_info() -> str | None:
     """Detect known NPUs via Plug-and-Play device enumeration (Windows)."""
     if platform.system() != "Windows":
         return None
-    out = _run(["powershell", "-NoProfile", "-Command",
-                "(Get-CimInstance Win32_PnPEntity).Name"])
+    out = _run(["powershell", "-NoProfile", "-Command", "(Get-CimInstance Win32_PnPEntity).Name"])
     if not out:
         return None
     for pattern in _KNOWN_NPU_PATTERNS:
@@ -225,8 +243,14 @@ def get_platform_name() -> str | None:
     """Best-effort machine product name (sanitized; no serials)."""
     system = platform.system()
     if system == "Windows":
-        out = _run(["powershell", "-NoProfile", "-Command",
-                    "(Get-CimInstance Win32_ComputerSystemProduct).Name"])
+        out = _run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-Command",
+                "(Get-CimInstance Win32_ComputerSystemProduct).Name",
+            ]
+        )
         if out:
             return out.strip().splitlines()[0]
     elif system == "Linux":

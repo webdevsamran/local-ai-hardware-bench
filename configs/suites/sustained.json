@@ -1,0 +1,14 @@
+{
+  "name": "sustained",
+  "description": "Sustained/thermal focus: longer iterations to expose throttling, steady-state throughput and peak temperature.",
+  "workload": {
+    "prompt": "Write a long, detailed essay about the architectural evolution of neural language models, covering attention mechanisms, scaling laws, quantization and deployment on local hardware.",
+    "max_tokens": 1024,
+    "temperature": 0.0,
+    "seed": 42,
+    "context_length": 16384,
+    "warmup_runs": 2,
+    "iterations": 12
+  },
+  "model_tier": "standard"
+}

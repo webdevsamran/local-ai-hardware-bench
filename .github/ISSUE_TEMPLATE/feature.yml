@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose an enhancement to the framework, CLI, or methodology.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+      description: What are you trying to achieve? What is missing?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the change you would like, including CLI/API shape if relevant.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - CLI / UX
+        - Backend / runtime support
+        - Schema / validation
+        - Comparison / statistics
+        - Telemetry
+        - Documentation
+        - CI / tooling
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      options:
+        - label: I have checked the ROADMAP and existing issues for duplicates.
+          required: true

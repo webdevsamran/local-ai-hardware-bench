@@ -1,8 +1,10 @@
 """Result schema definition and validation.
 
-Every benchmark result written by this framework conforms to schema
-version 1.0. Validation is intentionally dependency-free so results can
-be validated anywhere (CI, vendor review, offline).
+Benchmark result documents carry an explicit ``schema_version``. The
+current writer emits schema 2.0; schema 1.0 documents remain fully valid
+and readable (see ``benchmark/migrations``). Validation is intentionally
+dependency-free so results can be validated anywhere (CI, vendor review,
+offline).
 """
 
 from __future__ import annotations
@@ -10,7 +12,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.0"  # historical constant kept for backwards compatibility
+CURRENT_SCHEMA_VERSION = "2.0"
+SUPPORTED_SCHEMA_VERSIONS = ("1.0", "2.0")
 
 # Fields that must be present at the top level of every result document.
 _TOP_LEVEL_REQUIRED = (
@@ -50,6 +54,62 @@ _METRIC_FIELDS: dict[str, tuple[tuple[type, ...], float | None, float | None]] =
     "performance_per_watt": ((int, float), 0.0, None),
     "throughput_inferences_per_second": ((int, float), 0.0, None),
     "energy_joules_per_token": ((int, float), 0.0, None),
+    # Schema 2.0 additions — all optional; null means "not measured".
+    "median_latency_ms": ((int, float), 0.0, None),
+    "p75_latency_ms": ((int, float), 0.0, None),
+    "p99_9_latency_ms": ((int, float), 0.0, None),
+    "min_latency_ms": ((int, float), 0.0, None),
+    "max_latency_ms": ((int, float), 0.0, None),
+    "stddev_latency_ms": ((int, float), 0.0, None),
+    "cv_latency": ((int, float), 0.0, None),
+    "tpot_ms": ((int, float), 0.0, None),
+    "itl_ms": ((int, float), 0.0, None),
+    "time_to_second_token_ms": ((int, float), 0.0, None),
+    "inter_chunk_latency_ms": ((int, float), 0.0, None),
+    "prefill_latency_ms": ((int, float), 0.0, None),
+    "decode_duration_ms": ((int, float), 0.0, None),
+    "queue_latency_ms": ((int, float), 0.0, None),
+    "request_latency_ms": ((int, float), 0.0, None),
+    "idle_power_watts": ((int, float), 0.0, None),
+    "incremental_power_watts": ((int, float), 0.0, None),
+    "energy_joules_per_request": ((int, float), 0.0, None),
+    "energy_joules_per_1k_tokens": ((int, float), 0.0, None),
+    "requests_per_second": ((int, float), 0.0, None),
+    "error_rate": ((int, float), 0.0, 1.0),
+}
+
+# Schema 2.0 block specs (all fields optional; present values type-checked).
+_WORKLOAD_FIELDS = {
+    "id": str,
+    "kind": str,
+    "version": str,
+    "isl_tokens": int,
+    "osl_tokens": int,
+    "dataset": str,
+}
+
+_PROVENANCE_FIELDS = {
+    "result_hash": str,
+    "workload_hash": str,
+    "environment_hash": str,
+    "model_identity_hash": str,
+    "hash_algorithm": str,
+    "signature": str,
+    "signature_provider": str,
+}
+
+_TELEMETRY_FIELDS = {
+    "source": str,
+    "interval_seconds": (int, float),
+    "samples": int,
+}
+
+_QUALITY_FIELDS = {
+    "reproducibility_completeness": (int, float),
+    "variance_flag": str,
+    "outlier_flag": str,
+    "trust_state": str,
+    "checks_passed": bool,
 }
 
 _SYSTEM_FIELDS = {
@@ -151,9 +211,10 @@ def validate_result(data: Any) -> list[str]:
         if field not in data:
             errors.append(f"missing required field: {field}")
 
-    if "schema_version" in data and data["schema_version"] != SCHEMA_VERSION:
+    if "schema_version" in data and data["schema_version"] not in SUPPORTED_SCHEMA_VERSIONS:
         errors.append(
-            f"schema_version: expected {SCHEMA_VERSION!r}, got {data['schema_version']!r}"
+            f"schema_version: expected one of {SUPPORTED_SCHEMA_VERSIONS}, "
+            f"got {data['schema_version']!r}"
         )
 
     if "run_id" in data and not isinstance(data["run_id"], str):
@@ -265,6 +326,44 @@ def validate_result(data: Any) -> list[str]:
             for i, item in enumerate(iterations):
                 if not isinstance(item, dict):
                     errors.append(f"iterations[{i}]: must be an object")
+
+    # Schema 2.0 optional blocks.
+    workload = data.get("workload")
+    if workload is not None:
+        if not isinstance(workload, dict):
+            errors.append("workload: must be an object")
+        else:
+            _check_fields(workload, _WORKLOAD_FIELDS, "workload", errors)
+            for key in ("isl_tokens", "osl_tokens"):
+                if key in workload and workload[key] is not None:
+                    _check_metric(workload[key], f"workload.{key}", errors, minimum=1)
+
+    provenance = data.get("provenance")
+    if provenance is not None:
+        if not isinstance(provenance, dict):
+            errors.append("provenance: must be an object")
+        else:
+            _check_fields(provenance, _PROVENANCE_FIELDS, "provenance", errors)
+
+    telemetry = data.get("telemetry")
+    if telemetry is not None:
+        if not isinstance(telemetry, dict):
+            errors.append("telemetry: must be an object")
+        else:
+            _check_fields(telemetry, _TELEMETRY_FIELDS, "telemetry", errors)
+
+    quality = data.get("quality")
+    if quality is not None:
+        if not isinstance(quality, dict):
+            errors.append("quality: must be an object")
+        else:
+            _check_fields(quality, _QUALITY_FIELDS, "quality", errors)
+            score = quality.get("reproducibility_completeness")
+            if isinstance(score, (int, float)) and not isinstance(score, bool):
+                if not 0.0 <= score <= 100.0:
+                    errors.append(
+                        f"quality.reproducibility_completeness: must be within [0, 100], got {score}"
+                    )
 
     return errors
 

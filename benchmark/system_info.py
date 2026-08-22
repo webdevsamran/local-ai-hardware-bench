@@ -171,11 +171,16 @@ def get_cpu_info() -> dict[str, Any]:
 
 
 def get_nvidia_gpus() -> list[dict[str, Any]]:
-    """Query NVIDIA GPUs via nvidia-smi. Returns [] when unavailable."""
+    """Query NVIDIA GPUs via nvidia-smi. Returns [] when unavailable.
+
+    Each entry includes device index and PCIe link info where the driver
+    exposes it; unavailable fields stay None (#28, #29).
+    """
     out = _run(
         [
             "nvidia-smi",
-            "--query-gpu=name,memory.total,driver_version,compute_cap",
+            "--query-gpu=index,name,memory.total,driver_version,compute_cap,"
+            "pci.pcie_gen.current,pci.pcie_link.width.current",
             "--format=csv,noheader,nounits",
         ]
     )
@@ -186,12 +191,20 @@ def get_nvidia_gpus() -> list[dict[str, Any]]:
         parts = [p.strip() for p in line.split(",")]
         if len(parts) < 4:
             continue
-        name, vram_mb, driver, compute_cap = parts[:4]
+        # Older drivers may not support the extended query; fall back.
+        if len(parts) >= 7:
+            index_s, name, vram_mb, driver, compute_cap, pcie_gen, pcie_width = parts[:7]
+        else:
+            name, vram_mb, driver, compute_cap = parts[:4]
+            index_s = pcie_gen = pcie_width = ""
         gpu: dict[str, Any] = {
             "vendor": "NVIDIA",
             "name": name,
             "driver_version": driver,
             "vram_mb": int(vram_mb) if vram_mb.isdigit() else None,
+            "index": int(index_s) if index_s.isdigit() else None,
+            "pcie_gen": int(pcie_gen) if pcie_gen.isdigit() else None,
+            "pcie_width": int(pcie_width.replace("x", "")) if pcie_width.strip() else None,
         }
         try:
             major, minor = compute_cap.split(".")
@@ -262,6 +275,62 @@ def get_platform_name() -> str | None:
     return None
 
 
+def get_topology() -> dict[str, Any]:
+    """Hardware topology facts: NUMA, sockets, GPU count, unified memory,
+    CPU instruction-set features. Unavailable facts are None (#28, #30).
+
+    No serial numbers or PII: only structural counts and feature names.
+    """
+    topo: dict[str, Any] = {
+        "numa_nodes": None,
+        "sockets": None,
+        "unified_memory": None,
+        "cpu_features": [],
+        "gpu_count": None,
+    }
+    system = platform.system()
+    if system == "Linux":
+        import os as _os
+
+        try:
+            topo["numa_nodes"] = (
+                len([d for d in _os.listdir("/sys/devices/system/node") if d.startswith("node")])
+                or None
+            )
+        except OSError:
+            pass
+        socket_ids: set[str] = set()
+        try:
+            with open("/proc/cpuinfo", encoding="ascii") as fh:
+                for line in fh:
+                    if line.startswith("physical id"):
+                        socket_ids.add(line.split(":", 1)[1].strip())
+                    elif line.startswith("flags"):
+                        topo["cpu_features"] = sorted(set(line.split(":", 1)[1].split()))
+        except OSError:
+            pass
+        if socket_ids:
+            topo["sockets"] = len(socket_ids)
+    elif system == "Windows":
+        out = _run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-Command",
+                "(Get-CimInstance Win32_Processor | Measure-Object -Property DeviceID).Count",
+            ]
+        )
+        if out and out.strip().isdigit():
+            topo["sockets"] = int(out.strip())
+    elif system == "Darwin":
+        # Apple Silicon has unified memory; Intel Macs do not.
+        topo["unified_memory"] = platform.machine() == "arm64"
+    gpus = get_nvidia_gpus()
+    if gpus:
+        topo["gpu_count"] = len(gpus)
+    return topo
+
+
 def detect_system() -> dict[str, Any]:
     """Full sanitized system description used in every benchmark result."""
     os_info = get_os_info()
@@ -269,7 +338,9 @@ def detect_system() -> dict[str, Any]:
     gpu = get_gpu_info()
     ram = get_ram_gb()
     npu = get_npu_info()
-    return {
+    topology = get_topology()
+    nvidia_gpus = get_nvidia_gpus()
+    result: dict[str, Any] = {
         "os": os_info["os"],
         "os_version": os_info["os_version"],
         "cpu": cpu["cpu"],
@@ -281,4 +352,9 @@ def detect_system() -> dict[str, Any]:
         "npu": npu,
         "ram_gb": ram,
         "platform_name": get_platform_name(),
+        "topology": topology,
     }
+    # Multi-GPU representation (#29): every detected accelerator separately.
+    if nvidia_gpus:
+        result["gpus"] = nvidia_gpus
+    return result

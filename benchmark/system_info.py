@@ -141,20 +141,30 @@ def get_cpu_info() -> dict[str, Any]:
     elif system == "Linux":
         cpuinfo = "/proc/cpuinfo"
         names: list[str] = []
-        physical_ids: set[str] = set()
+        # Unique (physical id, core id) pairs = physical cores.
+        core_pairs: set[tuple[str, str]] = set()
+        current: dict[str, str] = {}
         try:
             with open(cpuinfo, encoding="ascii") as fh:
                 for line in fh:
                     if line.startswith("model name"):
                         names.append(line.split(":", 1)[1].strip())
                     elif line.startswith("physical id"):
-                        physical_ids.add(line.split(":", 1)[1].strip())
+                        current["physical"] = line.split(":", 1)[1].strip()
+                    elif line.startswith("core id"):
+                        current["core"] = line.split(":", 1)[1].strip()
+                    elif not line.strip() and current:
+                        if "physical" in current and "core" in current:
+                            core_pairs.add((current["physical"], current["core"]))
+                        current = {}
         except OSError:
             pass
+        if current and "physical" in current and "core" in current:
+            core_pairs.add((current["physical"], current["core"]))
         if names:
             info["cpu"] = names[0]
-        if physical_ids:
-            info["cpu_cores_physical"] = len(physical_ids)
+        if core_pairs:
+            info["cpu_cores_physical"] = len(core_pairs)
     else:
         info["cpu"] = platform.processor() or None
     return info

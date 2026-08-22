@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from ..telemetry import TelemetrySampler
-from .base import BackendError, BackendInfo, BenchmarkConfig, RuntimeStatus
+from .base import BackendError, BackendInfo, BenchmarkConfig, RuntimeStatus, new_run_id
 
 
 def _numpy():
@@ -155,7 +155,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "schema_version": SCHEMA_VERSION,
-        "run_id": f"openvino-{int(time.time())}",
+        "run_id": new_run_id("openvino"),
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "system": system,
         "runtime": {

@@ -9,6 +9,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from . import PROTOCOL_VERSION
 from .schemas import validate_or_raise
 
 
@@ -63,6 +64,7 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     # Enrich with environment/reproducibility metadata.
     result.setdefault("run_id", f"{runtime}-{uuid.uuid4().hex[:8]}")
     result["git_commit"] = git_commit()
+    result["protocol_version"] = PROTOCOL_VERSION
     repro = result.setdefault("reproducibility", {})
     repro.setdefault("python_version", platform.python_version())
     repro.setdefault("power_profile", power_profile())

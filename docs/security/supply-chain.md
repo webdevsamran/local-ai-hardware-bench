@@ -17,7 +17,7 @@ sha256sum -c SHA256SUMS.txt   # after downloading release artifacts
 
 ## Planned
 
-- Artifact provenance attestation (tracked in issues #3/#4)
+- Artifact provenance attestation (SBOM shipped; attestation tracked in issue #4)
 - PyPI Trusted Publishing (only when actually configured)
 - OpenSSF Scorecard badge (once the project has release history)
 

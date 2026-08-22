@@ -15,8 +15,18 @@ it is real.
 - [x] Deterministic result fingerprints + duplicate detection
 - [x] Versioned suite profiles (smoke/standard/latency/throughput/efficiency/sustained)
 - [ ] Model load-time measurement for Ollama (server log parsing)
-- [ ] Sustained-load thermal analysis tooling (steady-state detection)
-- [ ] Optional signing/attestation interface for results
+- [x] Sustained-load thermal analysis tooling (peak vs steady-state,
+      time-to-throttle, degradation)
+- [x] Optional signing/attestation interface (cosign sign/verify wrappers
+      that report unavailability honestly)
+- [x] Typed workload engine + registry and aihwbench.workloads plugin API
+- [x] Load generator (constant/closed-loop/Poisson/Gamma/burst arrivals)
+- [x] Parameter sweep engine and declarative experiment manifests
+- [x] Capacity ladder testing
+- [x] Advanced streaming metrics (TPOT/ITL/TTST/prefill/decode/queue where
+      measurable) and expanded statistics with guarded bootstrap CIs
+- [x] Prefill/decode separation, ISL/OSL profiles, mixed traffic,
+      multi-turn and deterministic agentic workloads
 
 ## Track 2 — Runtime Ecosystem
 
@@ -50,17 +60,23 @@ it is real.
 ## Track 5 — Dataset & Leaderboard
 
 - [x] Dataset generation: index.json / dataset.csv / LEADERBOARD.md
-- [x] Trust states (VERIFIED / COMMUNITY_VALIDATED / UNVERIFIED)
-- [ ] Trust states applied to all published results
-- [ ] Static GitHub Pages leaderboard generation
-- [ ] Parquet export behind an optional dependency
+- [x] Trust states (verified/unreviewed/flagged/invalidated/superseded)
+      enforced by the dataset pipeline and dashboard badges
+- [ ] Trust states applied to all published results (pipeline ready;
+      existing files predate the field)
+- [x] Static GitHub Pages leaderboard (React dashboard generated from
+      published results; data-freshness enforced in CI)
+- [x] Parquet export behind an optional dependency
+- [x] Invalidation records preserving history with reasons/replacements
+- [x] Data-quality checks and anomaly flags for manual review
+- [x] Versioned dataset snapshot manifests
 - [ ] Zenodo DOI for versioned dataset snapshots (when dataset matures)
 
 ## Track 6 — Enterprise Foundations
 
 - [x] Enterprise architecture overview (documented as planned/future)
 - [x] Stable exit codes for CI gates
-- [ ] Baseline/regression CLI primitives (`baseline`, `regression`)
+- [x] Baseline/regression CLI primitives (`baseline`, `regression`)
 - [ ] Private storage adapter interface spec
 - [ ] Fleet operation design doc
 
@@ -69,15 +85,19 @@ it is real.
 - [x] Actions pinned to immutable SHAs; minimal permissions
 - [x] Dependabot (Actions + pip)
 - [x] Fail-closed privacy scanner with tests
-- [ ] CodeQL workflow
-- [ ] SBOM generation in release flow
-- [ ] Release checksums + provenance attestation
+- [x] CodeQL workflow
+- [x] SBOM generation in release flow (CycloneDX)
+- [x] Release SHA256SUMS checksums
+- [ ] Artifact attestation (provenance) via GitHub artifact attestations
+- [x] Action-pin verification script (scripts/verify_action_pins.py)
 
 ## Track 8 — Research / Standards
 
 - [x] CITATION.cff with creator attribution
 - [ ] Methodology review with external maintainers
-- [ ] Schema 2.0 proposal with backward-compatible reader
+- [x] Schema 2.0 fields (schema_version/protocol_version/workload_version)
+      with migration machinery and backward-compatible reader for all
+      published schema 1.0 results
 - [ ] At least three genuinely tested hardware classes before v1.0
 
 ## Track 9 — Vendor Ecosystem
@@ -85,3 +105,25 @@ it is real.
 - [x] Vendor collaboration policy (no guaranteed outcomes; disclosure)
 - [ ] First vendor-supplied evaluation unit processed end-to-end
 - [ ] Independent reproducible benchmark report template
+
+## Track 10 — Platform Expansion (top-50 transformation)
+
+- [x] Public Python SDK (benchmark/sdk.py) with typed domain objects
+- [x] Exporter plugin architecture (JSON/CSV/Markdown/SQLite built-in;
+      Parquet behind extra) with aihwbench.exporters entry points
+- [x] Evaluator framework + aihwbench.evaluators entry points
+- [x] Performance-quality Pareto frontier analysis
+- [x] Quantization comparison, model-fit estimator, recommendation engine,
+      bottleneck analyzer, auto-tuner
+- [x] Energy metrics with telemetry tiering; idle-baseline power;
+      user-supplied cost/TCO
+- [x] Normalized hardware database; PCIe/NUMA/instruction-set topology;
+      multi-GPU representation
+- [x] env-diff, reproduce, reproducibility completeness score
+- [x] Portable .aihwbench bundles with SHA-256 integrity; provenance
+      hashing and tamper verification
+- [x] self-test precondition/noise checks; doctor enhancements
+- [x] Reusable benchmark-validation GitHub workflow with machine-readable
+      verdicts
+- [x] React + TypeScript production dashboard (20 routes) deployed to
+      GitHub Pages from generated static dataset

@@ -1,0 +1,14 @@
+{
+  "name": "throughput",
+  "description": "Throughput focus: larger token budgets and sustained streaming; generation tok/s and perf/watt.",
+  "workload": {
+    "prompt": "Write a detailed explanation of how large language models generate text from a prompt, covering attention, tokenization and sampling, in several sentences.",
+    "max_tokens": 512,
+    "temperature": 0.0,
+    "seed": 42,
+    "context_length": 8192,
+    "warmup_runs": 2,
+    "iterations": 8
+  },
+  "model_tier": "performance"
+}

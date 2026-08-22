@@ -31,23 +31,27 @@ def detect() -> BackendInfo:
                     version = line.strip()
                     break
         return BackendInfo(
-            "tensorrt", RuntimeStatus.CONFIGURATION_REQUIRED, version,
+            "tensorrt",
+            RuntimeStatus.CONFIGURATION_REQUIRED,
+            version,
             "trtexec found; requires per-GPU engine builds to benchmark",
         )
     try:
-        import tensorrt  # type: ignore[import-untyped]
+        import tensorrt  # type: ignore[import-not-found,import-untyped]
 
         return BackendInfo(
-            "tensorrt", RuntimeStatus.CONFIGURATION_REQUIRED,
+            "tensorrt",
+            RuntimeStatus.CONFIGURATION_REQUIRED,
             str(getattr(tensorrt, "__version__", None)),
             "Python package found; requires per-GPU engine builds to benchmark",
         )
     except ImportError:
         pass
     return BackendInfo(
-        "tensorrt", RuntimeStatus.NOT_INSTALLED, None,
-        "Install TensorRT from https://developer.nvidia.com/tensorrt "
-        "(requires NVIDIA GPU + CUDA)",
+        "tensorrt",
+        RuntimeStatus.NOT_INSTALLED,
+        None,
+        "Install TensorRT from https://developer.nvidia.com/tensorrt (requires NVIDIA GPU + CUDA)",
     )
 
 

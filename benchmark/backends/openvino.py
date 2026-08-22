@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from ..telemetry import TelemetrySampler
-from .base import BackendError, BackendInfo, BenchmarkConfig, RuntimeStatus
+from .base import BackendError, BackendInfo, BenchmarkConfig, RuntimeStatus, new_run_id
 
 
 def _numpy():
@@ -36,7 +36,9 @@ def detect() -> BackendInfo:
         import openvino  # type: ignore[import-untyped]
     except ImportError:
         return BackendInfo(
-            "openvino", RuntimeStatus.NOT_INSTALLED, None,
+            "openvino",
+            RuntimeStatus.NOT_INSTALLED,
+            None,
             "pip install openvino; Intel NPU benchmarking additionally needs "
             "an Intel Core Ultra class CPU with the NPU driver installed",
         )
@@ -64,8 +66,7 @@ def _resolve_device(device: str, available: list[str]) -> str:
         if matches:
             return matches[0]
     raise BackendError(
-        f"device {device!r} requested but not available "
-        f"(OpenVINO devices: {', '.join(available)})"
+        f"device {device!r} requested but not available (OpenVINO devices: {', '.join(available)})"
     )
 
 
@@ -77,9 +78,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
 
     model_path = config.extra.get("model_path")
     if not model_path or not Path(model_path).is_file():
-        raise BackendError(
-            "openvino backend requires --model-path pointing to a local .onnx file"
-        )
+        raise BackendError("openvino backend requires --model-path pointing to a local .onnx file")
 
     import openvino as ov
 
@@ -101,10 +100,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     feed: dict[Any, Any] = {}
     for input_node in compiled.inputs:
         pshape = input_node.get_partial_shape()
-        shape = [
-            d.get_length() if d.is_static and d.get_length() > 0 else 1
-            for d in pshape
-        ]
+        shape = [d.get_length() if d.is_static and d.get_length() > 0 else 1 for d in pshape]
         etype = str(input_node.get_element_type())
         dtype = np.float32
         if "i64" in etype:
@@ -143,21 +139,23 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
         "prompt_tokens_per_second": None,
         "generation_tokens_per_second": None,
         "total_latency_ms": round(mean_latency, 2),
-        "p50_latency_ms": round(percentile(latencies, 50), 2),
-        "p95_latency_ms": round(percentile(latencies, 95), 2),
+        "p50_latency_ms": (round(v, 2) if (v := percentile(latencies, 50)) is not None else None),
+        "p95_latency_ms": (round(v, 2) if (v := percentile(latencies, 95)) is not None else None),
         "peak_ram_mb": telemetry["peak_ram_mb"],
         "peak_vram_mb": telemetry["peak_vram_mb"],
         "avg_cpu_util_percent": telemetry["avg_cpu_util_percent"],
         "avg_gpu_util_percent": telemetry["avg_gpu_util_percent"],
         "max_temperature_c": telemetry["max_temperature_c"],
         "average_power_watts": telemetry["average_power_watts"],
-        "performance_per_watt": performance_per_watt(throughput_ips, telemetry["average_power_watts"]),
+        "performance_per_watt": performance_per_watt(
+            throughput_ips, telemetry["average_power_watts"]
+        ),
         "throughput_inferences_per_second": round(throughput_ips, 2) if throughput_ips else None,
     }
 
     return {
         "schema_version": SCHEMA_VERSION,
-        "run_id": f"openvino-{int(time.time())}",
+        "run_id": new_run_id("openvino"),
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "system": system,
         "runtime": {

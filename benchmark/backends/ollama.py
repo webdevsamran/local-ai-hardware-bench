@@ -20,6 +20,7 @@ from .base import (
     BackendInfo,
     BenchmarkConfig,
     RuntimeStatus,
+    new_run_id,
     run_command,
 )
 
@@ -45,7 +46,9 @@ def detect() -> BackendInfo:
         api = _api_get("/api/version")
         if api is None:
             return BackendInfo(
-                "ollama", RuntimeStatus.CONFIGURATION_REQUIRED, version,
+                "ollama",
+                RuntimeStatus.CONFIGURATION_REQUIRED,
+                version,
                 "CLI installed but server not responding on localhost:11434",
             )
         return BackendInfo("ollama", RuntimeStatus.AVAILABLE, version)
@@ -53,8 +56,12 @@ def detect() -> BackendInfo:
     api = _api_get("/api/version")
     if api and "version" in api:
         return BackendInfo("ollama", RuntimeStatus.AVAILABLE, str(api["version"]))
-    return BackendInfo("ollama", RuntimeStatus.NOT_INSTALLED, None,
-                       "Install from https://ollama.com or via 'winget install Ollama.Ollama'")
+    return BackendInfo(
+        "ollama",
+        RuntimeStatus.NOT_INSTALLED,
+        None,
+        "Install from https://ollama.com or via 'winget install Ollama.Ollama'",
+    )
 
 
 def list_models() -> list[str]:
@@ -175,7 +182,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "schema_version": SCHEMA_VERSION,
-        "run_id": f"ollama-{int(time.time())}",
+        "run_id": new_run_id("ollama"),
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "system": system,
         "runtime": {

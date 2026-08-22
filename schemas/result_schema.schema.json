@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/webdevsamran/local-ai-hardware-bench/schemas/result_schema.schema.json",
+  "title": "AIHWBench Result Document",
+  "description": "Formal JSON Schema for AIHWBench benchmark result documents (schema version 1.0). A metric that could not be measured MUST be null, never an estimate. Accompanying semantic checks (timestamps, ranges, run-ID format) are implemented in benchmark/schemas.py.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "run_id",
+    "timestamp",
+    "system",
+    "runtime",
+    "model",
+    "metrics"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "git_commit": {
+      "type": ["string", "null"]
+    },
+    "system": {
+      "type": "object",
+      "properties": {
+        "os": { "type": ["string", "null"] },
+        "os_version": { "type": ["string", "null"] },
+        "cpu": { "type": ["string", "null"] },
+        "cpu_cores_physical": { "type": ["integer", "null"], "minimum": 1 },
+        "cpu_cores_logical": { "type": ["integer", "null"], "minimum": 1 },
+        "gpu": { "type": ["string", "null"] },
+        "gpu_vram_mb": { "type": ["integer", "null"], "minimum": 1 },
+        "gpu_driver_version": { "type": ["string", "null"] },
+        "npu": { "type": ["string", "null"] },
+        "ram_gb": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+        "platform_name": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "name": { "type": ["string", "null"] },
+        "version": { "type": ["string", "null"] },
+        "backend": { "type": ["string", "null"] },
+        "device": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "model": {
+      "type": "object",
+      "properties": {
+        "name": { "type": ["string", "null"] },
+        "format": { "type": ["string", "null"] },
+        "quantization": { "type": ["string", "null"] },
+        "parameters": { "type": ["string", "null"] },
+        "checksum": { "type": ["string", "null"] },
+        "revision": { "type": ["string", "null"] },
+        "tokenizer": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "load_time_ms": { "type": ["number", "null"], "minimum": 0 },
+        "ttft_ms": { "type": ["number", "null"], "minimum": 0 },
+        "prompt_tokens_per_second": { "type": ["number", "null"], "minimum": 0 },
+        "generation_tokens_per_second": { "type": ["number", "null"], "minimum": 0 },
+        "total_latency_ms": { "type": ["number", "null"], "minimum": 0 },
+        "p50_latency_ms": { "type": ["number", "null"], "minimum": 0 },
+        "p90_latency_ms": { "type": ["number", "null"], "minimum": 0 },
+        "p95_latency_ms": { "type": ["number", "null"], "minimum": 0 },
+        "p99_latency_ms": { "type": ["number", "null"], "minimum": 0 },
+"latency_stddev_ms": { "type": ["number", "null"], "minimum": 0 },
+"latency_min_ms": { "type": ["number", "null"], "minimum": 0 },
+"latency_max_ms": { "type": ["number", "null"], "minimum": 0 },
+"ttft_stddev_ms": { "type": ["number", "null"], "minimum": 0 },
+"generation_tps_stddev": { "type": ["number", "null"], "minimum": 0 },
+"gen_tps_min": { "type": ["number", "null"], "minimum": 0 },
+"gen_tps_max": { "type": ["number", "null"], "minimum": 0 },
+"coverage": { "type": ["object", "null"] },
+        "peak_ram_mb": { "type": ["number", "null"], "minimum": 0 },
+        "peak_vram_mb": { "type": ["number", "null"], "minimum": 0 },
+        "avg_cpu_util_percent": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "avg_gpu_util_percent": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "max_temperature_c": { "type": ["number", "null"], "minimum": 0 },
+        "average_power_watts": { "type": ["number", "null"], "minimum": 0 },
+        "performance_per_watt": { "type": ["number", "null"], "minimum": 0 },
+        "throughput_inferences_per_second": { "type": ["number", "null"], "minimum": 0 },
+        "energy_joules_per_token": { "type": ["number", "null"], "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "reproducibility": {
+      "type": ["object", "null"],
+      "properties": {
+        "prompt": { "type": ["string", "null"] },
+        "max_tokens": { "type": ["integer", "null"], "minimum": 0 },
+        "temperature": { "type": ["number", "null"], "minimum": 0 },
+        "seed": { "type": ["integer", "null"] },
+        "context_length": { "type": ["integer", "null"], "minimum": 1 },
+        "warmup_runs": { "type": ["integer", "null"], "minimum": 0 },
+        "iterations": { "type": ["integer", "null"], "minimum": 0 },
+        "command": { "type": ["string", "null"] },
+        "python_version": { "type": ["string", "null"] },
+        "power_profile": { "type": ["string", "null"] },
+        "workload_type": { "type": ["string", "null"] },
+        "batch_size": { "type": ["integer", "null"], "minimum": 1 },
+        "concurrency": { "type": ["integer", "null"], "minimum": 1 }
+      },
+      "additionalProperties": true
+    },
+    "iterations": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

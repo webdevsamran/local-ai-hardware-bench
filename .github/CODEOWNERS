@@ -1,0 +1,8 @@
+# Default owners for everything in the repository.
+# The original creator and lead maintainer reviews all changes.
+*       @webdevsamran
+
+# Benchmark results and methodology require maintainer review.
+/results/            @webdevsamran
+/docs/methodology.md @webdevsamran
+/schemas/            @webdevsamran

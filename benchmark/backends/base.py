@@ -51,6 +51,16 @@ class BackendInfo:
 
 
 @dataclass
+class BenchmarkMetadata:
+    """Declarative backend metadata for the plugin registry."""
+
+    name: str
+    description: str
+    api_version: int = 1
+    capabilities: tuple[str, ...] = ()
+
+
+@dataclass
 class BenchmarkConfig:
     """Parameters for one benchmark run. All values are recorded in the
     result document's reproducibility block."""
@@ -65,6 +75,14 @@ class BenchmarkConfig:
     context_length: int = 2048
     device: str = "auto"
     extra: dict[str, Any] = field(default_factory=dict)
+
+
+def new_run_id(prefix: str) -> str:
+    """Collision-resistant run id: <prefix>-<epoch>-<uuid8>."""
+    import time
+    import uuid
+
+    return f"{prefix}-{int(time.time())}-{uuid.uuid4().hex[:8]}"
 
 
 def run_command(cmd: list[str], timeout: float = 15.0) -> tuple[int, str]:

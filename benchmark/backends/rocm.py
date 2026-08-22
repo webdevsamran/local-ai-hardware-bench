@@ -19,11 +19,15 @@ def detect() -> BackendInfo:
         code, out = run_command(["hipInfo"], timeout=10.0)
         if code == 0 and out:
             return BackendInfo(
-                "rocm", RuntimeStatus.CONFIGURATION_REQUIRED, None,
+                "rocm",
+                RuntimeStatus.CONFIGURATION_REQUIRED,
+                None,
                 "HIP SDK present; full ROCm LLM benchmarking requires Linux",
             )
         return BackendInfo(
-            "rocm", RuntimeStatus.HARDWARE_REQUIRED, None,
+            "rocm",
+            RuntimeStatus.HARDWARE_REQUIRED,
+            None,
             "Requires an AMD Radeon GPU with ROCm support (Linux recommended)",
         )
     for tool in ("rocminfo", "hipconfig"):
@@ -31,7 +35,9 @@ def detect() -> BackendInfo:
         if code == 0 and out:
             return BackendInfo("rocm", RuntimeStatus.AVAILABLE, None, out.splitlines()[0])
     return BackendInfo(
-        "rocm", RuntimeStatus.HARDWARE_REQUIRED, None,
+        "rocm",
+        RuntimeStatus.HARDWARE_REQUIRED,
+        None,
         "Install ROCm from https://rocm.docs.amd.com (requires supported AMD GPU)",
     )
 

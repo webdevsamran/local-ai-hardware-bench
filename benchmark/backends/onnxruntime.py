@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from ..telemetry import TelemetrySampler
-from .base import BackendError, BackendInfo, BenchmarkConfig, RuntimeStatus
+from .base import BackendError, BackendInfo, BenchmarkConfig, RuntimeStatus, new_run_id
 
 
 def detect() -> BackendInfo:
@@ -23,7 +23,9 @@ def detect() -> BackendInfo:
         import onnxruntime  # type: ignore[import-untyped]
     except ImportError:
         return BackendInfo(
-            "onnxruntime", RuntimeStatus.NOT_INSTALLED, None,
+            "onnxruntime",
+            RuntimeStatus.NOT_INSTALLED,
+            None,
             "pip install onnxruntime (CPU/DirectML) or onnxruntime-gpu (CUDA)",
         )
     providers = list(onnxruntime.get_available_providers())
@@ -65,9 +67,7 @@ def _numpy():
 
         return numpy
     except ImportError as exc:
-        raise BackendError(
-            "numpy is required to run ONNX benchmarks: pip install numpy"
-        ) from exc
+        raise BackendError("numpy is required to run ONNX benchmarks: pip install numpy") from exc
 
 
 def _make_inputs(session: Any) -> dict[str, Any]:
@@ -156,8 +156,8 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
         "prompt_tokens_per_second": None,
         "generation_tokens_per_second": None,
         "total_latency_ms": round(mean_latency, 2),
-        "p50_latency_ms": round(percentile(latencies, 50), 2),
-        "p95_latency_ms": round(percentile(latencies, 95), 2),
+        "p50_latency_ms": (round(v, 2) if (v := percentile(latencies, 50)) is not None else None),
+        "p95_latency_ms": (round(v, 2) if (v := percentile(latencies, 95)) is not None else None),
         "peak_ram_mb": telemetry["peak_ram_mb"],
         "peak_vram_mb": telemetry["peak_vram_mb"],
         "avg_cpu_util_percent": telemetry["avg_cpu_util_percent"],
@@ -165,13 +165,15 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
         "max_temperature_c": telemetry["max_temperature_c"],
         "average_power_watts": telemetry["average_power_watts"],
         # Throughput for graph models is inferences/second, not tokens/second.
-        "performance_per_watt": performance_per_watt(throughput_ips, telemetry["average_power_watts"]),
+        "performance_per_watt": performance_per_watt(
+            throughput_ips, telemetry["average_power_watts"]
+        ),
         "throughput_inferences_per_second": round(throughput_ips, 2) if throughput_ips else None,
     }
 
     return {
         "schema_version": SCHEMA_VERSION,
-        "run_id": f"onnxruntime-{int(time.time())}",
+        "run_id": new_run_id("onnxruntime"),
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "system": system,
         "runtime": {

@@ -1,15 +1,21 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "aihwbench"
 version = "0.1.0"
-description = "Open Local AI Hardware Benchmark - vendor-neutral benchmarking of local AI runtimes across CPUs, GPUs, NPUs, and edge accelerators"
+description = "AIHWBench - vendor-neutral benchmarking of local AI runtimes across CPUs, GPUs, NPUs, and edge accelerators"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "Apache-2.0" }
-authors = [{ name = "Open Local AI Hardware Benchmark contributors" }]
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [
+    { name = "webdevsamran (Original Creator / Lead Maintainer)" },
+]
+maintainers = [
+    { name = "webdevsamran" },
+]
 keywords = [
     "benchmark", "llm", "inference", "ollama", "llama.cpp",
     "onnxruntime", "openvino", "npu", "gpu", "edge-ai",
@@ -17,7 +23,7 @@ keywords = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
+    "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -25,8 +31,15 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: System :: Benchmark",
+    "Topic :: Scientific/Engineering",
 ]
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/webdevsamran/local-ai-hardware-bench"
+Repository = "https://github.com/webdevsamran/local-ai-hardware-bench"
+Issues = "https://github.com/webdevsamran/local-ai-hardware-bench/issues"
+Changelog = "https://github.com/webdevsamran/local-ai-hardware-bench/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 telemetry = ["psutil>=5.9"]
@@ -43,6 +56,10 @@ aihwbench = "benchmark.cli:main"
 [tool.setuptools.packages.find]
 include = ["benchmark*"]
 
+[tool.setuptools.package-data]
+benchmark = ["py.typed"]
+"benchmark.backends" = ["py.typed"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
@@ -54,3 +71,19 @@ ignore = ["E501"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+[tool.mypy]
+files = ["benchmark"]
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = false
+no_strict_optional = true
+[[tool.mypy.overrides]]
+module = ["psutil.*", "tensorrt.*", "onnxruntime.*", "openvino.*"]
+ignore_missing_imports = true
+
+# Platform-specific modules branch on sys.platform/OS at runtime; the
+# Windows-only attribute accesses (ctypes.windll, winreg) are guarded by
+# runtime checks that static analysis cannot narrow cross-platform.
+[[tool.mypy.overrides]]
+module = ["benchmark.system_info", "benchmark.telemetry"]
+disable_error_code = ["attr-defined"]

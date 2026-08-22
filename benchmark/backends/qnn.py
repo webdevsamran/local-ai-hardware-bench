@@ -28,12 +28,16 @@ def detect() -> BackendInfo:
     for candidate in candidates:
         if candidate.is_dir():
             return BackendInfo(
-                "qnn", RuntimeStatus.CONFIGURATION_REQUIRED, None,
+                "qnn",
+                RuntimeStatus.CONFIGURATION_REQUIRED,
+                None,
                 f"SDK found at {candidate}; requires Snapdragon NPU hardware "
                 "and compiled context binaries to benchmark",
             )
     return BackendInfo(
-        "qnn", RuntimeStatus.HARDWARE_REQUIRED, None,
+        "qnn",
+        RuntimeStatus.HARDWARE_REQUIRED,
+        None,
         "Requires Qualcomm Snapdragon X (or Hexagon NPU) hardware and the "
         "Qualcomm AI Engine Direct SDK",
     )

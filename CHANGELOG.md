@@ -6,6 +6,50 @@ Format based on Keep a Changelog; versioning is SemVer.
 ## [Unreleased]
 
 ### Added
+- Formal JSON Schema (schemas/result_schema.schema.json, draft 2020-12)
+  alongside the dependency-free semantic validator.
+- Strengthened validation: run-id format, ISO-8601 UTC timestamps,
+  metric range checks (non-negative; utilisation 0-100), reproducibility
+  typing, iterations array checks, new optional metrics (p90/p99 latency,
+  inferences/s throughput, energy per token).
+- Comparison safety classifier (benchmark/comparability.py):
+  STRICTLY_COMPARABLE / CONDITIONALLY_COMPARABLE / NOT_COMPARABLE with
+  machine-readable reasons; compare refuses deltas for incompatible
+  workloads unless --force (exit code 3).
+- Backend plugin API v1: BACKEND_API_VERSION, BenchmarkMetadata, and
+  third-party registration via the aihwbench.backends entry-point group.
+- CLI: stable exit-code contract, doctor command, suite command with
+  versioned profiles under configs/suites/, export command generating
+  index.json / dataset.csv / LEADERBOARD.md from published results.
+- Trust states (VERIFIED / COMMUNITY_VALIDATED / UNVERIFIED) and a
+  documented community result submission pipeline.
+- Fail-closed privacy scanner (benchmark/sanitize.py) covering MACs,
+  IPs, SSNs, tokens, home paths, serials.
+- Deterministic result fingerprints + duplicate detection.
+- Statistical expansion: median/stddev/min/max latency, TTFT and TPS
+  dispersion, per-metric coverage counts.
+- Community infrastructure: issue templates, PR template with honesty
+  checklist, CODEOWNERS, Dependabot, SUPPORT.md.
+- Governance files: NOTICE, AUTHORS.md, MAINTAINERS.md, CONTRIBUTORS.md,
+  GOVERNANCE.md, TRADEMARKS.md, BRANDING.md, ARCHITECTURE.md,
+  docs/certification.md, docs/enterprise/overview.md,
+  docs/guides/plugin-api.md, docs/results/submission-pipeline.md.
+
+### Changed
+- CI hardened: GitHub Actions pinned to immutable commit SHAs;
+  ruff format --check no longer masked by '|| true'; test matrix now
+  covers Python 3.10-3.13 on Ubuntu, Windows and macOS; result-schema
+  job reports the number of validated files.
+- Creator attribution added across CITATION.cff, pyproject metadata,
+  README, NOTICE and AUTHORS.md (@webdevsamran - Original Creator).
+- README restructured with audience navigation, comparison-safety and
+  trust-state documentation.
+- ROADMAP rewritten around nine parallel tracks.
+
+### Fixed
+- Cross-runtime comparisons no longer silently produce delta tables:
+  differing runtime/backend/device/model identity is classified
+  NOT_COMPARABLE (previously only model name was checked).
 - llama.cpp backend executed end-to-end on CUDA (b10578 prebuilt build):
   TTFT 14.52 ms, 360.87 tok/s generation, 13.49 tok/s/W; result published.
 - ONNX Runtime real benchmarking backend: model load time, latency

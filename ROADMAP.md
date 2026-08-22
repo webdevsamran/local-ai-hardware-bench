@@ -12,7 +12,7 @@ when its deliverables are genuinely tested — not before.
 - [x] Telemetry sampling (RAM/VRAM/util/temp/power via nvidia-smi/psutil)
 - [x] Reports, comparison, CLI (`aihwbench`)
 - [x] Test suite + CI
-- [ ] First published result set (in progress)
+- [x] First published result set (Ollama/CUDA on RTX 3080 Ti Laptop)
 
 ## v0.2 — Standardized llama.cpp/Ollama benchmarking
 - llama.cpp timing-log parsing (recover generation tok/s)

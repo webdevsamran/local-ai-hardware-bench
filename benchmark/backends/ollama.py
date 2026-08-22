@@ -39,7 +39,9 @@ def detect() -> BackendInfo:
     """Detect a locally installed Ollama runtime."""
     code, out = run_command(["ollama", "--version"], timeout=10.0)
     if code == 0 and out:
-        version = out.splitlines()[0].strip()
+        # Output looks like "ollama version is 0.32.15"
+        words = out.splitlines()[0].strip().split()
+        version = words[-1] if words else out.splitlines()[0].strip()
         api = _api_get("/api/version")
         if api is None:
             return BackendInfo(
@@ -162,7 +164,14 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
         sampler.stop()
 
     metrics = aggregate_iteration_metrics(iterations)
-    metrics.update(sampler.summary())
+    telemetry = sampler.summary()
+    metrics.update(telemetry)
+    # Recompute performance-per-watt now that measured power is available.
+    from ..metrics import performance_per_watt
+
+    metrics["performance_per_watt"] = performance_per_watt(
+        metrics["generation_tokens_per_second"], telemetry.get("average_power_watts")
+    )
 
     return {
         "schema_version": SCHEMA_VERSION,

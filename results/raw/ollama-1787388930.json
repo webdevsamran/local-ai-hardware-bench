@@ -1,0 +1,101 @@
+{
+  "schema_version": "1.0",
+  "run_id": "ollama-1787388930",
+  "timestamp": "2026-08-22T08:55:30Z",
+  "system": {
+    "os": "Windows 11",
+    "os_version": "10.0.26200",
+    "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+    "cpu_cores_physical": 14,
+    "cpu_cores_logical": 20,
+    "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+    "gpu_vram_mb": 16384,
+    "npu": null,
+    "ram_gb": 31.7,
+    "platform_name": "Predator PT516-52s"
+  },
+  "runtime": {
+    "name": "ollama",
+    "version": "0.32.15",
+    "backend": "ollama-http-api",
+    "device": "auto"
+  },
+  "model": {
+    "name": "qwen2.5:0.5b-instruct-q4_K_M",
+    "format": "gguf",
+    "quantization": null,
+    "parameters": null,
+    "checksum": "a8b0c51577010a279d933d14c2a8ab4b268079d44c5c8830c0a93900f1827c67"
+  },
+  "metrics": {
+    "load_time_ms": null,
+    "ttft_ms": 2069.71,
+    "prompt_tokens_per_second": 3554.46,
+    "generation_tokens_per_second": 110.93,
+    "total_latency_ms": 2417.27,
+    "p50_latency_ms": 2471.55,
+    "p95_latency_ms": 2565.49,
+    "peak_ram_mb": 20308.7109375,
+    "peak_vram_mb": 1192.0,
+    "avg_cpu_util_percent": 44.95,
+    "avg_gpu_util_percent": 21.3,
+    "max_temperature_c": 61.0,
+    "average_power_watts": 26.16,
+    "performance_per_watt": 4.240443425076453
+  },
+  "reproducibility": {
+    "prompt": "Explain what a token is in large language models, in two sentences.",
+    "max_tokens": 128,
+    "temperature": 0.0,
+    "seed": 42,
+    "context_length": 2048,
+    "warmup_runs": 2,
+    "iterations": 5,
+    "command": "aihwbench benchmark --runtime ollama --model qwen2.5:0.5b-instruct-q4_K_M",
+    "python_version": "3.14.6",
+    "power_profile": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)"
+  },
+  "iterations": [
+    {
+      "ttft_ms": 2063.25,
+      "total_latency_ms": 2486.33,
+      "completion_tokens": 29,
+      "eval_seconds": 0.36991,
+      "prompt_tokens": 44,
+      "prompt_eval_seconds": 0.019881
+    },
+    {
+      "ttft_ms": 2056.66,
+      "total_latency_ms": 2269.62,
+      "completion_tokens": 29,
+      "eval_seconds": 0.197467,
+      "prompt_tokens": 44,
+      "prompt_eval_seconds": 0.009428
+    },
+    {
+      "ttft_ms": 2076.72,
+      "total_latency_ms": 2585.28,
+      "completion_tokens": 29,
+      "eval_seconds": 0.39531,
+      "prompt_tokens": 44,
+      "prompt_eval_seconds": 0.023
+    },
+    {
+      "ttft_ms": 2083.93,
+      "total_latency_ms": 2273.58,
+      "completion_tokens": 29,
+      "eval_seconds": 0.170627,
+      "prompt_tokens": 44,
+      "prompt_eval_seconds": 0.006783
+    },
+    {
+      "ttft_ms": 2068.0,
+      "total_latency_ms": 2471.55,
+      "completion_tokens": 29,
+      "eval_seconds": 0.336943,
+      "prompt_tokens": 44,
+      "prompt_eval_seconds": 0.017654
+    }
+  ],
+  "git_commit": "7cdd6affaffcc79fb7c1547b3d93b404fc275bc9"
+}

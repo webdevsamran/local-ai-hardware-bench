@@ -107,3 +107,81 @@ def test_missing_required_sections_flagged():
     errors = validate_result(data)
     for section in ("system", "runtime", "model", "metrics"):
         assert any(section in e for e in errors)
+
+
+def test_negative_metric_rejected():
+    data = make_valid_result()
+    data["metrics"]["ttft_ms"] = -5.0
+    errors = validate_result(data)
+    assert any("ttft_ms" in e and ">=" in e for e in errors)
+
+
+def test_utilisation_above_100_rejected():
+    data = make_valid_result()
+    data["metrics"]["avg_cpu_util_percent"] = 150
+    errors = validate_result(data)
+    assert any("avg_cpu_util_percent" in e for e in errors)
+
+
+def test_utilisation_at_bounds_accepted():
+    data = make_valid_result()
+    data["metrics"]["avg_cpu_util_percent"] = 100
+    data["metrics"]["avg_gpu_util_percent"] = 0
+    assert validate_result(data) == []
+
+
+def test_invalid_timestamp_format_rejected():
+    data = make_valid_result()
+    data["timestamp"] = "22/08/2026 09:00"
+    errors = validate_result(data)
+    assert any("timestamp" in e for e in errors)
+
+
+def test_non_utc_timestamp_rejected():
+    data = make_valid_result()
+    data["timestamp"] = "2026-08-22T09:00:00+02:00"
+    errors = validate_result(data)
+    assert any("timestamp" in e for e in errors)
+
+
+def test_invalid_run_id_format_rejected():
+    data = make_valid_result()
+    data["run_id"] = "bad run id/with slash"
+    errors = validate_result(data)
+    assert any("run_id" in e for e in errors)
+
+
+def test_run_id_with_allowed_characters_passes():
+    data = make_valid_result()
+    data["run_id"] = "ollama-abc123_v2.1"
+    assert validate_result(data) == []
+
+
+def test_reproducibility_type_checks():
+    data = make_valid_result()
+    data["reproducibility"] = {
+        "max_tokens": "many",
+        "temperature": -1,
+        "context_length": 0,
+        "iterations": -3,
+    }
+    errors = validate_result(data)
+    assert any("max_tokens" in e for e in errors)
+    assert any("temperature" in e for e in errors)
+    assert any("context_length" in e for e in errors)
+    assert any("iterations" in e for e in errors)
+
+
+def test_iterations_must_be_array_of_objects():
+    data = make_valid_result()
+    data["iterations"] = ["not-an-object"]
+    errors = validate_result(data)
+    assert any("iterations[0]" in e for e in errors)
+
+
+def test_new_optional_metrics_accepted():
+    data = make_valid_result()
+    data["metrics"]["p90_latency_ms"] = 120.0
+    data["metrics"]["throughput_inferences_per_second"] = 55.5
+    data["metrics"]["energy_joules_per_token"] = None
+    assert validate_result(data) == []

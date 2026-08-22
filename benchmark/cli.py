@@ -35,6 +35,7 @@ from .exit_codes import (
     EXIT_VALIDATION_ERROR,
 )
 from .export import export_dataset
+from .exporters import get_exporter, list_exporters
 from .manifests import ExperimentError, load_experiment
 from .provenance import compute_provenance
 from .quality import data_quality_report, flag_anomalies, invalidate_result
@@ -43,6 +44,7 @@ from .regression import RegressionThresholds, evaluate_regression
 from .report import render_report
 from .repro import check_reproduction, env_diff, reproducibility_score
 from .runner import run_benchmark, save_result
+from .selftest import run_self_test
 from .suites import list_suites, load_suite, run_suite
 from .sweep import SweepSpec, matrix_to_csv_rows, run_sweep
 from .system_info import detect_system
@@ -648,6 +650,37 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def cmd_self_test(_args: argparse.Namespace) -> int:
+    """Precondition and environment-noise checks (#49)."""
+    report = run_self_test()
+    _json(report)
+    return EXIT_OK if report["overall"] != "fail" else EXIT_CONFIGURATION_ERROR
+
+
+def cmd_exporters(_args: argparse.Namespace) -> int:
+    for name in list_exporters():
+        print(name)
+    return EXIT_OK
+
+
+def cmd_export_as(args: argparse.Namespace) -> int:
+    """Export results via a named exporter (#47)."""
+    results = _load_results_dir(Path(args.results_dir))
+    if not results:
+        print(f"ERROR: no result JSON files found in {args.results_dir}", file=sys.stderr)
+        return EXIT_USAGE_ERROR
+    try:
+        exporter = get_exporter(args.format)
+    except KeyError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_USAGE_ERROR
+    out_path = Path(args.output)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    written = exporter.export(results, out_path)
+    print(f"Exported {len(results)} result(s) to: {written}")
+    return EXIT_OK
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="aihwbench",
@@ -856,6 +889,18 @@ def build_parser() -> argparse.ArgumentParser:
     snap.add_argument("--previous", default=None, help="Previous manifest JSON")
     snap.add_argument("--output", default="results/snapshots/snapshot.json")
     snap.set_defaults(func=cmd_snapshot)
+
+    sub.add_parser("self-test", help="Benchmark precondition / noise checks").set_defaults(
+        func=cmd_self_test
+    )
+
+    sub.add_parser("exporters", help="List registered exporters").set_defaults(func=cmd_exporters)
+
+    exp2 = sub.add_parser("export-as", help="Export results with a named exporter")
+    exp2.add_argument("--format", required=True, help="json, csv, markdown, sqlite, ...")
+    exp2.add_argument("--results-dir", default="results/published")
+    exp2.add_argument("--output", required=True)
+    exp2.set_defaults(func=cmd_export_as)
 
     return parser
 

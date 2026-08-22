@@ -3,7 +3,7 @@
 **Status: PROPOSED — not implemented. Schema 1.0 remains authoritative.**
 
 This document collects candidate changes for a future schema 2.0. Nothing
-here is enforced by validators yet; see issue #24 for tracking.
+here is enforced by validators yet; see issue #22 for tracking.
 
 ## Motivation
 

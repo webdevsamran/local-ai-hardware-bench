@@ -185,6 +185,7 @@ Exit codes are a stable contract (`benchmark/exit_codes.py`):
 | 2 | usage/backend error |
 | 3 | results NOT_COMPARABLE |
 | 4 | configuration error |
+| 5 | performance regression detected (regression gate) |
 
 ## Reproducing a published result
 
@@ -202,6 +203,17 @@ labeled in the issue tracker. See also:
 - [Backend plugin API](docs/guides/plugin-api.md)
 - [Result submission pipeline](docs/results/submission-pipeline.md)
 - [Governance](GOVERNANCE.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
+
+## Documentation
+
+| Audience | Start here |
+| --- | --- |
+| New user | [Quickstart](docs/getting-started/quickstart.md) · [Installation](docs/getting-started/installation.md) · [FAQ](FAQ.md) |
+| Contributor | [Onboarding](docs/contributing/onboarding.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Glossary](GLOSSARY.md) |
+| Runtime maintainer | [Backends overview](docs/backends/overview.md) · [Plugin API](docs/guides/plugin-api.md) |
+| Researcher | [Reproducibility](docs/research/reproducibility.md) · [Citation](docs/research/citation.md) |
+| Security/compliance | [Privacy](docs/security/privacy.md) · [Supply chain](docs/security/supply-chain.md) |
+| Hardware | [Hardware overview](docs/hardware/overview.md) |
 
 ## Vendor collaboration
 

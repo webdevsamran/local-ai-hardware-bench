@@ -72,7 +72,6 @@ ignore = ["E501"]
 testpaths = ["tests"]
 addopts = "-q"
 [tool.mypy]
-python_version = "3.10"
 files = ["benchmark"]
 ignore_missing_imports = true
 check_untyped_defs = true

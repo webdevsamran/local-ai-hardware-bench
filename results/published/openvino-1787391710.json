@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0",
+  "run_id": "openvino-1787391710",
+  "timestamp": "2026-08-22T09:41:50Z",
+  "system": {
+    "os": "Windows 11",
+    "os_version": "10.0.26200",
+    "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+    "cpu_cores_physical": 14,
+    "cpu_cores_logical": 20,
+    "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+    "gpu_vram_mb": 16384,
+    "gpu_driver_version": "610.74",
+    "npu": null,
+    "ram_gb": 31.7,
+    "platform_name": "Predator PT516-52s"
+  },
+  "runtime": {
+    "name": "openvino",
+    "version": "2026.3.0-22451-8a17657b995-releases/2026/3",
+    "backend": "device:GPU.0",
+    "device": "gpu"
+  },
+  "model": {
+    "name": "mobilenetv2-12.onnx",
+    "format": "onnx",
+    "quantization": null,
+    "parameters": null,
+    "checksum": null
+  },
+  "metrics": {
+    "load_time_ms": 2731.34,
+    "ttft_ms": null,
+    "prompt_tokens_per_second": null,
+    "generation_tokens_per_second": null,
+    "total_latency_ms": 6.35,
+    "p50_latency_ms": 6.67,
+    "p95_latency_ms": 6.74,
+    "peak_ram_mb": 20458.35546875,
+    "peak_vram_mb": 1315.0,
+    "avg_cpu_util_percent": 37.35,
+    "avg_gpu_util_percent": 30.75,
+    "max_temperature_c": 66.0,
+    "average_power_watts": 35.28,
+    "performance_per_watt": 4.461760364141747,
+    "throughput_inferences_per_second": 157.41
+  },
+  "reproducibility": {
+    "prompt": null,
+    "max_tokens": null,
+    "temperature": null,
+    "seed": null,
+    "context_length": null,
+    "warmup_runs": 2,
+    "iterations": 5,
+    "command": "aihwbench benchmark --runtime openvino --model-path E:\\models\\mobilenetv2-12.onnx --device gpu",
+    "workload_type": "graph-inference",
+    "python_version": "3.14.6",
+    "power_profile": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)"
+  },
+  "iterations": [
+    {
+      "iteration": 0,
+      "latency_ms": 5.86
+    },
+    {
+      "iteration": 1,
+      "latency_ms": 5.79
+    },
+    {
+      "iteration": 2,
+      "latency_ms": 6.67
+    },
+    {
+      "iteration": 3,
+      "latency_ms": 6.7
+    },
+    {
+      "iteration": 4,
+      "latency_ms": 6.76
+    }
+  ],
+  "git_commit": "6cec992520ccbbb92defb40e6677604483e4ca80"
+}

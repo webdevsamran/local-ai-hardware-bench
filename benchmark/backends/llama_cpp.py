@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import subprocess
 import time
 import urllib.error
@@ -58,11 +59,11 @@ def detect() -> BackendInfo:
     code, out = run_command([server, "--version"], timeout=15.0)
     version = None
     if code == 0 and out:
-        for line in out.splitlines():
-            if "version" in line.lower():
-                version = line.strip()
-                break
-        if version is None:
+        # Expected format: "version: 0.2.0-dev (build 10578, commit 369e1cd61)"
+        match = re.search(r"version:\s*(.+)", out)
+        if match:
+            version = match.group(1).strip()
+        else:
             version = out.splitlines()[0].strip()
     return BackendInfo("llama.cpp", RuntimeStatus.AVAILABLE, version, server)
 
@@ -142,6 +143,9 @@ def _chat_stream(handle: LlamaServerHandle, config: BenchmarkConfig) -> dict[str
     )
     ttft_ms: float | None = None
     start = time.perf_counter()
+    first_content_at: float | None = None
+    last_content_at: float | None = None
+    content_chunks = 0
     usage: dict[str, Any] = {}
     with urllib.request.urlopen(request, timeout=600) as resp:
         for raw_line in resp:
@@ -152,21 +156,36 @@ def _chat_stream(handle: LlamaServerHandle, config: BenchmarkConfig) -> dict[str
             if data_str == "[DONE]":
                 break
             chunk = json.loads(data_str)
-            if ttft_ms is None:
-                choices = chunk.get("choices") or []
-                if choices and (choices[0].get("delta") or {}).get("content"):
-                    ttft_ms = (time.perf_counter() - start) * 1000.0
+            choices = chunk.get("choices") or []
+            content = (choices[0].get("delta") or {}).get("content") if choices else None
+            if content:
+                now = time.perf_counter()
+                if first_content_at is None:
+                    first_content_at = now
+                    ttft_ms = (now - start) * 1000.0
+                last_content_at = now
+                content_chunks += 1
             if chunk.get("usage"):
                 usage = chunk["usage"]
     total_ms = (time.perf_counter() - start) * 1000.0
+
+    completion_tokens = usage.get("completion_tokens")
+    if completion_tokens is None and content_chunks > 0:
+        # llama.cpp streams one token per chunk; counting streamed content
+        # chunks is a measurement of received tokens, not an estimate.
+        completion_tokens = content_chunks
+    # Wall-clock streaming duration between first and last content token.
+    stream_seconds = (
+        (last_content_at - first_content_at)
+        if first_content_at is not None and last_content_at is not None
+        else None
+    )
     return {
         "ttft_ms": round(ttft_ms, 2) if ttft_ms is not None else None,
         "total_latency_ms": round(total_ms, 2),
-        "completion_tokens": usage.get("completion_tokens"),
+        "completion_tokens": completion_tokens,
         "prompt_tokens": usage.get("prompt_tokens"),
-        # llama.cpp usage does not include eval durations; tok/s is derived
-        # downstream only when both count and duration exist.
-        "eval_seconds": None,
+        "eval_seconds": stream_seconds,
         "prompt_eval_seconds": None,
     }
 
@@ -201,7 +220,14 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
         sampler.stop()
 
     metrics = aggregate_iteration_metrics(iterations)
-    metrics.update(sampler.summary())
+    telemetry = sampler.summary()
+    metrics.update(telemetry)
+    # Recompute performance-per-watt now that measured power is available.
+    from ..metrics import performance_per_watt
+
+    metrics["performance_per_watt"] = performance_per_watt(
+        metrics["generation_tokens_per_second"], telemetry.get("average_power_watts")
+    )
 
     return {
         "schema_version": SCHEMA_VERSION,

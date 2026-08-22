@@ -16,9 +16,32 @@ CLI (benchmark/cli.py)
   -> Statistics (benchmark/metrics.py)
   -> Schema Validation (benchmark/schemas.py + schemas/*.json)
   -> Result Artifact (results/raw|published/*.json)
-  -> Comparison (benchmark/comparability.py, benchmark/compare.py)
-  -> Report/Export (benchmark/report.py, benchmark/export.py)
-  -> Submission/Publication (PR pipeline; trust states in benchmark/trust.py)
+   -> Comparison (benchmark/comparability.py, benchmark/compare.py)
+   -> Report/Export (benchmark/report.py, benchmark/export.py,
+      benchmark/exporters/*)
+   -> Submission/Publication (PR pipeline; trust states in benchmark/trust.py)
+```
+
+Supporting engines:
+
+```
+Workloads (benchmark/workloads/)     typed definitions + registry +
+                                     aihwbench.workloads entry points
+Load generator (benchmark/loadgen/)  arrival processes, scheduler,
+                                     workers, recorder
+Experiments (benchmark/experiments)  declarative manifests -> sweep /
+                                     capacity / showdown / tune
+Evaluation (benchmark/evaluators/)   quality evaluators + plugin API
+Analysis (benchmark/analysis/)       bottleneck, thermal, energy,
+                                     cost/TCO, Pareto frontier
+Provenance (benchmark/provenance/)   hashing, bundles, cosign wrappers
+Migrations (benchmark/migrations/)   schema_version evolution
+Hardware DB (benchmark/hardware/)    normalized identifiers/topology
+Quality (benchmark/quality.py)       data-quality checks, anomalies,
+                                     invalidation records
+Public SDK (benchmark/sdk.py)        typed domain objects for consumers
+Static dataset (scripts/generate_frontend_data.py -> web/public/data)
+Dashboard (web/)                     React SPA deployed to GitHub Pages
 ```
 
 ## Module responsibilities
@@ -42,6 +65,16 @@ CLI (benchmark/cli.py)
 | `trust.py` | VERIFIED / COMMUNITY_VALIDATED / UNVERIFIED states | Public |
 | `suites.py` | Versioned suite profiles under `configs/suites/` | Public |
 | `export.py` | index.json / dataset.csv / LEADERBOARD.md generation | Public |
+| `workloads/` | Typed workload abstractions, registry, plugin discovery | **Plugin API v1** |
+| `loadgen/` | Arrival processes, request scheduler/workers/recorder | Internal |
+| `evaluators/` | Quality evaluators + `aihwbench.evaluators` entry points | **Plugin API v1** |
+| `exporters/` | Export formats + `aihwbench.exporters` entry points | **Plugin API v1** |
+| `hardware/` | Normalized hardware identifiers, aliases, topology | Public |
+| `analysis/` | Bottleneck/thermal/energy/cost/Pareto reasoning rules | Public |
+| `provenance/` | Result/environment/workload/model hashing, `.aihwbench` bundles, optional cosign sign/verify | Public |
+| `migrations/` | schema_version/protocol_version/workload_version evolution; readers for published schema 1.0 | Public |
+| `quality.py` | Data-quality checks, anomaly flags, invalidation records | Public |
+| `sdk.py` | Typed public domain objects (`BenchmarkResult`, `SystemInfo`, ...) | Public SDK |
 
 ## Stability guarantees
 
@@ -51,9 +84,12 @@ CLI (benchmark/cli.py)
   `BenchmarkConfig`, and the `aihwbench.backends` entry-point group are
   stable. Breaking changes bump `BACKEND_API_VERSION`.
 - **Result schema 1.0**: published results remain readable; breaking
-  schema changes require a new major version plus migration support.
-- **Internals** (telemetry internals, runner plumbing) may change
-  without notice.
+  schema changes require a new major version plus migration support
+  (`benchmark/migrations/`, exercised by CI against every published file).
+- **Plugin APIs v1**: workload, evaluator and exporter entry-point groups
+  follow the same stability rules as backends.
+- **Internals** (telemetry internals, runner plumbing, loadgen internals)
+  may change without notice.
 
 ## Design constraints
 
@@ -61,3 +97,5 @@ CLI (benchmark/cli.py)
 - Everything works offline; no cloud calls anywhere in the core.
 - Detection output is sanitized by design (no serials/MACs/usernames).
 - Metrics that cannot be measured are `null`, never estimated.
+- The dashboard consumes only generated static JSON derived from
+  `results/published/`; charts render only when real data exists.

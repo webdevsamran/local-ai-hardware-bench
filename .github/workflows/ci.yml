@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint & format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - run: ruff check benchmark tests
+      - run: ruff format --check benchmark tests || true
+
+  test:
+    name: Unit tests (${{ matrix.os }}, py${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e ".[dev]"
+      - run: pytest
+
+  package:
+    name: Build package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine check dist/*
+
+  schema:
+    name: Validate committed results
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate all published result files against schema 1.0
+        shell: python
+        run: |
+          import json, pathlib, sys
+          sys.path.insert(0, ".")
+          from benchmark.schemas import validate_result
+          failures = []
+          for pattern in ("results/published/*.json", "results/normalized/*.json"):
+              for path in sorted(pathlib.Path(".").glob(pattern)):
+                  data = json.loads(path.read_text(encoding="utf-8"))
+                  errors = validate_result(data)
+                  status = "OK" if not errors else "FAIL"
+                  print(f"{status}: {path}")
+                  if errors:
+                      failures.append((path, errors))
+          if failures:
+              for path, errors in failures:
+                  print()
+                  print(f"{path}:")
+                  for e in errors:
+                      print(f"  - {e}")
+              sys.exit(1)

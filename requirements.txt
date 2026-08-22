@@ -1,0 +1,4 @@
+# Core runtime dependencies.
+# The benchmark framework is intentionally dependency-free at runtime;
+# psutil improves telemetry (CPU utilization) when available.
+psutil>=5.9

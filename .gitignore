@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Models and large binaries - never commit
+*.gguf
+*.onnx
+*.bin
+*.safetensors
+*.engine
+*.trt
+models/
+
+# Results are committed selectively (published/ only); ignore transient state
+results/raw/*.tmp
+
+# OS / editor
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/
+
+# Secrets
+.env
+*.key

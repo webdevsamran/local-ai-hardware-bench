@@ -1,0 +1,38 @@
+{
+  "$comment": "Benchmark model tiers. Models are never committed to Git; they are pulled/downloaded at benchmark time. Tiers exist so results are comparable within a tier.",
+  "tiers": {
+    "smoke": {
+      "description": "Tiny model for installation and functionality checks.",
+      "ollama": "qwen2.5:0.5b-instruct-q4_K_M",
+      "llama_cpp_hf_repo": "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
+      "llama_cpp_file": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "approx_size_gb": 0.4
+    },
+    "standard": {
+      "description": "Roughly 1B-4B quantized model; the default comparison tier.",
+      "ollama": "llama3.2:3b-instruct-q4_K_M",
+      "llama_cpp_hf_repo": "bartowski/Llama-3.2-3B-Instruct-GGUF",
+      "llama_cpp_file": "Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+      "approx_size_gb": 2.0
+    },
+    "performance": {
+      "description": "Roughly 7B-14B where hardware permits (>=12 GB VRAM recommended).",
+      "ollama": "qwen2.5:7b-instruct-q4_K_M",
+      "approx_size_gb": 4.7
+    },
+    "high-memory": {
+      "description": "Large models for workstations/high-memory platforms (>=24 GB VRAM or unified memory).",
+      "ollama": "qwen2.5:32b-instruct-q4_K_M",
+      "approx_size_gb": 20.0
+    }
+  },
+  "default_workload": {
+    "prompt": "Explain what a token is in large language models, in two sentences.",
+    "max_tokens": 128,
+    "temperature": 0.0,
+    "seed": 42,
+    "context_length": 2048,
+    "warmup_runs": 2,
+    "iterations": 5
+  }
+}

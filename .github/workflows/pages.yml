@@ -1,11 +1,18 @@
-name: Dataset pages
+# Deploys the React dashboard (web/) to GitHub Pages.
+#
+# Requires the repository setting Pages → Source = "GitHub Actions".
+# If deployment fails with a permissions error, that single setting is the
+# remaining manual step; everything else is fully configured here.
+
+name: Deploy dashboard to GitHub Pages
 
 on:
   push:
     branches: [main]
     paths:
       - "results/published/**"
-      - "scripts/build_dataset_views.py"
+      - "web/**"
+      - "scripts/generate_frontend_data.py"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -17,15 +24,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      - name: Build dataset views
-        run: python scripts/build_dataset_views.py results/published site
+
+      - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c69c37211dc61 # v4.4.0
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Generate static dataset
+        run: python scripts/generate_frontend_data.py
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci --no-fund --no-audit
+
+      - name: Build production bundle
+        working-directory: web
+        env:
+          VITE_BASE_PATH: /local-ai-hardware-bench/
+        run: npm run build
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: site
+          path: web/dist
 
   deploy:
     needs: build

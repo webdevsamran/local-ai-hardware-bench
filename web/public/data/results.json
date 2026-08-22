@@ -1,0 +1,553 @@
+[
+  {
+    "_file": "llamacpp-1787391945.json",
+    "git_commit": "6cec992520ccbbb92defb40e6677604483e4ca80",
+    "iterations": [
+      {
+        "completion_tokens": 29,
+        "eval_seconds": 0.0820092000067234,
+        "prompt_eval_seconds": null,
+        "prompt_tokens": 44,
+        "total_latency_ms": 102.28,
+        "ttft_ms": 12.91
+      },
+      {
+        "completion_tokens": 29,
+        "eval_seconds": 0.07888360001379624,
+        "prompt_eval_seconds": null,
+        "prompt_tokens": 44,
+        "total_latency_ms": 99.21,
+        "ttft_ms": 14.06
+      },
+      {
+        "completion_tokens": 29,
+        "eval_seconds": 0.08295599999837577,
+        "prompt_eval_seconds": null,
+        "prompt_tokens": 44,
+        "total_latency_ms": 101.49,
+        "ttft_ms": 12.41
+      },
+      {
+        "completion_tokens": 29,
+        "eval_seconds": 0.07778819999657571,
+        "prompt_eval_seconds": null,
+        "prompt_tokens": 44,
+        "total_latency_ms": 102.28,
+        "ttft_ms": 16.44
+      },
+      {
+        "completion_tokens": 29,
+        "eval_seconds": 0.08040179999079555,
+        "prompt_eval_seconds": null,
+        "prompt_tokens": 44,
+        "total_latency_ms": 103.5,
+        "ttft_ms": 16.78
+      }
+    ],
+    "metrics": {
+      "average_power_watts": 26.76,
+      "avg_cpu_util_percent": 38.6,
+      "avg_gpu_util_percent": 24.0,
+      "generation_tokens_per_second": 360.87,
+      "load_time_ms": null,
+      "max_temperature_c": 59.0,
+      "p50_latency_ms": 102.28,
+      "p95_latency_ms": 103.26,
+      "peak_ram_mb": 19806.33203125,
+      "peak_vram_mb": 1061.0,
+      "performance_per_watt": 13.48542600896861,
+      "prompt_tokens_per_second": null,
+      "total_latency_ms": 101.75,
+      "ttft_ms": 14.52
+    },
+    "model": {
+      "checksum": "sha256:c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515",
+      "format": "gguf",
+      "name": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "parameters": null,
+      "quantization": null
+    },
+    "reproducibility": {
+      "command": "aihwbench benchmark --runtime llama.cpp --model-path E:\\llama.cpp\\qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "context_length": 2048,
+      "iterations": 5,
+      "max_tokens": 128,
+      "power_profile": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)",
+      "prompt": "Explain what a token is in large language models, in two sentences.",
+      "python_version": "3.14.6",
+      "seed": 42,
+      "temperature": 0.0,
+      "trust": "VERIFIED",
+      "warmup_runs": 2
+    },
+    "run_id": "llamacpp-1787391945",
+    "runtime": {
+      "backend": "llama-server",
+      "device": "cuda",
+      "name": "llama.cpp",
+      "version": "0.2.0-dev (build 10578, commit 369e1cd61)"
+    },
+    "schema_version": "1.0",
+    "system": {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "cpu_cores_logical": 20,
+      "cpu_cores_physical": 14,
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "gpu_driver_version": "610.74",
+      "gpu_vram_mb": 16384,
+      "npu": null,
+      "os": "Windows 11",
+      "os_version": "10.0.26200",
+      "platform_name": "Predator PT516-52s",
+      "ram_gb": 31.7
+    },
+    "timestamp": "2026-08-22T09:45:45Z"
+  },
+  {
+    "_file": "ollama-1787388930.json",
+    "git_commit": "7cdd6affaffcc79fb7c1547b3d93b404fc275bc9",
+    "iterations": [
+      {
+        "completion_tokens": 29,
+        "eval_seconds": 0.36991,
+        "prompt_eval_seconds": 0.019881,
+        "prompt_tokens": 44,
+        "total_latency_ms": 2486.33,
+        "ttft_ms": 2063.25
+      },
+      {
+        "completion_tokens": 29,
+        "eval_seconds": 0.197467,
+        "prompt_eval_seconds": 0.009428,
+        "prompt_tokens": 44,
+        "total_latency_ms": 2269.62,
+        "ttft_ms": 2056.66
+      },
+      {
+        "completion_tokens": 29,
+        "eval_seconds": 0.39531,
+        "prompt_eval_seconds": 0.023,
+        "prompt_tokens": 44,
+        "total_latency_ms": 2585.28,
+        "ttft_ms": 2076.72
+      },
+      {
+        "completion_tokens": 29,
+        "eval_seconds": 0.170627,
+        "prompt_eval_seconds": 0.006783,
+        "prompt_tokens": 44,
+        "total_latency_ms": 2273.58,
+        "ttft_ms": 2083.93
+      },
+      {
+        "completion_tokens": 29,
+        "eval_seconds": 0.336943,
+        "prompt_eval_seconds": 0.017654,
+        "prompt_tokens": 44,
+        "total_latency_ms": 2471.55,
+        "ttft_ms": 2068.0
+      }
+    ],
+    "metrics": {
+      "average_power_watts": 26.16,
+      "avg_cpu_util_percent": 44.95,
+      "avg_gpu_util_percent": 21.3,
+      "generation_tokens_per_second": 110.93,
+      "load_time_ms": null,
+      "max_temperature_c": 61.0,
+      "p50_latency_ms": 2471.55,
+      "p95_latency_ms": 2565.49,
+      "peak_ram_mb": 20308.7109375,
+      "peak_vram_mb": 1192.0,
+      "performance_per_watt": 4.240443425076453,
+      "prompt_tokens_per_second": 3554.46,
+      "total_latency_ms": 2417.27,
+      "ttft_ms": 2069.71
+    },
+    "model": {
+      "checksum": "a8b0c51577010a279d933d14c2a8ab4b268079d44c5c8830c0a93900f1827c67",
+      "format": "gguf",
+      "name": "qwen2.5:0.5b-instruct-q4_K_M",
+      "parameters": null,
+      "quantization": null
+    },
+    "reproducibility": {
+      "command": "aihwbench benchmark --runtime ollama --model qwen2.5:0.5b-instruct-q4_K_M",
+      "context_length": 2048,
+      "iterations": 5,
+      "max_tokens": 128,
+      "power_profile": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)",
+      "prompt": "Explain what a token is in large language models, in two sentences.",
+      "python_version": "3.14.6",
+      "seed": 42,
+      "temperature": 0.0,
+      "trust": "VERIFIED",
+      "warmup_runs": 2
+    },
+    "run_id": "ollama-1787388930",
+    "runtime": {
+      "backend": "ollama-http-api",
+      "device": "auto",
+      "name": "ollama",
+      "version": "0.32.15"
+    },
+    "schema_version": "1.0",
+    "system": {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "cpu_cores_logical": 20,
+      "cpu_cores_physical": 14,
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "gpu_vram_mb": 16384,
+      "npu": null,
+      "os": "Windows 11",
+      "os_version": "10.0.26200",
+      "platform_name": "Predator PT516-52s",
+      "ram_gb": 31.7
+    },
+    "timestamp": "2026-08-22T08:55:30Z"
+  },
+  {
+    "_file": "onnxruntime-1787391388.json",
+    "git_commit": "6cec992520ccbbb92defb40e6677604483e4ca80",
+    "iterations": [
+      {
+        "iteration": 0,
+        "latency_ms": 2.31
+      },
+      {
+        "iteration": 1,
+        "latency_ms": 3.53
+      },
+      {
+        "iteration": 2,
+        "latency_ms": 6.16
+      },
+      {
+        "iteration": 3,
+        "latency_ms": 2.52
+      },
+      {
+        "iteration": 4,
+        "latency_ms": 2.16
+      }
+    ],
+    "metrics": {
+      "average_power_watts": 22.27,
+      "avg_cpu_util_percent": 0.0,
+      "avg_gpu_util_percent": 38.0,
+      "generation_tokens_per_second": null,
+      "load_time_ms": 55.21,
+      "max_temperature_c": 64.0,
+      "p50_latency_ms": 2.52,
+      "p95_latency_ms": 5.63,
+      "peak_ram_mb": 20702.5859375,
+      "peak_vram_mb": 1315.0,
+      "performance_per_watt": 13.46753567139,
+      "prompt_tokens_per_second": null,
+      "throughput_inferences_per_second": 299.92,
+      "total_latency_ms": 3.33,
+      "ttft_ms": null
+    },
+    "model": {
+      "checksum": null,
+      "format": "onnx",
+      "name": "mobilenetv2-12.onnx",
+      "parameters": null,
+      "quantization": null
+    },
+    "reproducibility": {
+      "command": "aihwbench benchmark --runtime onnxruntime --model-path E:\\models\\mobilenetv2-12.onnx --device cpu",
+      "context_length": null,
+      "iterations": 5,
+      "max_tokens": null,
+      "power_profile": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)",
+      "prompt": null,
+      "python_version": "3.14.6",
+      "seed": null,
+      "temperature": null,
+      "trust": "VERIFIED",
+      "warmup_runs": 2,
+      "workload_type": "graph-inference"
+    },
+    "run_id": "onnxruntime-1787391388",
+    "runtime": {
+      "backend": "execution-providers:CPUExecutionProvider",
+      "device": "cpu",
+      "name": "onnxruntime",
+      "version": "1.29.0"
+    },
+    "schema_version": "1.0",
+    "system": {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "cpu_cores_logical": 20,
+      "cpu_cores_physical": 14,
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "gpu_driver_version": "610.74",
+      "gpu_vram_mb": 16384,
+      "npu": null,
+      "os": "Windows 11",
+      "os_version": "10.0.26200",
+      "platform_name": "Predator PT516-52s",
+      "ram_gb": 31.7
+    },
+    "timestamp": "2026-08-22T09:36:28Z"
+  },
+  {
+    "_file": "onnxruntime-1787391455.json",
+    "git_commit": "6cec992520ccbbb92defb40e6677604483e4ca80",
+    "iterations": [
+      {
+        "iteration": 0,
+        "latency_ms": 2.11
+      },
+      {
+        "iteration": 1,
+        "latency_ms": 2.74
+      },
+      {
+        "iteration": 2,
+        "latency_ms": 4.2
+      },
+      {
+        "iteration": 3,
+        "latency_ms": 2.27
+      },
+      {
+        "iteration": 4,
+        "latency_ms": 2.27
+      }
+    ],
+    "metrics": {
+      "average_power_watts": 32.42,
+      "avg_cpu_util_percent": 17.27,
+      "avg_gpu_util_percent": 45.67,
+      "generation_tokens_per_second": null,
+      "load_time_ms": 777.44,
+      "max_temperature_c": 66.0,
+      "p50_latency_ms": 2.27,
+      "p95_latency_ms": 3.9,
+      "peak_ram_mb": 20644.15625,
+      "peak_vram_mb": 1388.0,
+      "performance_per_watt": 11.353989914187999,
+      "prompt_tokens_per_second": null,
+      "throughput_inferences_per_second": 368.1,
+      "total_latency_ms": 2.72,
+      "ttft_ms": null
+    },
+    "model": {
+      "checksum": null,
+      "format": "onnx",
+      "name": "mobilenetv2-12.onnx",
+      "parameters": null,
+      "quantization": null
+    },
+    "reproducibility": {
+      "command": "aihwbench benchmark --runtime onnxruntime --model-path E:\\models\\mobilenetv2-12.onnx --device dml",
+      "context_length": null,
+      "iterations": 5,
+      "max_tokens": null,
+      "power_profile": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)",
+      "prompt": null,
+      "python_version": "3.14.6",
+      "seed": null,
+      "temperature": null,
+      "trust": "VERIFIED",
+      "warmup_runs": 2,
+      "workload_type": "graph-inference"
+    },
+    "run_id": "onnxruntime-1787391455",
+    "runtime": {
+      "backend": "execution-providers:DmlExecutionProvider,CPUExecutionProvider",
+      "device": "dml",
+      "name": "onnxruntime",
+      "version": "1.24.4"
+    },
+    "schema_version": "1.0",
+    "system": {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "cpu_cores_logical": 20,
+      "cpu_cores_physical": 14,
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "gpu_driver_version": "610.74",
+      "gpu_vram_mb": 16384,
+      "npu": null,
+      "os": "Windows 11",
+      "os_version": "10.0.26200",
+      "platform_name": "Predator PT516-52s",
+      "ram_gb": 31.7
+    },
+    "timestamp": "2026-08-22T09:37:35Z"
+  },
+  {
+    "_file": "openvino-1787391625.json",
+    "git_commit": "6cec992520ccbbb92defb40e6677604483e4ca80",
+    "iterations": [
+      {
+        "iteration": 0,
+        "latency_ms": 5.0
+      },
+      {
+        "iteration": 1,
+        "latency_ms": 5.04
+      },
+      {
+        "iteration": 2,
+        "latency_ms": 6.4
+      },
+      {
+        "iteration": 3,
+        "latency_ms": 5.72
+      },
+      {
+        "iteration": 4,
+        "latency_ms": 6.18
+      }
+    ],
+    "metrics": {
+      "average_power_watts": 30.01,
+      "avg_cpu_util_percent": 0.0,
+      "avg_gpu_util_percent": 34.0,
+      "generation_tokens_per_second": null,
+      "load_time_ms": 243.51,
+      "max_temperature_c": 63.0,
+      "p50_latency_ms": 5.72,
+      "p95_latency_ms": 6.36,
+      "peak_ram_mb": 20753.3828125,
+      "peak_vram_mb": 1315.0,
+      "performance_per_watt": 5.878096883870219,
+      "prompt_tokens_per_second": null,
+      "throughput_inferences_per_second": 176.4,
+      "total_latency_ms": 5.67,
+      "ttft_ms": null
+    },
+    "model": {
+      "checksum": null,
+      "format": "onnx",
+      "name": "mobilenetv2-12.onnx",
+      "parameters": null,
+      "quantization": null
+    },
+    "reproducibility": {
+      "command": "aihwbench benchmark --runtime openvino --model-path E:\\models\\mobilenetv2-12.onnx --device cpu",
+      "context_length": null,
+      "iterations": 5,
+      "max_tokens": null,
+      "power_profile": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)",
+      "prompt": null,
+      "python_version": "3.14.6",
+      "seed": null,
+      "temperature": null,
+      "trust": "VERIFIED",
+      "warmup_runs": 2,
+      "workload_type": "graph-inference"
+    },
+    "run_id": "openvino-1787391625",
+    "runtime": {
+      "backend": "device:CPU",
+      "device": "cpu",
+      "name": "openvino",
+      "version": "2026.3.0-22451-8a17657b995-releases/2026/3"
+    },
+    "schema_version": "1.0",
+    "system": {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "cpu_cores_logical": 20,
+      "cpu_cores_physical": 14,
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "gpu_driver_version": "610.74",
+      "gpu_vram_mb": 16384,
+      "npu": null,
+      "os": "Windows 11",
+      "os_version": "10.0.26200",
+      "platform_name": "Predator PT516-52s",
+      "ram_gb": 31.7
+    },
+    "timestamp": "2026-08-22T09:40:25Z"
+  },
+  {
+    "_file": "openvino-1787391710.json",
+    "git_commit": "6cec992520ccbbb92defb40e6677604483e4ca80",
+    "iterations": [
+      {
+        "iteration": 0,
+        "latency_ms": 5.86
+      },
+      {
+        "iteration": 1,
+        "latency_ms": 5.79
+      },
+      {
+        "iteration": 2,
+        "latency_ms": 6.67
+      },
+      {
+        "iteration": 3,
+        "latency_ms": 6.7
+      },
+      {
+        "iteration": 4,
+        "latency_ms": 6.76
+      }
+    ],
+    "metrics": {
+      "average_power_watts": 35.28,
+      "avg_cpu_util_percent": 37.35,
+      "avg_gpu_util_percent": 30.75,
+      "generation_tokens_per_second": null,
+      "load_time_ms": 2731.34,
+      "max_temperature_c": 66.0,
+      "p50_latency_ms": 6.67,
+      "p95_latency_ms": 6.74,
+      "peak_ram_mb": 20458.35546875,
+      "peak_vram_mb": 1315.0,
+      "performance_per_watt": 4.461760364141747,
+      "prompt_tokens_per_second": null,
+      "throughput_inferences_per_second": 157.41,
+      "total_latency_ms": 6.35,
+      "ttft_ms": null
+    },
+    "model": {
+      "checksum": null,
+      "format": "onnx",
+      "name": "mobilenetv2-12.onnx",
+      "parameters": null,
+      "quantization": null
+    },
+    "reproducibility": {
+      "command": "aihwbench benchmark --runtime openvino --model-path E:\\models\\mobilenetv2-12.onnx --device gpu",
+      "context_length": null,
+      "iterations": 5,
+      "max_tokens": null,
+      "power_profile": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)",
+      "prompt": null,
+      "python_version": "3.14.6",
+      "seed": null,
+      "temperature": null,
+      "trust": "VERIFIED",
+      "warmup_runs": 2,
+      "workload_type": "graph-inference"
+    },
+    "run_id": "openvino-1787391710",
+    "runtime": {
+      "backend": "device:GPU.0",
+      "device": "gpu",
+      "name": "openvino",
+      "version": "2026.3.0-22451-8a17657b995-releases/2026/3"
+    },
+    "schema_version": "1.0",
+    "system": {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "cpu_cores_logical": 20,
+      "cpu_cores_physical": 14,
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "gpu_driver_version": "610.74",
+      "gpu_vram_mb": 16384,
+      "npu": null,
+      "os": "Windows 11",
+      "os_version": "10.0.26200",
+      "platform_name": "Predator PT516-52s",
+      "ram_gb": 31.7
+    },
+    "timestamp": "2026-08-22T09:41:50Z"
+  }
+]

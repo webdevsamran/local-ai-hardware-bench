@@ -1,0 +1,36 @@
+[
+  {
+    "checksums": [],
+    "format": "onnx",
+    "name": "mobilenetv2-12.onnx",
+    "quantizations": [],
+    "result_ids": [
+      "onnxruntime-1787391388",
+      "onnxruntime-1787391455",
+      "openvino-1787391625",
+      "openvino-1787391710"
+    ]
+  },
+  {
+    "checksums": [
+      "sha256:c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515"
+    ],
+    "format": "gguf",
+    "name": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+    "quantizations": [],
+    "result_ids": [
+      "llamacpp-1787391945"
+    ]
+  },
+  {
+    "checksums": [
+      "a8b0c51577010a279d933d14c2a8ab4b268079d44c5c8830c0a93900f1827c67"
+    ],
+    "format": "gguf",
+    "name": "qwen2.5:0.5b-instruct-q4_K_M",
+    "quantizations": [],
+    "result_ids": [
+      "ollama-1787388930"
+    ]
+  }
+]

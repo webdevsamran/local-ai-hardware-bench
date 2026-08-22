@@ -1,0 +1,98 @@
+{
+  "perf_watt": [
+    {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "rank": 1,
+      "run_id": "llamacpp-1787391945",
+      "runtime": "llama.cpp",
+      "value": 13.48542600896861
+    },
+    {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "model": "mobilenetv2-12.onnx",
+      "rank": 2,
+      "run_id": "onnxruntime-1787391388",
+      "runtime": "onnxruntime",
+      "value": 13.46753567139
+    },
+    {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "model": "mobilenetv2-12.onnx",
+      "rank": 3,
+      "run_id": "onnxruntime-1787391455",
+      "runtime": "onnxruntime",
+      "value": 11.353989914187999
+    },
+    {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "model": "mobilenetv2-12.onnx",
+      "rank": 4,
+      "run_id": "openvino-1787391625",
+      "runtime": "openvino",
+      "value": 5.878096883870219
+    },
+    {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "model": "mobilenetv2-12.onnx",
+      "rank": 5,
+      "run_id": "openvino-1787391710",
+      "runtime": "openvino",
+      "value": 4.461760364141747
+    },
+    {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "model": "qwen2.5:0.5b-instruct-q4_K_M",
+      "rank": 6,
+      "run_id": "ollama-1787388930",
+      "runtime": "ollama",
+      "value": 4.240443425076453
+    }
+  ],
+  "throughput": [
+    {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "rank": 1,
+      "run_id": "llamacpp-1787391945",
+      "runtime": "llama.cpp",
+      "value": 360.87
+    },
+    {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "model": "qwen2.5:0.5b-instruct-q4_K_M",
+      "rank": 2,
+      "run_id": "ollama-1787388930",
+      "runtime": "ollama",
+      "value": 110.93
+    }
+  ],
+  "ttft": [
+    {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "rank": 1,
+      "run_id": "llamacpp-1787391945",
+      "runtime": "llama.cpp",
+      "value": 14.52
+    },
+    {
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "model": "qwen2.5:0.5b-instruct-q4_K_M",
+      "rank": 2,
+      "run_id": "ollama-1787388930",
+      "runtime": "ollama",
+      "value": 2069.71
+    }
+  ]
+}

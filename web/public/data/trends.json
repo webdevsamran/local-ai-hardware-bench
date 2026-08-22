@@ -1,0 +1,46 @@
+{
+  "llama.cpp": [
+    {
+      "throughput": 360.87,
+      "timestamp": "2026-08-22T09:45:45Z",
+      "ttft_ms": 14.52,
+      "version": "0.2.0-dev (build 10578, commit 369e1cd61)"
+    }
+  ],
+  "ollama": [
+    {
+      "throughput": 110.93,
+      "timestamp": "2026-08-22T08:55:30Z",
+      "ttft_ms": 2069.71,
+      "version": "0.32.15"
+    }
+  ],
+  "onnxruntime": [
+    {
+      "throughput": null,
+      "timestamp": "2026-08-22T09:36:28Z",
+      "ttft_ms": null,
+      "version": "1.29.0"
+    },
+    {
+      "throughput": null,
+      "timestamp": "2026-08-22T09:37:35Z",
+      "ttft_ms": null,
+      "version": "1.24.4"
+    }
+  ],
+  "openvino": [
+    {
+      "throughput": null,
+      "timestamp": "2026-08-22T09:40:25Z",
+      "ttft_ms": null,
+      "version": "2026.3.0-22451-8a17657b995-releases/2026/3"
+    },
+    {
+      "throughput": null,
+      "timestamp": "2026-08-22T09:41:50Z",
+      "ttft_ms": null,
+      "version": "2026.3.0-22451-8a17657b995-releases/2026/3"
+    }
+  ]
+}

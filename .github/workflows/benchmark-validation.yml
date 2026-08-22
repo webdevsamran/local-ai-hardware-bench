@@ -1,0 +1,114 @@
+# Reusable benchmark validation / regression reporting workflow (#48).
+#
+# Consumers call this from their own workflows:
+#
+#   jobs:
+#     validate:
+#       uses: webdevsamran/local-ai-hardware-bench/.github/workflows/
+#         benchmark-validation.yml@main
+#       with:
+#         results-dir: results/published
+#         baseline-name: my-machine
+#
+# It validates every result against the schema, runs the privacy scan and
+# data-quality checks, flags anomalies for review, and — when a baseline
+# exists — produces a machine-readable regression verdict plus an optional
+# PR summary. No hardware benchmarks run in CI; no models are downloaded.
+
+name: Benchmark validation
+
+on:
+  workflow_call:
+    inputs:
+      results-dir:
+        description: Directory containing published result JSON files
+        required: false
+        default: results/published
+        type: string
+      baseline-name:
+        description: Optional saved baseline name for regression checks
+        required: false
+        default: ""
+        type: string
+      python-version:
+        required: false
+        default: "3.12"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+
+      - name: Validate all results (schema + privacy + quality)
+        id: validate
+        run: |
+          set -e
+          verdict="pass"
+          mkdir -p validation-output
+          for f in "${{ inputs.results-dir }}"/*.json; do
+            [ -e "$f" ] || { echo "No results found in ${{ inputs.results-dir }}" >&2; exit 1; }
+            if ! aihwbench validate "$f"; then
+              verdict="fail"
+            fi
+            aihwbench quality "$f" > "validation-output/$(basename "$f")" || true
+          done
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+
+      - name: Anomaly review flags
+        run: |
+          aihwbench anomalies --results-dir "${{ inputs.results-dir }}" \
+            > validation-output/anomalies.json || true
+          cat validation-output/anomalies.json
+
+      - name: Regression check vs baseline
+        if: ${{ inputs.baseline-name != '' }}
+        run: |
+          candidate=$(ls "${{ inputs.results-dir }}"/*.json | head -n 1)
+          aihwbench regression --baseline "${{ inputs.baseline-name }}" \
+            --json "$candidate" > validation-output/regression.json
+          cat validation-output/regression.json
+
+      - name: Machine-readable verdict
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          out = pathlib.Path("validation-output")
+          verdict = {"validation": "${{ steps.validate.outputs.verdict }}"}
+          anomalies = out / "anomalies.json"
+          if anomalies.exists():
+              data = json.loads(anomalies.read_text())
+              verdict["anomaly_flags"] = len(data.get("flags", []))
+          (out / "verdict.json").write_text(json.dumps(verdict, indent=2))
+          print(json.dumps(verdict, indent=2))
+          PY
+
+      - name: Upload validation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-validation
+          path: validation-output/
+
+      - name: PR summary
+        if: github.event_name == 'pull_request'
+        run: |
+          {
+            echo "## Benchmark validation"
+            echo ""
+            echo "- Verdict: \`${{ steps.validate.outputs.verdict }}\`"
+            echo "- Results checked: $(ls "${{ inputs.results-dir }}"/*.json 2>/dev/null | wc -l)"
+            echo "- Anomaly report: see artifact \`benchmark-validation\`"
+          } >> "$GITHUB_STEP_SUMMARY"

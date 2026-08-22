@@ -20,8 +20,10 @@ def detect() -> BackendInfo:
         detail = out.splitlines()[0] if out else None
         return BackendInfo("hailo", RuntimeStatus.AVAILABLE, None, detail)
     try:
-        import hailo_platform  # type: ignore[import-untyped]
+        import importlib.util
 
+        if importlib.util.find_spec("hailo_platform") is None:
+            raise ImportError
         return BackendInfo(
             "hailo", RuntimeStatus.HARDWARE_REQUIRED, None,
             "HailoRT python package present but no accelerator detected",

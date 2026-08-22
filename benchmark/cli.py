@@ -21,8 +21,10 @@ from .backends import (
     detect_all,
     resolve,
 )
+from .bundles import create_bundle, verify_bundle
 from .capacity import CapacityConfig, run_capacity_ladder
 from .compare import NOT_COMPARABLE, compare_results, render_comparison
+from .dataset_versioning import build_snapshot_manifest
 from .evaluators import list_evaluators, load_dataset, run_evaluation
 from .exit_codes import (
     EXIT_CONFIGURATION_ERROR,
@@ -34,9 +36,12 @@ from .exit_codes import (
 )
 from .export import export_dataset
 from .manifests import ExperimentError, load_experiment
+from .provenance import compute_provenance
+from .quality import data_quality_report, flag_anomalies, invalidate_result
 from .quantization import compare_quantizations
 from .regression import RegressionThresholds, evaluate_regression
 from .report import render_report
+from .repro import check_reproduction, env_diff, reproducibility_score
 from .runner import run_benchmark, save_result
 from .suites import list_suites, load_suite, run_suite
 from .sweep import SweepSpec, matrix_to_csv_rows, run_sweep
@@ -509,6 +514,140 @@ def cmd_quantization(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def cmd_bundle(args: argparse.Namespace) -> int:
+    """Create a portable .aihwbench bundle (#36)."""
+    try:
+        result = load_result(Path(args.result))
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION_ERROR
+    result = dict(result)
+    result.setdefault("provenance", compute_provenance(result))
+    env_path = Path(args.environment) if args.environment else None
+    environment = json.loads(env_path.read_text(encoding="utf-8")) if env_path else None
+    out_path = Path(args.output or Path(args.result).with_suffix(".aihwbench"))
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    bundle_path = create_bundle(out_path, result, environment=environment)
+    print(f"Bundle created: {bundle_path}")
+    verification = verify_bundle(bundle_path)
+    _json(verification)
+    return EXIT_OK if verification["valid"] else EXIT_VALIDATION_ERROR
+
+
+def cmd_verify_bundle(args: argparse.Namespace) -> int:
+    """Verify bundle integrity (checksums) (#36/#38)."""
+    report = verify_bundle(Path(args.bundle))
+    _json(report)
+    return EXIT_OK if report["valid"] else EXIT_VALIDATION_ERROR
+
+
+def cmd_env_diff(args: argparse.Namespace) -> int:
+    """Show matching/differing fields between two results (#33)."""
+    try:
+        a = load_result(Path(args.result_a))
+        b = load_result(Path(args.result_b))
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION_ERROR
+    _json(env_diff(a, b))
+    return EXIT_OK
+
+
+def cmd_reproduce(args: argparse.Namespace) -> int:
+    """Check reproduction prerequisites for a result (#34)."""
+    try:
+        result = load_result(Path(args.result))
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION_ERROR
+    system = detect_system() if args.check_environment else {}
+    _json(check_reproduction(result, system))
+    return EXIT_OK
+
+
+def cmd_repro_score(args: argparse.Namespace) -> int:
+    """Reproducibility metadata-completeness score (#35)."""
+    try:
+        result = load_result(Path(args.result))
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION_ERROR
+    _json(reproducibility_score(result))
+    return EXIT_OK
+
+
+def cmd_quality(args: argparse.Namespace) -> int:
+    """Data-quality checks for one result or a whole directory (#43)."""
+    path = Path(args.path)
+    if path.is_dir():
+        reports = {}
+        for p in sorted(path.glob("*.json")):
+            try:
+                reports[p.name] = data_quality_report(json.loads(p.read_text(encoding="utf-8")))
+            except (OSError, json.JSONDecodeError):
+                continue
+        _json(reports)
+        return EXIT_OK
+    try:
+        result = load_result(path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION_ERROR
+    _json(data_quality_report(result))
+    return EXIT_OK
+
+
+def cmd_invalidate(args: argparse.Namespace) -> int:
+    """Record an invalidation; original history is preserved (#42)."""
+    try:
+        result = load_result(Path(args.result))
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION_ERROR
+    record = invalidate_result(result, args.reason, args.replacement)
+    out_path = Path(args.output)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
+    print(f"Invalidation record written: {out_path}")
+    return EXIT_OK
+
+
+def cmd_anomalies(args: argparse.Namespace) -> int:
+    """Flag statistically suspicious results for review (#44)."""
+    results = _load_results_dir(Path(args.results_dir))
+    if not results:
+        print(f"ERROR: no result JSON files found in {args.results_dir}", file=sys.stderr)
+        return EXIT_USAGE_ERROR
+    flags = flag_anomalies(results, metric=args.metric, z_threshold=args.z)
+    _json(
+        {
+            "metric": args.metric,
+            "z_threshold": args.z,
+            "results_scanned": len(results),
+            "flags": flags,
+        }
+    )
+    return EXIT_OK
+
+
+def cmd_snapshot(args: argparse.Namespace) -> int:
+    """Build a versioned dataset snapshot manifest (#41)."""
+    results_dir = Path(args.results_dir)
+    if not results_dir.is_dir():
+        print(f"ERROR: {results_dir} is not a directory", file=sys.stderr)
+        return EXIT_USAGE_ERROR
+    previous = None
+    prev_path = Path(args.previous) if args.previous else None
+    if prev_path and prev_path.is_file():
+        previous = json.loads(prev_path.read_text(encoding="utf-8"))
+    manifest = build_snapshot_manifest(results_dir, args.version, previous)
+    out_path = Path(args.output)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    print(f"Snapshot manifest written: {out_path}")
+    return EXIT_OK
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="aihwbench",
@@ -665,6 +804,58 @@ def build_parser() -> argparse.ArgumentParser:
     quant = sub.add_parser("quantization", help="Compare quantization variants")
     quant.add_argument("--results-dir", default="results/published")
     quant.set_defaults(func=cmd_quantization)
+
+    bun = sub.add_parser("bundle", help="Create a portable .aihwbench bundle")
+    bun.add_argument("result")
+    bun.add_argument("--environment", default=None, help="Optional environment.json")
+    bun.add_argument("--output", default=None, help="Output bundle path")
+    bun.set_defaults(func=cmd_bundle)
+
+    vbun = sub.add_parser("verify-bundle", help="Verify .aihwbench bundle integrity")
+    vbun.add_argument("bundle")
+    vbun.set_defaults(func=cmd_verify_bundle)
+
+    ediff = sub.add_parser("env-diff", help="Diff two result environments")
+    ediff.add_argument("result_a")
+    ediff.add_argument("result_b")
+    ediff.set_defaults(func=cmd_env_diff)
+
+    repro_p = sub.add_parser("reproduce", help="Check reproduction prerequisites")
+    repro_p.add_argument("result")
+    repro_p.add_argument(
+        "--check-environment",
+        action="store_true",
+        help="Compare against this machine's detected system",
+    )
+    repro_p.set_defaults(func=cmd_reproduce)
+
+    rscore = sub.add_parser("repro-score", help="Reproducibility completeness score")
+    rscore.add_argument("result")
+    rscore.set_defaults(func=cmd_repro_score)
+
+    qual = sub.add_parser("quality", help="Data-quality checks (file or directory)")
+    qual.add_argument("path")
+    qual.set_defaults(func=cmd_quality)
+
+    inval = sub.add_parser("invalidate", help="Record an invalidation (history preserved)")
+    inval.add_argument("result")
+    inval.add_argument("--reason", required=True)
+    inval.add_argument("--replacement", default=None, help="Replacement run id")
+    inval.add_argument("--output", default="results/invalidations/invalidation.json")
+    inval.set_defaults(func=cmd_invalidate)
+
+    anom = sub.add_parser("anomalies", help="Flag suspicious results for review")
+    anom.add_argument("--results-dir", default="results/published")
+    anom.add_argument("--metric", default="generation_tokens_per_second")
+    anom.add_argument("--z", type=float, default=3.0)
+    anom.set_defaults(func=cmd_anomalies)
+
+    snap = sub.add_parser("snapshot", help="Versioned dataset snapshot manifest")
+    snap.add_argument("--version", required=True)
+    snap.add_argument("--results-dir", default="results/published")
+    snap.add_argument("--previous", default=None, help="Previous manifest JSON")
+    snap.add_argument("--output", default="results/snapshots/snapshot.json")
+    snap.set_defaults(func=cmd_snapshot)
 
     return parser
 

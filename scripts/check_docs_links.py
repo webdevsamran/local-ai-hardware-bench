@@ -16,7 +16,8 @@ LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 broken: list[str] = []
 checked = 0
 
-targets = [ROOT / "README.md", *sorted((ROOT / "docs").rglob("*.md"))]
+root_mds = sorted(p for p in ROOT.glob("*.md"))
+targets = [ROOT / "README.md", *root_mds, *sorted((ROOT / "docs").rglob("*.md"))]
 for md in targets:
     if not md.is_file():
         continue

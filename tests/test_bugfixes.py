@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import uuid
 from unittest import mock
@@ -86,7 +87,9 @@ def test_linux_physical_cores_count_core_pairs_not_sockets():
 
         info = get_cpu_info()
     assert info["cpu_cores_physical"] == 8
-    assert info["cpu_cores_logical"] >= 8
+    # Logical cores come from the real OS, not the mocked /proc/cpuinfo,
+    # so compare against the actual machine instead of assuming a size.
+    assert info["cpu_cores_logical"] == (os.cpu_count() or 1)
 
 
 def test_uuid_module_still_importable_for_plugins():

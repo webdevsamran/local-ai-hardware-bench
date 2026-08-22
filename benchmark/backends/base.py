@@ -77,6 +77,13 @@ class BenchmarkConfig:
     extra: dict[str, Any] = field(default_factory=dict)
 
 
+def new_run_id(prefix: str) -> str:
+    """Collision-resistant run id: <prefix>-<epoch>-<uuid8>."""
+    import time
+    import uuid
+
+    return f"{prefix}-{int(time.time())}-{uuid.uuid4().hex[:8]}"
+
 def run_command(cmd: list[str], timeout: float = 15.0) -> tuple[int, str]:
     """Run a command, returning (returncode, combined output)."""
     try:

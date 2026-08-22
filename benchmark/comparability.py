@@ -24,6 +24,8 @@ _STRICT = (
     "model.checksum",
     "model.format",
     "model.quantization",
+    "model.revision",
+    "model.tokenizer",
     "runtime.name",
     "runtime.backend",
     "runtime.device",

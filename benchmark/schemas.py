@@ -161,6 +161,9 @@ def validate_result(data: Any) -> list[str]:
     elif "run_id" in data and not _RUN_ID_RE.match(data["run_id"]):
         errors.append("run_id: must match [A-Za-z0-9][A-Za-z0-9._-]{0,127} (no spaces or slashes)")
 
+    if "protocol_version" in data and not isinstance(data["protocol_version"], str):
+        errors.append("protocol_version: expected string")
+
     if "timestamp" in data and not isinstance(data["timestamp"], str):
         errors.append("timestamp: expected string")
     elif "timestamp" in data and not _TIMESTAMP_RE.match(data["timestamp"]):

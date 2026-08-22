@@ -26,6 +26,7 @@ from .base import (
     BackendInfo,
     BenchmarkConfig,
     RuntimeStatus,
+    new_run_id,
     run_command,
     which,
 )
@@ -240,7 +241,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "schema_version": SCHEMA_VERSION,
-        "run_id": f"llamacpp-{int(time.time())}",
+        "run_id": new_run_id("llamacpp"),
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "system": system,
         "runtime": {

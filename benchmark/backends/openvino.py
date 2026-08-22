@@ -14,10 +14,20 @@ import time
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-
 from ..telemetry import TelemetrySampler
 from .base import BackendError, BackendInfo, BenchmarkConfig, RuntimeStatus
+
+
+def _numpy():
+    """Import numpy lazily; it is only needed when actually benchmarking."""
+    try:
+        import numpy
+
+        return numpy
+    except ImportError as exc:
+        raise BackendError(
+            "numpy is required to run OpenVINO benchmarks: pip install numpy"
+        ) from exc
 
 
 def detect() -> BackendInfo:
@@ -87,6 +97,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
 
     # Build deterministic zero inputs from the compiled model's inputs.
     # Dynamic dimensions are pinned to 1 (documented in reproducibility).
+    np = _numpy()
     feed: dict[Any, Any] = {}
     for input_node in compiled.inputs:
         pshape = input_node.get_partial_shape()

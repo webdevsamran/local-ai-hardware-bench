@@ -6,6 +6,7 @@ for a derived metric is missing, the derived metric is None.
 
 from __future__ import annotations
 
+import math
 import statistics
 from collections.abc import Sequence
 from typing import Any
@@ -91,6 +92,23 @@ def aggregate_iteration_metrics(iterations: list[dict[str, Any]]) -> dict[str, A
     def lo(values: Sequence[float]) -> float | None:
         return round(min(values), 2) if values else None
 
+    def cv(values: Sequence[float]) -> float | None:
+        """Coefficient of variation (stddev/mean); None if undefined."""
+        if len(values) < 2:
+            return None
+        mu = sum(values) / len(values)
+        if mu == 0:
+            return None
+        return round(statistics.pstdev(values) / abs(mu), 4)
+
+    def ci95(values: Sequence[float]) -> list[float] | None:
+        """95% CI of the mean (normal approximation; n>=2)."""
+        if len(values) < 2:
+            return None
+        mu = sum(values) / len(values)
+        se = statistics.pstdev(values) / math.sqrt(len(values))
+        return [round(mu - 1.96 * se, 2), round(mu + 1.96 * se, 2)]
+
     def hi(values: Sequence[float]) -> float | None:
         return round(max(values), 2) if values else None
 
@@ -99,6 +117,18 @@ def aggregate_iteration_metrics(iterations: list[dict[str, Any]]) -> dict[str, A
         return round(v, 2) if v is not None else None
 
     gen_tps_mean = mean(gen_tps)
+    eval_seconds_list = [float(v) for it in iterations if (v := it.get("eval_seconds")) is not None]
+    completion_tokens_list = [
+        float(v) for it in iterations if (v := it.get("completion_tokens")) is not None
+    ]
+    mean_eval_s = (
+        round(sum(eval_seconds_list) / len(eval_seconds_list), 6) if eval_seconds_list else None
+    )
+    mean_tokens = (
+        round(sum(completion_tokens_list) / len(completion_tokens_list), 3)
+        if completion_tokens_list
+        else None
+    )
     power_mean = mean(
         [float(v) for it in iterations if (v := it.get("average_power_watts")) is not None]
     )
@@ -127,6 +157,15 @@ def aggregate_iteration_metrics(iterations: list[dict[str, Any]]) -> dict[str, A
         "max_temperature_c": None,
         "average_power_watts": power_mean,
         "performance_per_watt": performance_per_watt(gen_tps_mean, power_mean),
+        "generation_tps_cv": cv(gen_tps),
+        "latency_ci95_ms": ci95(latencies),
+        "gen_tps_ci95": ci95(gen_tps),
+        "itl_mean_ms": (
+            round(1000.0 * mean_eval_s / mean_tokens, 3) if mean_eval_s and mean_tokens else None
+        ),
+        "energy_per_token_joules": (
+            round(power_mean / gen_tps_mean, 4) if power_mean and gen_tps_mean else None
+        ),
         "coverage": {
             "iterations": len(iterations),
             "ttft_measured": len(ttfts),

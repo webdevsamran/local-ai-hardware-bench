@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: >-
+  If you use this benchmark framework or its published results, please cite it.
+title: Open Local AI Hardware Benchmark & Compatibility Initiative
+type: software
+authors:
+  - name: Open Local AI Hardware Benchmark contributors
+repository-code: "https://github.com/webdevsamran/local-ai-hardware-bench"
+url: "https://github.com/webdevsamran/local-ai-hardware-bench"
+abstract: >-
+  A vendor-neutral, reproducible framework for evaluating local AI runtimes
+  across CPUs, GPUs, NPUs, AI PCs, workstations, mini PCs, and edge
+  accelerators. Results include full environment capture and are validated
+  against a versioned schema.
+keywords:
+  - benchmark
+  - llm
+  - inference
+  - npu
+  - gpu
+  - edge-ai
+license: Apache-2.0
+version: 0.1.0
+date-released: "2026-08-22"

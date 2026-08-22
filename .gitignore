@@ -30,3 +30,6 @@ Thumbs.db
 # Secrets
 .env
 *.key
+
+# Runtime compiler artifacts
+*.errors.txt

@@ -59,7 +59,9 @@ def aggregate_iteration_metrics(iterations: list[dict[str, Any]]) -> dict[str, A
     Missing inputs produce None for the corresponding output metric.
     """
     ttfts = [it["ttft_ms"] for it in iterations if it.get("ttft_ms") is not None]
-    latencies = [it["total_latency_ms"] for it in iterations if it.get("total_latency_ms") is not None]
+    latencies = [
+        it["total_latency_ms"] for it in iterations if it.get("total_latency_ms") is not None
+    ]
     loads = [it["load_time_ms"] for it in iterations if it.get("load_time_ms") is not None]
 
     prompt_tps_values = [
@@ -67,8 +69,7 @@ def aggregate_iteration_metrics(iterations: list[dict[str, Any]]) -> dict[str, A
         for it in iterations
     ]
     gen_tps_values = [
-        tokens_per_second(it.get("completion_tokens"), it.get("eval_seconds"))
-        for it in iterations
+        tokens_per_second(it.get("completion_tokens"), it.get("eval_seconds")) for it in iterations
     ]
     prompt_tps = [v for v in prompt_tps_values if v is not None]
     gen_tps = [v for v in gen_tps_values if v is not None]
@@ -77,7 +78,9 @@ def aggregate_iteration_metrics(iterations: list[dict[str, Any]]) -> dict[str, A
         return round(sum(values) / len(values), 2) if values else None
 
     gen_tps_mean = mean(gen_tps)
-    power_mean = mean([float(v) for it in iterations if (v := it.get("average_power_watts")) is not None])
+    power_mean = mean(
+        [float(v) for it in iterations if (v := it.get("average_power_watts")) is not None]
+    )
 
     return {
         "load_time_ms": mean([float(v) for v in loads]) if loads else None,

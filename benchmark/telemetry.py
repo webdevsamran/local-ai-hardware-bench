@@ -23,8 +23,12 @@ def _nvidia_smi_sample() -> dict[str, float | None] | None:
     ]
     try:
         proc = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=5.0,
-            encoding="utf-8", errors="replace",
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=5.0,
+            encoding="utf-8",
+            errors="replace",
         )
         if proc.returncode != 0:
             return None

@@ -47,12 +47,22 @@ def test_performance_per_watt():
 
 def test_aggregate_iterations():
     iterations = [
-        {"ttft_ms": 10.0, "total_latency_ms": 100.0,
-         "completion_tokens": 100, "eval_seconds": 2.0,
-         "prompt_tokens": 20, "prompt_eval_seconds": 0.1},
-        {"ttft_ms": 20.0, "total_latency_ms": 200.0,
-         "completion_tokens": 100, "eval_seconds": 4.0,
-         "prompt_tokens": 20, "prompt_eval_seconds": 0.1},
+        {
+            "ttft_ms": 10.0,
+            "total_latency_ms": 100.0,
+            "completion_tokens": 100,
+            "eval_seconds": 2.0,
+            "prompt_tokens": 20,
+            "prompt_eval_seconds": 0.1,
+        },
+        {
+            "ttft_ms": 20.0,
+            "total_latency_ms": 200.0,
+            "completion_tokens": 100,
+            "eval_seconds": 4.0,
+            "prompt_tokens": 20,
+            "prompt_eval_seconds": 0.1,
+        },
     ]
     metrics = aggregate_iteration_metrics(iterations)
     assert metrics["ttft_ms"] == 15.0

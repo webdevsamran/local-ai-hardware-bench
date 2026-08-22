@@ -16,17 +16,23 @@ def detect() -> BackendInfo:
     """Detect Windows ML availability by OS version."""
     if platform.system() != "Windows":
         return BackendInfo(
-            "windows_ml", RuntimeStatus.UNSUPPORTED_PLATFORM, None,
+            "windows_ml",
+            RuntimeStatus.UNSUPPORTED_PLATFORM,
+            None,
             "Windows ML is only available on Windows",
         )
     build = int(platform.version().split(".")[2]) if platform.version().count(".") >= 2 else 0
     if build >= 17763:  # 1809 introduced Windows ML
         return BackendInfo(
-            "windows_ml", RuntimeStatus.CONFIGURATION_REQUIRED, f"build {build}",
+            "windows_ml",
+            RuntimeStatus.CONFIGURATION_REQUIRED,
+            f"build {build}",
             "OS component present; requires an ONNX model pipeline to benchmark",
         )
     return BackendInfo(
-        "windows_ml", RuntimeStatus.NOT_AVAILABLE, f"build {build}",
+        "windows_ml",
+        RuntimeStatus.NOT_AVAILABLE,
+        f"build {build}",
         "Windows 10 1809+ required",
     )
 

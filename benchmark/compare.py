@@ -55,13 +55,15 @@ def compare_results(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
         if va is not None and vb is not None and va != 0:
             delta = round(vb - va, 3)
             delta_pct = round((vb - va) / abs(va) * 100.0, 1)
-        rows.append({
-            "metric": key,
-            "a": va,
-            "b": vb,
-            "delta_b_minus_a": delta,
-            "delta_percent": delta_pct,
-        })
+        rows.append(
+            {
+                "metric": key,
+                "a": va,
+                "b": vb,
+                "delta_b_minus_a": delta,
+                "delta_percent": delta_pct,
+            }
+        )
     return {
         "a_run_id": a.get("run_id"),
         "b_run_id": b.get("run_id"),

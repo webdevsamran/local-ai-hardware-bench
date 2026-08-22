@@ -6,10 +6,10 @@ from benchmark.system_info import detect_system
 
 # Patterns that must never appear in sanitized output.
 _FORBIDDEN_PATTERNS = [
-    r"[0-9A-F]{2}(:[0-9A-F]{2}){5}",          # MAC addresses
-    r"C:\\Users\\[a-zA-Z]",                    # home directory paths
-    r"/home/[a-zA-Z]",                         # unix home paths
-    r"(?i)serial",                             # serial numbers
+    r"[0-9A-F]{2}(:[0-9A-F]{2}){5}",  # MAC addresses
+    r"C:\\Users\\[a-zA-Z]",  # home directory paths
+    r"/home/[a-zA-Z]",  # unix home paths
+    r"(?i)serial",  # serial numbers
 ]
 
 

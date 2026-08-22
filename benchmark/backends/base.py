@@ -51,6 +51,16 @@ class BackendInfo:
 
 
 @dataclass
+class BenchmarkMetadata:
+    """Declarative backend metadata for the plugin registry."""
+
+    name: str
+    description: str
+    api_version: int = 1
+    capabilities: tuple[str, ...] = ()
+
+
+@dataclass
 class BenchmarkConfig:
     """Parameters for one benchmark run. All values are recorded in the
     result document's reproducibility block."""

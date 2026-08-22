@@ -1,0 +1,14 @@
+{
+  "name": "efficiency",
+  "description": "Efficiency focus: performance-per-watt and energy-per-token on power-sampled platforms.",
+  "workload": {
+    "prompt": "Explain what a token is in large language models, in two sentences.",
+    "max_tokens": 128,
+    "temperature": 0.0,
+    "seed": 42,
+    "context_length": 2048,
+    "warmup_runs": 2,
+    "iterations": 12
+  },
+  "model_tier": "smoke"
+}

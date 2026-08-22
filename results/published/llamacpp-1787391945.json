@@ -54,7 +54,8 @@
     "iterations": 5,
     "command": "aihwbench benchmark --runtime llama.cpp --model-path E:\\llama.cpp\\qwen2.5-0.5b-instruct-q4_k_m.gguf",
     "python_version": "3.14.6",
-    "power_profile": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)"
+    "power_profile": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)",
+    "trust": "VERIFIED"
   },
   "iterations": [
     {

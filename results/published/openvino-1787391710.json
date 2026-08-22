@@ -56,7 +56,8 @@
     "command": "aihwbench benchmark --runtime openvino --model-path E:\\models\\mobilenetv2-12.onnx --device gpu",
     "workload_type": "graph-inference",
     "python_version": "3.14.6",
-    "power_profile": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)"
+    "power_profile": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)",
+    "trust": "VERIFIED"
   },
   "iterations": [
     {

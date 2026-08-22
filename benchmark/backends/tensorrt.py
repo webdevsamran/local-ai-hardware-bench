@@ -37,7 +37,7 @@ def detect() -> BackendInfo:
             "trtexec found; requires per-GPU engine builds to benchmark",
         )
     try:
-        import tensorrt  # type: ignore[import-untyped]
+        import tensorrt  # type: ignore[import-not-found,import-untyped]
 
         return BackendInfo(
             "tensorrt",

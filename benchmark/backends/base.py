@@ -84,6 +84,7 @@ def new_run_id(prefix: str) -> str:
 
     return f"{prefix}-{int(time.time())}-{uuid.uuid4().hex[:8]}"
 
+
 def run_command(cmd: list[str], timeout: float = 15.0) -> tuple[int, str]:
     """Run a command, returning (returncode, combined output)."""
     try:

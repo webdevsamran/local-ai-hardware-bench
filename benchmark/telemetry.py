@@ -56,7 +56,7 @@ def _nvidia_smi_sample() -> dict[str, float | None] | None:
 def _system_ram_mb() -> float | None:
     """Available-system view: used RAM in MB. Uses psutil when present."""
     try:
-        import psutil
+        import psutil  # type: ignore[import-untyped]
 
         vm = psutil.virtual_memory()
         return vm.total / (1024 * 1024) - vm.available / (1024 * 1024)
@@ -132,11 +132,11 @@ class TelemetrySampler:
             }
 
         def peak(key: str) -> float | None:
-            values = [s[key] for s in samples if s.get(key) is not None]
+            values = [float(v) for s in samples if (v := s.get(key)) is not None]
             return max(values) if values else None
 
         def avg(key: str) -> float | None:
-            values = [s[key] for s in samples if s.get(key) is not None]
+            values = [float(v) for s in samples if (v := s.get(key)) is not None]
             return round(sum(values) / len(values), 2) if values else None
 
         return {

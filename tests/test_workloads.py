@@ -86,7 +86,9 @@ def test_multi_turn_prompts_grow_in_context():
     prompts = build_multi_turn_prompts(workload.turns)
     assert len(prompts) == 8
     lengths = [len(p) for p in prompts]
-    assert all(b > a for a, b in zip(lengths, lengths[1:])), "context must grow per turn"
+    assert all(b > a for a, b in zip(lengths, lengths[1:], strict=False)), (
+        "context must grow per turn"
+    )
 
 
 def test_workload_as_dict_round_trip():

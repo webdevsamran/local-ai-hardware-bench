@@ -51,8 +51,15 @@ def cmd_runtimes(_args: argparse.Namespace) -> int:
 
 
 def cmd_benchmark(args: argparse.Namespace) -> int:
+    if args.runtime == "ollama" and not args.model:
+        print("ERROR: --model is required for the ollama runtime", file=sys.stderr)
+        return 2
+    if args.runtime in ("llama.cpp", "onnxruntime", "openvino") and not args.model_path:
+        print(f"ERROR: --model-path is required for the {args.runtime} runtime",
+              file=sys.stderr)
+        return 2
     config = BenchmarkConfig(
-        model=args.model,
+        model=args.model or "",
         max_tokens=args.max_tokens,
         warmup_runs=args.warmup,
         iterations=args.iterations,
@@ -121,7 +128,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     bench = sub.add_parser("benchmark", help="Run a real benchmark")
     bench.add_argument("--runtime", required=True, choices=sorted(BACKENDS))
-    bench.add_argument("--model", required=True, help="Model identifier (e.g. ollama tag)")
+    bench.add_argument("--model", default=None, help="Model identifier (e.g. ollama tag)")
     bench.add_argument("--model-path", default=None, help="Local model file path (llama.cpp)")
     bench.add_argument("--max-tokens", type=int, default=128)
     bench.add_argument("--warmup", type=int, default=2)

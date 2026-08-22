@@ -3,6 +3,25 @@
 All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
+## [Unreleased]
+
+### Added
+- llama.cpp backend executed end-to-end on CUDA (b10578 prebuilt build):
+  TTFT 14.52 ms, 360.87 tok/s generation, 13.49 tok/s/W; result published.
+- ONNX Runtime real benchmarking backend: model load time, latency
+  percentiles, inferences/s throughput, telemetry; execution-provider
+  mismatch now fails loudly instead of silently falling back.
+- OpenVINO real benchmarking backend with CPU and GPU device support;
+  dynamic input shapes pinned deterministically.
+- Five new validated published results: llama.cpp CUDA, ONNX Runtime CPU,
+  ONNX Runtime DirectML, OpenVINO CPU, OpenVINO GPU.
+
+### Changed
+- CLI `--model` is now optional; per-runtime argument validation
+  (`--model` for ollama, `--model-path` for file-based runtimes).
+- README runtime table and compatibility matrix updated to reflect six
+  genuinely tested runtime/device combinations.
+
 ## [0.1.0] - 2026-08-22
 
 ### Added

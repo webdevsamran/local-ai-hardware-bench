@@ -42,21 +42,25 @@ runtime × platform matrix, including what is *not* tested yet.
 
 ## Supported runtimes
 
+"Tested" means a real benchmark executed on our reference machine and a
+validated result file exists in [`results/published/`](results/published).
+
 | Runtime | Detection | Benchmarking |
 | --- | --- | --- |
-| Ollama | Yes | **Yes (tested)** |
-| llama.cpp (`llama-server`) | Yes | Yes (implemented) |
-| ONNX Runtime | Yes | Planned (v0.3) |
-| OpenVINO / GenAI | Yes | Planned (v0.4) |
-| AMD ROCm / Ryzen AI / Lemonade | Yes | Planned (v0.5) |
-| NVIDIA CUDA / TensorRT | Yes | Planned (v0.6) |
-| Qualcomm QNN | Yes | Planned (v0.7) |
-| Hailo HailoRT | Yes | Planned (v0.8) |
-| Windows ML / DirectML | Yes | Planned |
+| Ollama (CUDA) | Yes | **Yes — tested** |
+| llama.cpp (`llama-server`, CUDA) | Yes | **Yes — tested** |
+| ONNX Runtime (CPU + DirectML EPs) | Yes | **Yes — tested** |
+| OpenVINO (CPU + GPU devices) | Yes | **Yes — tested** |
+| NVIDIA CUDA | Yes | **Yes — tested** (via Ollama/llama.cpp CUDA builds) |
+| NVIDIA TensorRT | Yes | Not yet (needs per-GPU engine builds; see ROADMAP v0.6) |
+| AMD ROCm / Ryzen AI / Lemonade | Yes | Hardware needed (no AMD system available) |
+| Qualcomm QNN | Yes | Hardware needed (no Snapdragon NPU available) |
+| Hailo HailoRT | Yes | Hardware needed (no Hailo device available) |
+| Windows ML / DirectML | Yes | **Yes — tested** (ONNX Runtime DML EP) |
 
-Unsupported runtimes report an explicit status
-(`NOT_INSTALLED`, `HARDWARE_REQUIRED`, `CONFIGURATION_REQUIRED`,
-`UNSUPPORTED_PLATFORM`) instead of pretending.
+Runtimes that cannot run on current hardware report an explicit
+`HARDWARE_REQUIRED` status instead of pretending — we will not mark them
+"Yes" until real benchmarks execute on real hardware.
 
 ## Installation
 

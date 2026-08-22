@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.0",
+  "run_id": "llamacpp-1787391945",
+  "timestamp": "2026-08-22T09:45:45Z",
+  "system": {
+    "os": "Windows 11",
+    "os_version": "10.0.26200",
+    "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+    "cpu_cores_physical": 14,
+    "cpu_cores_logical": 20,
+    "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+    "gpu_vram_mb": 16384,
+    "gpu_driver_version": "610.74",
+    "npu": null,
+    "ram_gb": 31.7,
+    "platform_name": "Predator PT516-52s"
+  },
+  "runtime": {
+    "name": "llama.cpp",
+    "version": "0.2.0-dev (build 10578, commit 369e1cd61)",
+    "backend": "llama-server",
+    "device": "cuda"
+  },
+  "model": {
+    "name": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+    "format": "gguf",
+    "quantization": null,
+    "parameters": null,
+    "checksum": "sha256:c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515"
+  },
+  "metrics": {
+    "load_time_ms": null,
+    "ttft_ms": 14.52,
+    "prompt_tokens_per_second": null,
+    "generation_tokens_per_second": 360.87,
+    "total_latency_ms": 101.75,
+    "p50_latency_ms": 102.28,
+    "p95_latency_ms": 103.26,
+    "peak_ram_mb": 19806.33203125,
+    "peak_vram_mb": 1061.0,
+    "avg_cpu_util_percent": 38.6,
+    "avg_gpu_util_percent": 24.0,
+    "max_temperature_c": 59.0,
+    "average_power_watts": 26.76,
+    "performance_per_watt": 13.48542600896861
+  },
+  "reproducibility": {
+    "prompt": "Explain what a token is in large language models, in two sentences.",
+    "max_tokens": 128,
+    "temperature": 0.0,
+    "seed": 42,
+    "context_length": 2048,
+    "warmup_runs": 2,
+    "iterations": 5,
+    "command": "aihwbench benchmark --runtime llama.cpp --model-path E:\\llama.cpp\\qwen2.5-0.5b-instruct-q4_k_m.gguf",
+    "python_version": "3.14.6",
+    "power_profile": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)"
+  },
+  "iterations": [
+    {
+      "ttft_ms": 12.91,
+      "total_latency_ms": 102.28,
+      "completion_tokens": 29,
+      "prompt_tokens": 44,
+      "eval_seconds": 0.0820092000067234,
+      "prompt_eval_seconds": null
+    },
+    {
+      "ttft_ms": 14.06,
+      "total_latency_ms": 99.21,
+      "completion_tokens": 29,
+      "prompt_tokens": 44,
+      "eval_seconds": 0.07888360001379624,
+      "prompt_eval_seconds": null
+    },
+    {
+      "ttft_ms": 12.41,
+      "total_latency_ms": 101.49,
+      "completion_tokens": 29,
+      "prompt_tokens": 44,
+      "eval_seconds": 0.08295599999837577,
+      "prompt_eval_seconds": null
+    },
+    {
+      "ttft_ms": 16.44,
+      "total_latency_ms": 102.28,
+      "completion_tokens": 29,
+      "prompt_tokens": 44,
+      "eval_seconds": 0.07778819999657571,
+      "prompt_eval_seconds": null
+    },
+    {
+      "ttft_ms": 16.78,
+      "total_latency_ms": 103.5,
+      "completion_tokens": 29,
+      "prompt_tokens": 44,
+      "eval_seconds": 0.08040179999079555,
+      "prompt_eval_seconds": null
+    }
+  ],
+  "git_commit": "6cec992520ccbbb92defb40e6677604483e4ca80"
+}

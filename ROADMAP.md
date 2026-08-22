@@ -15,18 +15,19 @@ when its deliverables are genuinely tested — not before.
 - [x] First published result set (Ollama/CUDA on RTX 3080 Ti Laptop)
 
 ## v0.2 — Standardized llama.cpp/Ollama benchmarking
-- llama.cpp timing-log parsing (recover generation tok/s)
-- Model load-time measurement for Ollama (server log parsing)
-- Sustained-load profile (longer iterations, thermal tracking)
-- Published standard-tier results across available runtimes
+- [x] llama.cpp generation tok/s via measured streaming duration
+- [ ] Model load-time measurement for Ollama (server log parsing)
+- [ ] Sustained-load profile (longer iterations, thermal tracking)
+- [x] Published smoke-tier results across available runtimes
 
 ## v0.3 — ONNX Runtime
-- ONNX model pipeline (LLM + vision workloads)
-- CPU / DirectML / CUDA EP comparison on current machine
+- [x] ONNX graph-inference pipeline (load time, latency percentiles, throughput)
+- [x] CPU + DirectML EP results on current machine (CUDA EP blocked on cuDNN/CUDA toolkit — documented)
 
 ## v0.4 — Intel / OpenVINO
-- OpenVINO GenAI backend
-- NPU telemetry hooks (needs Core Ultra hardware)
+- [x] OpenVINO backend: CPU + GPU device results published
+- [ ] OpenVINO GenAI LLM pipeline
+- [ ] NPU telemetry hooks (needs Core Ultra hardware)
 
 ## v0.5 — AMD / ROCm / Ryzen AI / Lemonade
 - ROCm backend (Linux)

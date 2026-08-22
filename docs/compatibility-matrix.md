@@ -11,24 +11,26 @@ Statuses:
 
 Every "Tested" cell links to a committed result file with a reproducibility block.
 
-## Current machine
+## Current machine (Acer Predator PT516-52s)
 
 | Runtime | Status | Evidence |
 | --- | --- | --- |
-| Ollama (CUDA, RTX 3080 Ti) | **Tested** | `results/published/` |
-| llama.cpp (`llama-server`) | Supported (implemented, not yet executed) | — |
-| ONNX Runtime | Planned (v0.3) | — |
-| OpenVINO | Planned (v0.4) | — |
+| Ollama (CUDA, RTX 3080 Ti) | **Tested** | `results/published/ollama-1787388930.json` |
+| llama.cpp `llama-server` (CUDA) | **Tested** | `results/published/llamacpp-1787391945.json` |
+| ONNX Runtime (CPU EP) | **Tested** | `results/published/onnxruntime-1787391388.json` |
+| ONNX Runtime (DirectML EP) | **Tested** | `results/published/onnxruntime-1787391455.json` |
+| OpenVINO (CPU device) | **Tested** | `results/published/openvino-1787391625.json` |
+| OpenVINO (GPU device) | **Tested** | `results/published/openvino-1787391710.json` |
 | ROCm | Hardware Needed (no AMD GPU; Windows HIP SDK only) | — |
 | QNN | Hardware Needed (no Snapdragon NPU) | — |
-| TensorRT | Planned (v0.6); CUDA driver present | — |
+| TensorRT | Not tested (needs per-GPU engine builds; CUDA toolkit absent) | — |
 | HailoRT | Hardware Needed (no Hailo device) | — |
 
 ## Platform × runtime matrix
 
 | Platform | llama.cpp | Ollama | ONNX | OpenVINO | ROCm | QNN | TensorRT | HailoRT |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **This machine** (i9-12900H + RTX 3080 Ti Laptop) | Supported | **Tested** | Planned | Planned | Hardware Needed | Hardware Needed | Planned | Hardware Needed |
+| **This machine** (i9-12900H + RTX 3080 Ti Laptop) | **Tested** | **Tested** | **Tested** (CPU+DML) | **Tested** (CPU+GPU) | Hardware Needed | Hardware Needed | Not tested | Hardware Needed |
 | AMD Ryzen AI / AI Max | Hardware Needed | Hardware Needed | Hardware Needed | Hardware Needed | Hardware Needed | n/a | n/a | n/a |
 | Intel Core Ultra (NPU) | Hardware Needed | Hardware Needed | Hardware Needed | Hardware Needed | n/a | n/a | n/a | n/a |
 | Snapdragon X (ARM64) | Hardware Needed | Hardware Needed | Hardware Needed | n/a | n/a | Hardware Needed | n/a | n/a |

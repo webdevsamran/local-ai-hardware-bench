@@ -5,6 +5,83 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Added — top-50 platform transformation (phases 1–7)
+- Collision-resistant UUID-backed run IDs with regression tests (#1).
+- Corrected Linux physical-core counting and richer CPU topology
+  detection with synthetic fixture tests (#2).
+- Typed workload engine and registry under benchmark/workloads/ with
+  id/version/input-output profiles/capability requirements (#3) and the
+  aihwbench.workloads entry-point plugin API (#4).
+- Parameter sweep engine (aihwbench sweep) producing structured JSON+CSV
+  matrices (#5); declarative experiment manifests in JSON/TOML/YAML via
+  aihwbench run (#6).
+- Load generator (benchmark/loadgen/) with constant-rate, closed-loop,
+  Poisson, Gamma and burst arrivals, deterministic seeds, scheduler,
+  workers and recorder (#7).
+- Capacity ladder (aihwbench capacity): req/s, throughput, p95/p99
+  latency, TTFT, error rate, sustainable concurrency (#8).
+- Advanced streaming metrics: TPOT, ITL, time-to-second-token,
+  inter-chunk latency, prefill latency, decode duration, queue latency
+  where measurable (#9).
+- Expanded statistics: median, p50-p99.9, min/max, stddev, coefficient of
+  variation, optional bootstrap CIs that refuse to fabricate confidence
+  from too few samples (#10).
+- Prefill/decode separated workloads and reporting (#11), standardized
+  ISL/OSL length profiles (#12), weighted mixed traffic distributions
+  (#13), growing-context multi-turn workloads (#14), deterministic
+  agentic tool-call benchmarks (#15).
+- Accuracy/evaluation framework with evaluator abstractions and small
+  redistributable datasets (#16) plus the aihwbench.evaluators plugin API
+  (#17); performance-quality Pareto frontier without opaque composite
+  scores (#18).
+- Quantization comparison (aihwbench quantization) across speed, TTFT,
+  memory, power and optional quality (#19); model-fit estimator
+  (aihwbench fit) clearly labeled as estimate vs fact (#20);
+  recommendation engine with evidence and uncertainty (#21); bottleneck
+  analyzer with explicit reasoning rules (#22); thermal stability
+  analysis (peak vs steady-state, time-to-throttle) (#23).
+- Energy metrics (joules/request, joules/token) with telemetry source and
+  measurement tier where hardware supports it (#24); optional idle
+  baseline power separating gross vs incremental power (#25); user-
+  supplied cost/TCO analysis — never scraped prices (#26).
+- Normalized hardware identifiers/aliases without PII (#27); device
+  topology detection (PCIe, NUMA, instruction sets) (#28); multi-GPU
+  representation with per-device telemetry (#29); NUMA-aware metadata
+  (#30); runtime showdown comparisons (#31); runtime/driver regression
+  history tracking (#32).
+- env-diff (#33), reproduce prerequisite checks (#34), transparent
+  reproducibility completeness score explicitly not a validity claim
+  (#35), portable .aihwbench bundles with SHA-256 integrity (#36),
+  provenance hashing + tamper verification (#38), thin cosign sign/verify
+  interfaces that report unavailability honestly (#39).
+- schema_version/protocol_version/workload_version fields with migration
+  machinery preserving readers for published schema 1.0 results (#40);
+  versioned dataset snapshot manifests (#41); invalidation records that
+  preserve history with reasons and replacement references (#42);
+  machine-readable data-quality checks (#43); z-score anomaly flags
+  requesting manual review, never asserting fraud (#44).
+- Public Python SDK (benchmark/sdk.py): BenchmarkResult, SystemInfo,
+  RuntimeInfo, ModelInfo, MetricSet, Workload, BenchmarkRunner,
+  RegressionReport (#46). Exporter plugin architecture with
+  aihwbench.exporters entry points; JSON/CSV/Markdown/SQLite built-ins;
+  optional Parquet behind an extra (#47). Reusable benchmark-validation
+  GitHub workflow with machine-readable verdicts (#48). self-test command
+  measuring timer resolution, telemetry availability, background load,
+  battery vs AC, power profile, thermal state, runtime readiness (#49).
+  Auto-tuner (aihwbench tune) identifying fastest/most-efficient/
+  lowest-memory/balanced Pareto configurations (#50).
+- Production React + TypeScript dashboard under web/: 20 routes
+  (leaderboard, hardware/runtime/model/result explorers and details,
+  compare, dataset explorer, methodology, compatibility matrix, docs,
+  community, hardware-needed, planned enterprise/certification pages,
+  about with creator attribution, 404); dependency-free SVG charts;
+  accessible sortable/paginated tables; URL-shareable filters; trust
+  badges; light/dark themes; skeleton/empty/error states; downloadable
+  result JSON. Deterministic static dataset generation
+  (scripts/generate_frontend_data.py) with CI freshness enforcement.
+- CI additions: frontend lint/test/build job, generated-data freshness
+  job, Pages deployment rebuilt for the Vite bundle.
+
 ### Added
 - Formal JSON Schema (schemas/result_schema.schema.json, draft 2020-12)
   alongside the dependency-free semantic validator.

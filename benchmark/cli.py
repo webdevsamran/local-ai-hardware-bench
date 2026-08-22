@@ -8,6 +8,12 @@ import sys
 from pathlib import Path
 
 from . import __version__
+from .analysis import (
+    analyze_bottlenecks,
+    estimate_model_fit,
+    recommend_configuration,
+)
+from .analysis.tune import run_tuner
 from .backends import (
     BACKENDS,
     BackendError,
@@ -17,6 +23,7 @@ from .backends import (
 )
 from .capacity import CapacityConfig, run_capacity_ladder
 from .compare import NOT_COMPARABLE, compare_results, render_comparison
+from .evaluators import list_evaluators, load_dataset, run_evaluation
 from .exit_codes import (
     EXIT_CONFIGURATION_ERROR,
     EXIT_NOT_COMPARABLE,
@@ -27,6 +34,7 @@ from .exit_codes import (
 )
 from .export import export_dataset
 from .manifests import ExperimentError, load_experiment
+from .quantization import compare_quantizations
 from .regression import RegressionThresholds, evaluate_regression
 from .report import render_report
 from .runner import run_benchmark, save_result
@@ -382,6 +390,125 @@ def cmd_capacity(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _load_results_dir(results_dir: Path) -> list[dict]:
+    results = []
+    for path in sorted(results_dir.glob("*.json")):
+        try:
+            results.append(json.loads(path.read_text(encoding="utf-8")))
+        except (OSError, json.JSONDecodeError):
+            continue
+    return results
+
+
+def cmd_analyze(args: argparse.Namespace) -> int:
+    """Bottleneck analysis from a result's measured telemetry (#22)."""
+    try:
+        result = load_result(Path(args.result))
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION_ERROR
+    findings = analyze_bottlenecks(result.get("metrics", {}), result.get("system", {}))
+    _json({"run_id": result.get("run_id"), "findings": findings})
+    return EXIT_OK
+
+
+def cmd_fit(args: argparse.Namespace) -> int:
+    """Estimate whether a model fits in available memory (#20)."""
+    system = detect_system()
+    ram_gb = system.get("ram_gb")
+    report = estimate_model_fit(
+        parameters_text=args.parameters,
+        quantization=args.quantization,
+        available_vram_mb=system.get("gpu_vram_mb"),
+        available_ram_mb=ram_gb * 1000.0 if isinstance(ram_gb, (int, float)) else None,
+        context_tokens=args.context_tokens,
+    )
+    _json(report)
+    return EXIT_OK
+
+
+def cmd_recommend(args: argparse.Namespace) -> int:
+    """Recommend a configuration for this hardware (#21)."""
+    system = detect_system()
+    measured = _load_results_dir(Path(args.results_dir)) if args.results_dir else []
+    _json(recommend_configuration(system, measured))
+    return EXIT_OK
+
+
+def cmd_tune(args: argparse.Namespace) -> int:
+    """Auto-tune a safe configuration space (#50)."""
+    axes: dict[str, tuple] = {}
+    if args.threads_list:
+        axes["threads"] = tuple(int(v) for v in args.threads_list.split(","))
+    if args.batch_list:
+        axes["batch_size"] = tuple(int(v) for v in args.batch_list.split(","))
+    if args.context_list:
+        axes["context_length"] = tuple(int(v) for v in args.context_list.split(","))
+    if args.gpu_layers_list:
+        axes["gpu_layers"] = tuple(int(v) for v in args.gpu_layers_list.split(","))
+    if args.concurrency_list:
+        axes["concurrency"] = tuple(int(v) for v in args.concurrency_list.split(","))
+
+    def run_fn(point: dict) -> dict:
+        config = BenchmarkConfig(
+            model=args.model or "",
+            max_tokens=args.max_tokens,
+            iterations=args.iterations,
+            context_length=point.get("context_length", 2048),
+            device=args.device,
+            extra={"model_path": args.model_path, **point},
+        )
+        return run_benchmark(args.runtime, config)
+
+    try:
+        resolve(args.runtime)
+        report = run_tuner(axes, run_fn)
+    except BackendError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_USAGE_ERROR
+    out_dir = Path(args.output)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"tune-{args.runtime}.json"
+    out_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    print(f"Tuning report saved to: {out_path}")
+    _json({k: v for k, v in report.items() if k != "balanced_frontier"})
+    return EXIT_OK
+
+
+def cmd_evaluate(args: argparse.Namespace) -> int:
+    """Run a quality evaluator over a JSONL responses file (#16)."""
+    try:
+        dataset = load_dataset(Path(args.dataset))
+    except (OSError, ValueError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_USAGE_ERROR
+    responses = [str(item.get("response", "")) for item in dataset]
+    expected = [item.get("expected") for item in dataset]
+    try:
+        report = run_evaluation(args.evaluator, responses, expected)
+    except KeyError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_USAGE_ERROR
+    _json(report)
+    return EXIT_OK
+
+
+def cmd_evaluators(_args: argparse.Namespace) -> int:
+    for name in list_evaluators():
+        print(name)
+    return EXIT_OK
+
+
+def cmd_quantization(args: argparse.Namespace) -> int:
+    """Compare quantization variants from published results (#19)."""
+    results = _load_results_dir(Path(args.results_dir))
+    if not results:
+        print(f"ERROR: no result JSON files found in {args.results_dir}", file=sys.stderr)
+        return EXIT_USAGE_ERROR
+    _json(compare_quantizations(results))
+    return EXIT_OK
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="aihwbench",
@@ -496,6 +623,48 @@ def build_parser() -> argparse.ArgumentParser:
     cap.add_argument("--device", default="auto")
     cap.add_argument("--sustainability-factor", type=float, default=2.0)
     cap.set_defaults(func=cmd_capacity)
+
+    ana = sub.add_parser("analyze", help="Bottleneck analysis from measured telemetry")
+    ana.add_argument("result")
+    ana.set_defaults(func=cmd_analyze)
+
+    fit_p = sub.add_parser("fit", help="Estimate model memory fit (labeled estimate)")
+    fit_p.add_argument("--parameters", required=True, help="e.g. 7B, 1.5b, 350M")
+    fit_p.add_argument("--quantization", required=True, help="e.g. q4_k_m, fp16")
+    fit_p.add_argument("--context-tokens", type=int, default=4096)
+    fit_p.set_defaults(func=cmd_fit)
+
+    rec = sub.add_parser("recommend", help="Recommend a configuration for this hardware")
+    rec.add_argument("--results-dir", default=None, help="Prior results to anchor on")
+    rec.set_defaults(func=cmd_recommend)
+
+    tune_p = sub.add_parser("tune", help="Auto-tune a safe configuration space")
+    tune_p.add_argument("--runtime", required=True, choices=sorted(BACKENDS))
+    tune_p.add_argument("--model", default=None)
+    tune_p.add_argument("--model-path", default=None)
+    tune_p.add_argument("--threads-list", default=None)
+    tune_p.add_argument("--batch-list", default=None)
+    tune_p.add_argument("--context-list", default=None)
+    tune_p.add_argument("--gpu-layers-list", default=None)
+    tune_p.add_argument("--concurrency-list", default=None)
+    tune_p.add_argument("--max-tokens", type=int, default=64)
+    tune_p.add_argument("--iterations", type=int, default=3)
+    tune_p.add_argument("--device", default="auto")
+    tune_p.add_argument("--output", default="results/tuning")
+    tune_p.set_defaults(func=cmd_tune)
+
+    ev = sub.add_parser("evaluate", help="Run a quality evaluator over a JSONL dataset")
+    ev.add_argument("--evaluator", required=True)
+    ev.add_argument("--dataset", required=True, help="JSONL with input/expected/response")
+    ev.set_defaults(func=cmd_evaluate)
+
+    sub.add_parser("evaluators", help="List registered evaluators").set_defaults(
+        func=cmd_evaluators
+    )
+
+    quant = sub.add_parser("quantization", help="Compare quantization variants")
+    quant.add_argument("--results-dir", default="results/published")
+    quant.set_defaults(func=cmd_quantization)
 
     return parser
 

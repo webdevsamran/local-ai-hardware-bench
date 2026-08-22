@@ -1,0 +1,18 @@
+[
+  {
+    "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+    "fingerprint": "0d2605644fb5f221",
+    "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+    "npu": null,
+    "os": "Windows 11",
+    "ram_gb": 31.7,
+    "result_ids": [
+      "llamacpp-1787391945",
+      "ollama-1787388930",
+      "onnxruntime-1787391388",
+      "onnxruntime-1787391455",
+      "openvino-1787391625",
+      "openvino-1787391710"
+    ]
+  }
+]

@@ -1,0 +1,55 @@
+[
+  {
+    "device_options": [
+      "cuda"
+    ],
+    "name": "llama.cpp",
+    "result_ids": [
+      "llamacpp-1787391945"
+    ],
+    "versions": [
+      "0.2.0-dev (build 10578, commit 369e1cd61)"
+    ]
+  },
+  {
+    "device_options": [
+      "auto"
+    ],
+    "name": "ollama",
+    "result_ids": [
+      "ollama-1787388930"
+    ],
+    "versions": [
+      "0.32.15"
+    ]
+  },
+  {
+    "device_options": [
+      "cpu",
+      "dml"
+    ],
+    "name": "onnxruntime",
+    "result_ids": [
+      "onnxruntime-1787391388",
+      "onnxruntime-1787391455"
+    ],
+    "versions": [
+      "1.29.0",
+      "1.24.4"
+    ]
+  },
+  {
+    "device_options": [
+      "cpu",
+      "gpu"
+    ],
+    "name": "openvino",
+    "result_ids": [
+      "openvino-1787391625",
+      "openvino-1787391710"
+    ],
+    "versions": [
+      "2026.3.0-22451-8a17657b995-releases/2026/3"
+    ]
+  }
+]

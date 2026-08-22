@@ -1,0 +1,14 @@
+{
+  "name": "standard",
+  "description": "Default comparison tier (1B-4B model); the canonical workload for apples-to-apples comparisons.",
+  "workload": {
+    "prompt": "Explain what a token is in large language models, in two sentences.",
+    "max_tokens": 256,
+    "temperature": 0.0,
+    "seed": 42,
+    "context_length": 4096,
+    "warmup_runs": 2,
+    "iterations": 10
+  },
+  "model_tier": "standard"
+}

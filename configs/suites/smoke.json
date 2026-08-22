@@ -1,0 +1,14 @@
+{
+  "name": "smoke",
+  "description": "Tiny model; used for installation, detection and functionality checks.",
+  "workload": {
+    "prompt": "Explain what a token is in large language models, in two sentences.",
+    "max_tokens": 128,
+    "temperature": 0.0,
+    "seed": 42,
+    "context_length": 2048,
+    "warmup_runs": 0,
+    "iterations": 2
+  },
+  "model_tier": "smoke"
+}

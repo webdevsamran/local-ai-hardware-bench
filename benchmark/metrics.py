@@ -6,6 +6,7 @@ for a derived metric is missing, the derived metric is None.
 
 from __future__ import annotations
 
+import statistics
 from collections.abc import Sequence
 from typing import Any
 
@@ -74,8 +75,24 @@ def aggregate_iteration_metrics(iterations: list[dict[str, Any]]) -> dict[str, A
     prompt_tps = [v for v in prompt_tps_values if v is not None]
     gen_tps = [v for v in gen_tps_values if v is not None]
 
-    def mean(values: list[float]) -> float | None:
+    def mean(values: Sequence[float]) -> float | None:
         return round(sum(values) / len(values), 2) if values else None
+
+    def median(values: Sequence[float]) -> float | None:
+        if not values:
+            return None
+        return round(statistics.median(values), 2)
+
+    def stddev(values: Sequence[float]) -> float | None:
+        if len(values) < 2:
+            return None
+        return round(statistics.pstdev(values), 2)
+
+    def lo(values: Sequence[float]) -> float | None:
+        return round(min(values), 2) if values else None
+
+    def hi(values: Sequence[float]) -> float | None:
+        return round(max(values), 2) if values else None
 
     gen_tps_mean = mean(gen_tps)
     power_mean = mean(
@@ -83,13 +100,22 @@ def aggregate_iteration_metrics(iterations: list[dict[str, Any]]) -> dict[str, A
     )
 
     return {
-        "load_time_ms": mean([float(v) for v in loads]) if loads else None,
-        "ttft_ms": mean([float(v) for v in ttfts]) if ttfts else None,
-        "prompt_tokens_per_second": mean(prompt_tps),
+        "load_time_ms": lo(loads),
+        "ttft_ms": median(ttfts) if ttfts else mean([float(v) for v in ttfts]),
+        "prompt_tokens_per_second": median(prompt_tps),
         "generation_tokens_per_second": gen_tps_mean,
-        "total_latency_ms": mean([float(v) for v in latencies]) if latencies else None,
+        "total_latency_ms": median(latencies) if latencies else mean([float(v) for v in latencies]),
         "p50_latency_ms": round(percentile(latencies, 50), 2) if latencies else None,
+        "p90_latency_ms": round(percentile(latencies, 90), 2) if latencies else None,
         "p95_latency_ms": round(percentile(latencies, 95), 2) if latencies else None,
+        "p99_latency_ms": round(percentile(latencies, 99), 2) if latencies else None,
+        "latency_stddev_ms": stddev(latencies),
+        "latency_min_ms": lo(latencies),
+        "latency_max_ms": hi(latencies),
+        "ttft_stddev_ms": stddev([float(v) for v in ttfts]),
+        "generation_tps_stddev": stddev(gen_tps),
+        "gen_tps_min": lo(gen_tps),
+        "gen_tps_max": hi(gen_tps),
         "peak_ram_mb": None,
         "peak_vram_mb": None,
         "avg_cpu_util_percent": None,
@@ -97,4 +123,10 @@ def aggregate_iteration_metrics(iterations: list[dict[str, Any]]) -> dict[str, A
         "max_temperature_c": None,
         "average_power_watts": power_mean,
         "performance_per_watt": performance_per_watt(gen_tps_mean, power_mean),
+        "coverage": {
+            "iterations": len(iterations),
+            "ttft_measured": len(ttfts),
+            "latency_measured": len(latencies),
+            "gen_tps_measured": len(gen_tps),
+        },
     }

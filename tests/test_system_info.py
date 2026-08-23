@@ -5,11 +5,17 @@ import re
 from benchmark.system_info import detect_system
 
 # Patterns that must never appear in sanitized output.
+#
+# Note on the serial pattern: the bare word "serial" is allowed because
+# modern kernels expose a CPU *capability flag* literally named "serial"
+# (e.g. in /proc/cpuinfo on recent Intel Xeon parts). A real leak is a
+# serial label followed by an assigned value, matching the semantics of
+# benchmark/sanitize.py's SERIAL_RE.
 _FORBIDDEN_PATTERNS = [
     r"[0-9A-F]{2}(:[0-9A-F]{2}){5}",  # MAC addresses
     r"C:\\Users\\[a-zA-Z]",  # home directory paths
     r"/home/[a-zA-Z]",  # unix home paths
-    r"(?i)serial",  # serial numbers
+    r"(?i)serial\s*(?:number|no|#)?\s*[:=]\s*[A-Za-z0-9]+",  # serial values
 ]
 
 

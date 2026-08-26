@@ -7,39 +7,39 @@ guarantees.
 ## Pipeline
 
 ```
-CLI (benchmark/cli.py)
-  -> Suite/Configuration (configs/suites/*.json, benchmark/suites.py)
-  -> System Detection (benchmark/system_info.py)
-  -> Backend/Plugin (benchmark/backends/*)
-  -> Benchmark Runner (benchmark/runner.py)
-  -> Telemetry (benchmark/telemetry.py)
-  -> Statistics (benchmark/metrics.py)
-  -> Schema Validation (benchmark/schemas.py + schemas/*.json)
+CLI (aihwbench/cli/)
+  -> Suite/Configuration (configs/suites/*.json, aihwbench/suites.py)
+  -> System Detection (aihwbench/system_info.py)
+  -> Backend/Plugin (aihwbench/backends/*)
+  -> Benchmark Runner (aihwbench/runner.py)
+  -> Telemetry (aihwbench/telemetry.py)
+  -> Statistics (aihwbench/metrics.py)
+  -> Schema Validation (aihwbench/schemas.py + schemas/*.json)
   -> Result Artifact (results/raw|published/*.json)
-   -> Comparison (benchmark/comparability.py, benchmark/compare.py)
-   -> Report/Export (benchmark/report.py, benchmark/export.py,
-      benchmark/exporters/*)
-   -> Submission/Publication (PR pipeline; trust states in benchmark/trust.py)
+   -> Comparison (aihwbench/comparability.py, aihwbench/compare.py)
+   -> Report/Export (aihwbench/report.py, aihwbench/export.py,
+      aihwbench/exporters/*)
+   -> Submission/Publication (PR pipeline; trust states in aihwbench/trust.py)
 ```
 
 Supporting engines:
 
 ```
-Workloads (benchmark/workloads/)     typed definitions + registry +
+Workloads (aihwbench/workloads/)     typed definitions + registry +
                                      aihwbench.workloads entry points
-Load generator (benchmark/loadgen/)  arrival processes, scheduler,
+Load generator (aihwbench/loadgen/)  arrival processes, scheduler,
                                      workers, recorder
-Experiments (benchmark/experiments)  declarative manifests -> sweep /
+Experiments (aihwbench/experiments)  declarative manifests -> sweep /
                                      capacity / showdown / tune
-Evaluation (benchmark/evaluators/)   quality evaluators + plugin API
-Analysis (benchmark/analysis/)       bottleneck, thermal, energy,
+Evaluation (aihwbench/evaluators/)   quality evaluators + plugin API
+Analysis (aihwbench/analysis/)       bottleneck, thermal, energy,
                                      cost/TCO, Pareto frontier
-Provenance (benchmark/provenance/)   hashing, bundles, cosign wrappers
-Migrations (benchmark/migrations/)   schema_version evolution
-Hardware DB (benchmark/hardware/)    normalized identifiers/topology
-Quality (benchmark/quality.py)       data-quality checks, anomalies,
+Provenance (aihwbench/provenance/)   hashing, bundles, cosign wrappers
+Migrations (aihwbench/migrations/)   schema_version evolution
+Hardware DB (aihwbench/hardware/)    normalized identifiers/topology
+Quality (aihwbench/quality.py)       data-quality checks, anomalies,
                                      invalidation records
-Public SDK (benchmark/sdk.py)        typed domain objects for consumers
+Public SDK (aihwbench/sdk.py)        typed domain objects for consumers
 Static dataset (scripts/generate_frontend_data.py -> web/public/data)
 Dashboard (web/)                     React SPA deployed to GitHub Pages
 ```
@@ -85,7 +85,7 @@ Dashboard (web/)                     React SPA deployed to GitHub Pages
   stable. Breaking changes bump `BACKEND_API_VERSION`.
 - **Result schema 1.0**: published results remain readable; breaking
   schema changes require a new major version plus migration support
-  (`benchmark/migrations/`, exercised by CI against every published file).
+  (`aihwbench/migrations/`, exercised by CI against every published file).
 - **Plugin APIs v1**: workload, evaluator and exporter entry-point groups
   follow the same stability rules as backends.
 - **Internals** (telemetry internals, runner plumbing, loadgen internals)

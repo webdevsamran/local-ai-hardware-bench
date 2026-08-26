@@ -1,7 +1,7 @@
 """Tests for comparison and report generation."""
 
-from benchmark.compare import comparability_warnings, compare_results, render_comparison
-from benchmark.report import render_report
+from aihwbench.compare import comparability_warnings, compare_results, render_comparison
+from aihwbench.report import render_report
 from tests.test_schemas import make_valid_result
 
 

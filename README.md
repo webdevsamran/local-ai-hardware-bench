@@ -64,6 +64,8 @@ validated result file exists in [`results/published/`](results/published).
 | AMD ROCm / Ryzen AI / Lemonade | Yes | Hardware needed (no AMD system available) |
 | Qualcomm QNN | Yes | Hardware needed (no Snapdragon NPU available) |
 | Hailo HailoRT | Yes | Hardware needed (no Hailo device available) |
+| LM Studio (OpenAI-compatible server) | Yes | **Yes — experimental** (HTTP API backend) |
+| Apple MLX | Yes | Hardware needed (requires Apple Silicon; benchmarking planned) |
 | Windows ML / DirectML | Yes | **Yes — tested** (ONNX Runtime DML EP) |
 
 Runtimes that cannot run on current hardware report an explicit
@@ -208,7 +210,7 @@ as "not measured" in reports. They are never estimated.**
 Every result is a JSON document validated against schema 1.0:
 
 - Formal JSON Schema: [`schemas/result_schema.schema.json`](schemas/result_schema.schema.json)
-- Semantic validator: [`benchmark/schemas.py`](benchmark/schemas.py)
+- Semantic validator: [`aihwbench/schemas.py`](aihwbench/schemas.py)
 - Full field reference: [`schemas/README.md`](schemas/README.md)
 
 Validation covers types, ISO-8601 UTC timestamps, run-id format,
@@ -235,7 +237,7 @@ See [docs/methodology.md](docs/methodology.md).
 Results carry a machine-readable trust state consumed by the dataset
 pipeline and the dashboard badges (see
 [submission pipeline](docs/results/submission-pipeline.md) and
-`benchmark/quality.py`):
+`aihwbench/quality.py`):
 
 | State | Meaning |
 | --- | --- |
@@ -250,7 +252,7 @@ original document verbatim with a reason and a replacement reference.
 
 ## Python SDK & plugins
 
-Typed public APIs live in `benchmark/sdk.py`: `BenchmarkResult`,
+Typed public APIs live in `aihwbench/sdk.py`: `BenchmarkResult`,
 `SystemInfo`, `RuntimeInfo`, `ModelInfo`, `MetricSet`, `Workload`,
 `BenchmarkRunner`, `RegressionReport`. All convert losslessly from
 published result documents; unavailable metrics stay `None`.
@@ -265,7 +267,7 @@ Plugin entry points:
 
 ## Automation & CI
 
-Exit codes are a stable contract (`benchmark/exit_codes.py`):
+Exit codes are a stable contract (`aihwbench/exit_codes.py`):
 
 | Code | Meaning |
 | --- | --- |
@@ -291,7 +293,7 @@ Tooling support:
   score (explicitly **not** a scientific-validity claim);
 - `aihwbench bundle` / `verify-bundle` — portable `.aihwbench` archives with
   SHA-256 integrity over every member;
-- provenance hashing (`benchmark/provenance/`) covers result, environment,
+- provenance hashing (`aihwbench/provenance/`) covers result, environment,
   workload and model identity; optional cosign signing interfaces are thin
   wrappers that honestly report when cosign is unavailable.
 

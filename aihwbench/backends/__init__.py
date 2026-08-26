@@ -14,6 +14,8 @@ from typing import Any
 from . import (
     hailo,
     llama_cpp,
+    lmstudio,
+    mlx,
     ollama,
     onnxruntime,
     openvino,
@@ -37,7 +39,9 @@ BACKENDS: dict[str, Any] = {
     "llama.cpp": llama_cpp,
     "onnxruntime": onnxruntime,
     "openvino": openvino,
+    "lmstudio": lmstudio,
     "rocm": rocm,
+    "mlx": mlx,
     "windows_ml": windows_ml,
     "qnn": qnn,
     "tensorrt": tensorrt,
@@ -50,6 +54,7 @@ ALIASES: dict[str, str] = {
     "ort": "onnxruntime",
     "trt": "tensorrt",
     "hailort": "hailo",
+    "lms": "lmstudio",
 }
 
 ENTRY_POINT_GROUP = "aihwbench.backends"

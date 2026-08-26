@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from benchmark.workloads import (
+from aihwbench.workloads import (
     ISL_OSL_PROFILES,
     TrafficMixItem,
     TurnSpec,
@@ -12,7 +12,7 @@ from benchmark.workloads import (
     get_workload,
     list_workloads,
 )
-from benchmark.workloads.builtin import (
+from aihwbench.workloads.builtin import (
     build_multi_turn_prompts,
     sample_traffic_mix,
     synthesize_prompt,

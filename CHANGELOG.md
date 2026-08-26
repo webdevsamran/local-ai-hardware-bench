@@ -4,6 +4,29 @@ All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
+### Changed
+- **Package renamed:** the import package is now `aihwbench` (was
+  `benchmark`). The console script and `python -m aihwbench.cli` behave
+  identically; update any external imports from `benchmark.*` to
+  `aihwbench.*`.
+
+### Added
+- CLI restructured into a package (`aihwbench/cli/`) with focused
+  command-group modules; all subcommands and exit codes preserved.
+- **LM Studio backend** (`--runtime lmstudio`): benchmarks via its
+  OpenAI-compatible local server with streamed TTFT measurement; token
+  counts come only from reported usage — never estimated.
+- **Apple MLX backend** (detection): honest HARDWARE_REQUIRED /
+  CONFIGURATION_REQUIRED states off Apple Silicon.
+- **`aihwbench score` command** + `score.py`: optional composite score
+  with fully published reference points, weights and component breakdown;
+  renormalized when telemetry is missing, refused when throughput is
+  missing. Explicitly labeled heuristic.
+- New suite profiles: `rag.json` (grounded retrieval-style query) and
+  `long_context.json` (8k-context comprehension).
+- Makefile task runner mirroring CI commands; Dependabot now also covers
+  the `web/` npm ecosystem.
+
 
 ### Added — top-50 platform transformation (phases 1–7)
 - Collision-resistant UUID-backed run IDs with regression tests (#1).

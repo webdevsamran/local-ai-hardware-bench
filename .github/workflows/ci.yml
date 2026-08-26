@@ -19,8 +19,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install ruff
-      - run: ruff check benchmark tests
-      - run: ruff format --check benchmark tests
+      - run: ruff check aihwbench tests
+      - run: ruff format --check aihwbench tests
 
   test:
     name: Unit tests (${{ matrix.os }}, py${{ matrix.python }})
@@ -47,7 +47,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e ".[dev]" pytest-cov
-      - run: pytest --cov=benchmark --cov-report=term --cov-fail-under=55
+      - run: pytest --cov=aihwbench --cov-report=term --cov-fail-under=55
 
   types:
     name: Type check (mypy)
@@ -58,7 +58,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e ".[dev]" mypy
-      - run: mypy benchmark
+      - run: mypy aihwbench
 
   package:
     name: Build package
@@ -136,9 +136,9 @@ jobs:
         run: |
           import json, pathlib, sys
           sys.path.insert(0, ".")
-          from benchmark.fingerprint import result_fingerprint
-          from benchmark.sanitize import scan_object
-          from benchmark.schemas import validate_result
+          from aihwbench.fingerprint import result_fingerprint
+          from aihwbench.sanitize import scan_object
+          from aihwbench.schemas import validate_result
           failures = []
           fingerprints = {}
           checked = 0

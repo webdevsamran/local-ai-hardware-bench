@@ -20,7 +20,7 @@ documents.
 
 ## Validation
 
-The authoritative runtime validator is `benchmark/schemas.py`
+The authoritative runtime validator is `aihwbench/schemas.py`
 (`validate_result`). It performs type checks, semantic range checks,
 timestamp/run-id format checks, and nested object validation without any
 third-party dependencies.

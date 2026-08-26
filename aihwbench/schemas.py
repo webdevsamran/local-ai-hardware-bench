@@ -2,7 +2,7 @@
 
 Benchmark result documents carry an explicit ``schema_version``. The
 current writer emits schema 2.0; schema 1.0 documents remain fully valid
-and readable (see ``benchmark/migrations``). Validation is intentionally
+and readable (see ``aihwbench/migrations``). Validation is intentionally
 dependency-free so results can be validated anywhere (CI, vendor review,
 offline).
 """

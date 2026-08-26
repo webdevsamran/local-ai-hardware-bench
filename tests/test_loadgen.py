@@ -7,11 +7,11 @@ import time
 
 import pytest
 
-from benchmark.capacity import CapacityConfig, run_capacity_ladder
-from benchmark.loadgen import LoadgenConfig, generate_arrivals, run_load
-from benchmark.manifests import ExperimentError, load_experiment
-from benchmark.stats import MIN_SAMPLES_FOR_CI, bootstrap_ci, summarize
-from benchmark.sweep import SweepSpec, best_by, matrix_to_csv_rows, pareto_frontier, run_sweep
+from aihwbench.capacity import CapacityConfig, run_capacity_ladder
+from aihwbench.loadgen import LoadgenConfig, generate_arrivals, run_load
+from aihwbench.manifests import ExperimentError, load_experiment
+from aihwbench.stats import MIN_SAMPLES_FOR_CI, bootstrap_ci, summarize
+from aihwbench.sweep import SweepSpec, best_by, matrix_to_csv_rows, pareto_frontier, run_sweep
 
 
 def _fast_execute(request_id: int) -> dict:

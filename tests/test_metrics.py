@@ -2,7 +2,7 @@
 
 import pytest
 
-from benchmark.metrics import (
+from aihwbench.metrics import (
     aggregate_iteration_metrics,
     percentile,
     performance_per_watt,

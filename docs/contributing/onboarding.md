@@ -49,9 +49,9 @@ ruff-clean code, tests for behavior changes, honest documentation.
 ## 4. Test locally
 
 ```bash
-ruff check benchmark tests
-ruff format --check benchmark tests
-mypy benchmark
+ruff check aihwbench tests
+ruff format --check aihwbench tests
+mypy aihwbench
 pytest
 ```
 

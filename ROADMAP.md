@@ -1,12 +1,12 @@
-# Roadmap
+﻿# Roadmap
 
 Milestones are adjusted to actual hardware availability. A milestone ships
-when its deliverables are genuinely tested — not before.
+when its deliverables are genuinely tested â€” not before.
 
 Work is organized into parallel tracks. Nothing is marked complete until
 it is real.
 
-## Track 1 — Benchmark Core
+## Track 1 â€” Benchmark Core
 
 - [x] Cross-platform hardware detection (CPU, GPU, RAM, NPU, drivers)
 - [x] Runtime detection with explicit status states
@@ -28,7 +28,7 @@ it is real.
 - [x] Prefill/decode separation, ISL/OSL profiles, mixed traffic,
       multi-turn and deterministic agentic workloads
 
-## Track 2 — Runtime Ecosystem
+## Track 2 â€” Runtime Ecosystem
 
 - [x] Ollama backend: real streamed benchmarking on CUDA
 - [x] llama.cpp backend (`llama-server`)
@@ -41,7 +41,7 @@ it is real.
 - [ ] Qualcomm QNN backend + ARM64 Windows validation (needs Snapdragon X)
 - [ ] HailoRT backend, HEF benchmark configs (needs Hailo device)
 
-## Track 3 — Hardware Coverage
+## Track 3 â€” Hardware Coverage
 
 - [x] First genuinely tested platform (i9-12900H + RTX 3080 Ti Laptop)
 - [ ] Intel Core Ultra NPU telemetry hooks (needs Core Ultra hardware)
@@ -49,21 +49,20 @@ it is real.
 - [ ] Snapdragon X Elite results (hardware needed)
 - [ ] Mini-PC / edge device class results (hardware needed)
 
-## Track 4 — Community
+## Track 4 â€” Community
 
 - [x] Issue templates, PR template, CODEOWNERS, SUPPORT.md
 - [x] Governance document and contributor ladder
 - [x] Expanded CONTRIBUTING with per-platform setup
-- [ ] First-time-contributor onboarding guide
+- [x] First-time-contributor onboarding guide
 - [ ] Community discussion forums moderation guidelines
 
-## Track 5 — Dataset & Leaderboard
+## Track 5 â€” Dataset & Leaderboard
 
 - [x] Dataset generation: index.json / dataset.csv / LEADERBOARD.md
 - [x] Trust states (verified/unreviewed/flagged/invalidated/superseded)
       enforced by the dataset pipeline and dashboard badges
-- [ ] Trust states applied to all published results (pipeline ready;
-      existing files predate the field)
+- [x] Trust states applied to all published results
 - [x] Static GitHub Pages leaderboard (React dashboard generated from
       published results; data-freshness enforced in CI)
 - [x] Parquet export behind an optional dependency
@@ -72,7 +71,7 @@ it is real.
 - [x] Versioned dataset snapshot manifests
 - [ ] Zenodo DOI for versioned dataset snapshots (when dataset matures)
 
-## Track 6 — Enterprise Foundations
+## Track 6 â€” Enterprise Foundations
 
 - [x] Enterprise architecture overview (documented as planned/future)
 - [x] Stable exit codes for CI gates
@@ -80,7 +79,7 @@ it is real.
 - [ ] Private storage adapter interface spec
 - [ ] Fleet operation design doc
 
-## Track 7 — Security
+## Track 7 â€” Security
 
 - [x] Actions pinned to immutable SHAs; minimal permissions
 - [x] Dependabot (Actions + pip)
@@ -91,7 +90,7 @@ it is real.
 - [ ] Artifact attestation (provenance) via GitHub artifact attestations
 - [x] Action-pin verification script (scripts/verify_action_pins.py)
 
-## Track 8 — Research / Standards
+## Track 8 â€” Research / Standards
 
 - [x] CITATION.cff with creator attribution
 - [ ] Methodology review with external maintainers
@@ -100,13 +99,13 @@ it is real.
       published schema 1.0 results
 - [ ] At least three genuinely tested hardware classes before v1.0
 
-## Track 9 — Vendor Ecosystem
+## Track 9 â€” Vendor Ecosystem
 
 - [x] Vendor collaboration policy (no guaranteed outcomes; disclosure)
 - [ ] First vendor-supplied evaluation unit processed end-to-end
 - [ ] Independent reproducible benchmark report template
 
-## Track 10 — Platform Expansion (top-50 transformation)
+## Track 10 â€” Platform Expansion (top-50 transformation)
 
 - [x] Public Python SDK (benchmark/sdk.py) with typed domain objects
 - [x] Exporter plugin architecture (JSON/CSV/Markdown/SQLite built-in;

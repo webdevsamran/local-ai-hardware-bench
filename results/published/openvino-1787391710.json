@@ -81,5 +81,6 @@
       "latency_ms": 6.76
     }
   ],
-  "git_commit": "6cec992520ccbbb92defb40e6677604483e4ca80"
+  "git_commit": "6cec992520ccbbb92defb40e6677604483e4ca80",
+  "trust_state": "verified"
 }

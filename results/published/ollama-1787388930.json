@@ -98,5 +98,6 @@
       "prompt_eval_seconds": 0.017654
     }
   ],
-  "git_commit": "7cdd6affaffcc79fb7c1547b3d93b404fc275bc9"
+  "git_commit": "7cdd6affaffcc79fb7c1547b3d93b404fc275bc9",
+  "trust_state": "verified"
 }

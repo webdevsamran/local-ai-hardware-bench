@@ -101,7 +101,8 @@
       "platform_name": "Predator PT516-52s",
       "ram_gb": 31.7
     },
-    "timestamp": "2026-08-22T09:45:45Z"
+    "timestamp": "2026-08-22T09:45:45Z",
+    "trust_state": "verified"
   },
   {
     "_file": "ollama-1787388930.json",
@@ -204,7 +205,8 @@
       "platform_name": "Predator PT516-52s",
       "ram_gb": 31.7
     },
-    "timestamp": "2026-08-22T08:55:30Z"
+    "timestamp": "2026-08-22T08:55:30Z",
+    "trust_state": "verified"
   },
   {
     "_file": "onnxruntime-1787391388.json",
@@ -290,7 +292,8 @@
       "platform_name": "Predator PT516-52s",
       "ram_gb": 31.7
     },
-    "timestamp": "2026-08-22T09:36:28Z"
+    "timestamp": "2026-08-22T09:36:28Z",
+    "trust_state": "verified"
   },
   {
     "_file": "onnxruntime-1787391455.json",
@@ -376,7 +379,8 @@
       "platform_name": "Predator PT516-52s",
       "ram_gb": 31.7
     },
-    "timestamp": "2026-08-22T09:37:35Z"
+    "timestamp": "2026-08-22T09:37:35Z",
+    "trust_state": "verified"
   },
   {
     "_file": "openvino-1787391625.json",
@@ -462,7 +466,8 @@
       "platform_name": "Predator PT516-52s",
       "ram_gb": 31.7
     },
-    "timestamp": "2026-08-22T09:40:25Z"
+    "timestamp": "2026-08-22T09:40:25Z",
+    "trust_state": "verified"
   },
   {
     "_file": "openvino-1787391710.json",
@@ -548,6 +553,7 @@
       "platform_name": "Predator PT516-52s",
       "ram_gb": 31.7
     },
-    "timestamp": "2026-08-22T09:41:50Z"
+    "timestamp": "2026-08-22T09:41:50Z",
+    "trust_state": "verified"
   }
 ]

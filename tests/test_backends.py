@@ -1,6 +1,6 @@
 """Tests for backend detection and unavailable-backend handling."""
 
-from benchmark.backends import (
+from aihwbench.backends import (
     BACKENDS,
     BackendError,
     BenchmarkConfig,
@@ -8,7 +8,7 @@ from benchmark.backends import (
     detect_all,
     resolve,
 )
-from benchmark.backends.base import BackendInfo
+from aihwbench.backends.base import BackendInfo
 
 
 def test_all_registered_backends_detect_without_crashing():
@@ -48,6 +48,51 @@ def test_unavailable_backend_run_raises_backend_error():
     system = {"os": "test"}
     try:
         BACKENDS["qnn"].run(config, system)
+    except BackendError as exc:
+        assert "not available" in str(exc) or "planned" in str(exc).lower()
+    else:
+        raise AssertionError("expected BackendError")
+
+
+def test_lmstudio_registered_and_resolvable():
+    assert "lmstudio" in BACKENDS
+    assert resolve("lms") is BACKENDS["lmstudio"]
+    info = BACKENDS["lmstudio"].detect()
+    assert isinstance(info, BackendInfo)
+    # On CI there is no LM Studio server running.
+    assert info.status in {RuntimeStatus.NOT_INSTALLED, RuntimeStatus.AVAILABLE}
+
+
+def test_lmstudio_run_raises_without_server(monkeypatch):
+    import aihwbench.backends.lmstudio as lm
+
+    monkeypatch.setattr(
+        lm,
+        "detect",
+        lambda: BackendInfo("lmstudio", RuntimeStatus.NOT_INSTALLED, None, "no server"),
+    )
+    try:
+        lm.run(BenchmarkConfig(model="x"), {})
+    except BackendError as exc:
+        assert "not available" in str(exc)
+    else:
+        raise AssertionError("expected BackendError")
+
+
+def test_mlx_off_platform_is_hardware_required(monkeypatch):
+    import aihwbench.backends.mlx as mlx_mod
+
+    monkeypatch.setattr(mlx_mod.platform, "system", lambda: "Windows")
+    info = mlx_mod.detect()
+    assert info.status is RuntimeStatus.HARDWARE_REQUIRED
+
+
+def test_mlx_run_raises_cleanly(monkeypatch):
+    import aihwbench.backends.mlx as mlx_mod
+
+    monkeypatch.setattr(mlx_mod.platform, "system", lambda: "Windows")
+    try:
+        mlx_mod.run(BenchmarkConfig(model="dummy"), {})
     except BackendError as exc:
         assert "not available" in str(exc) or "planned" in str(exc).lower()
     else:

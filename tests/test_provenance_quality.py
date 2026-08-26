@@ -7,16 +7,16 @@ import zipfile
 
 import pytest
 
-from benchmark.bundles import create_bundle, verify_bundle
-from benchmark.dataset_versioning import build_snapshot_manifest, diff_snapshots
-from benchmark.provenance import (
+from aihwbench.bundles import create_bundle, verify_bundle
+from aihwbench.dataset_versioning import build_snapshot_manifest, diff_snapshots
+from aihwbench.provenance import (
     canonical_json,
     compute_provenance,
     sha256_canonical,
     verify_hashes,
 )
-from benchmark.quality import data_quality_report, flag_anomalies, invalidate_result
-from benchmark.repro import check_reproduction, env_diff, reproducibility_score
+from aihwbench.quality import data_quality_report, flag_anomalies, invalidate_result
+from aihwbench.repro import check_reproduction, env_diff, reproducibility_score
 
 
 def _result(run_id: str = "run-1", **overrides) -> dict:
@@ -65,7 +65,7 @@ def test_verify_hashes_detects_tampering():
 
 
 def test_cosign_interfaces_report_unavailable(monkeypatch):
-    from benchmark import provenance
+    from aihwbench import provenance
 
     monkeypatch.setattr(provenance.shutil, "which", lambda name: None)
     out = provenance.sign_bundle_cosign(__import__("pathlib").Path("x"))

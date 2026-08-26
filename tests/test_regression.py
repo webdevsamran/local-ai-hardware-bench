@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from benchmark.regression import (
+from aihwbench.regression import (
     RegressionThresholds,
     evaluate_regression,
 )

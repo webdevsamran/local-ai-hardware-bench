@@ -7,14 +7,14 @@ import sqlite3
 
 import pytest
 
-from benchmark.exporters import (
+from aihwbench.exporters import (
     CsvExporter,
     MarkdownExporter,
     SqliteExporter,
     get_exporter,
     list_exporters,
 )
-from benchmark.sdk import (
+from aihwbench.sdk import (
     BenchmarkResult,
     BenchmarkRunner,
     MetricSet,
@@ -22,7 +22,7 @@ from benchmark.sdk import (
     SystemInfo,
     Workload,
 )
-from benchmark.selftest import run_self_test
+from aihwbench.selftest import run_self_test
 
 
 def _result(run_id: str = "r1") -> dict:
@@ -150,7 +150,7 @@ def test_unknown_exporter_raises():
 
 
 def test_parquet_exporter_requires_extra():
-    from benchmark.exporters import ParquetExporter
+    from aihwbench.exporters import ParquetExporter
 
     try:
         import pyarrow  # noqa: F401

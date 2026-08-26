@@ -3,7 +3,7 @@
 ## CLI
 
 **`aihwbench: command not found`**
-Reinstall with `pip install .`, or invoke via `python -m benchmark.cli`.
+Reinstall with `pip install .`, or invoke via `python -m aihwbench.cli`.
 
 **A command crashes with a stack trace**
 This is a bug — please open an issue with the traceback and your OS/runtime versions.

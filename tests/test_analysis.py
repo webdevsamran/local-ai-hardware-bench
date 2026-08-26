@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import pytest
 
-from benchmark.analysis import (
+from aihwbench.analysis import (
     analyze_bottlenecks,
     compute_cost_metrics,
     compute_energy_metrics,
     estimate_model_fit,
     recommend_configuration,
 )
-from benchmark.analysis.thermal import analyze_thermal_stability
-from benchmark.analysis.tune import run_tuner
-from benchmark.evaluators import (
+from aihwbench.analysis.thermal import analyze_thermal_stability
+from aihwbench.analysis.tune import run_tuner
+from aihwbench.evaluators import (
     CosineSimilarityEvaluator,
     ExactMatchEvaluator,
     JsonValidityEvaluator,
@@ -22,7 +22,7 @@ from benchmark.evaluators import (
     load_dataset,
     run_evaluation,
 )
-from benchmark.quantization import compare_quantizations, performance_quality_frontier
+from aihwbench.quantization import compare_quantizations, performance_quality_frontier
 
 # ---------------------------------------------------------------------------
 # Evaluators
@@ -85,7 +85,7 @@ def test_load_dataset_validates_lines(tmp_path):
 
 
 def test_evaluator_plugin_registration():
-    from benchmark.evaluators import register_evaluator
+    from aihwbench.evaluators import register_evaluator
 
     class Upper(ExactMatchEvaluator):
         name = "test_upper_plugin"
@@ -120,7 +120,7 @@ def test_fit_requires_parameter_count():
 
 def test_parse_parameter_count_units():
     assert estimate_model_fit.__module__  # sanity
-    from benchmark.analysis.fit import parse_parameter_count
+    from aihwbench.analysis.fit import parse_parameter_count
 
     assert parse_parameter_count("7B") == 7e9
     assert parse_parameter_count("350M") == 350e6

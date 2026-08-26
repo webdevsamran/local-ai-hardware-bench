@@ -51,14 +51,14 @@ dev = [
 ]
 
 [project.scripts]
-aihwbench = "benchmark.cli:main"
+aihwbench = "aihwbench.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["benchmark*"]
+include = ["aihwbench*"]
 
 [tool.setuptools.package-data]
-benchmark = ["py.typed"]
-"benchmark.backends" = ["py.typed"]
+aihwbench = ["py.typed"]
+"aihwbench.backends" = ["py.typed"]
 
 [tool.ruff]
 line-length = 100
@@ -72,7 +72,7 @@ ignore = ["E501"]
 testpaths = ["tests"]
 addopts = "-q"
 [tool.mypy]
-files = ["benchmark"]
+files = ["aihwbench"]
 ignore_missing_imports = true
 check_untyped_defs = true
 warn_unused_ignores = false
@@ -85,5 +85,5 @@ ignore_missing_imports = true
 # Windows-only attribute accesses (ctypes.windll, winreg) are guarded by
 # runtime checks that static analysis cannot narrow cross-platform.
 [[tool.mypy.overrides]]
-module = ["benchmark.system_info", "benchmark.telemetry"]
+module = ["aihwbench.system_info", "aihwbench.telemetry"]
 disable_error_code = ["attr-defined"]

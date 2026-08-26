@@ -51,8 +51,8 @@ pytest
 
    ```bash
    pytest
-   ruff check benchmark tests
-   ruff format --check benchmark tests
+   ruff check aihwbench tests
+   ruff format --check aihwbench tests
    ```
 
 6. **Commit** with a clear message (`feat:`, `fix:`, `docs:`, `test:`,
@@ -68,7 +68,7 @@ contract. Summary:
 1. Implement `detect() -> BackendInfo` (never raises) and
    `run(config, system) -> dict` (raises `BackendError` cleanly when
    prerequisites are missing).
-2. Register in `benchmark/backends/__init__.py` or publish an external
+2. Register in `aihwbench/backends/__init__.py` or publish an external
    package with an `aihwbench.backends` entry point.
 3. Add tests: detection without the runtime, clean failure of `run()`,
    and schema-valid output if you can run it locally.

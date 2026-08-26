@@ -39,4 +39,4 @@
 
 Until this program launches, the only honest status labels are those in
 [docs/compatibility-matrix.md](compatibility-matrix.md) and the trust
-states defined in `benchmark/trust.py`.
+states defined in `aihwbench/trust.py`.

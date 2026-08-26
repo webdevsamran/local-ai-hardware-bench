@@ -1,6 +1,6 @@
 """Tests for result schema validation."""
 
-from benchmark.schemas import SCHEMA_VERSION, validate_result
+from aihwbench.schemas import SCHEMA_VERSION, validate_result
 
 
 def make_valid_result() -> dict:

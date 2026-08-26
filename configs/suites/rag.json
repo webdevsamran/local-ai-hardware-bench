@@ -1,0 +1,14 @@
+{
+  "name": "rag",
+  "description": "Retrieval-style query: a reference passage is provided in-prompt and must be used to answer. Stresses prompt processing over long input with grounded generation.",
+  "workload": {
+    "prompt": "Context: Local AI inference runs entirely on user hardware. Tokens are generated sequentially; each token depends on all previous ones, so generation speed (tok/s) dominates perceived latency for long answers while time-to-first-token (TTFT) dominates perceived snappiness. Quantization trades model precision for memory footprint; q4_K_M is a common quality/speed compromise. Power draw matters on laptops where sustained thermals throttle performance.\n\nQuestion: Based only on the context above, explain in three sentences why a system can feel fast on short replies yet slow on long ones, and which two metrics distinguish those cases.",
+    "max_tokens": 256,
+    "temperature": 0.0,
+    "seed": 42,
+    "context_length": 4096,
+    "warmup_runs": 1,
+    "iterations": 3
+  },
+  "model_tier": "standard"
+}

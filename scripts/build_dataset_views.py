@@ -15,7 +15,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from benchmark.export import export_dataset, load_results  # noqa: E402
+from aihwbench.export import export_dataset, load_results  # noqa: E402
 
 NL = chr(10)
 

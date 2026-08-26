@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/webdevsamran/local-ai-hardware-bench/schemas/result_schema.schema.json",
   "title": "AIHWBench Result Document",
-  "description": "Formal JSON Schema for AIHWBench benchmark result documents (schema version 1.0). A metric that could not be measured MUST be null, never an estimate. Accompanying semantic checks (timestamps, ranges, run-ID format) are implemented in benchmark/schemas.py.",
+  "description": "Formal JSON Schema for AIHWBench benchmark result documents (schema version 1.0). A metric that could not be measured MUST be null, never an estimate. Accompanying semantic checks (timestamps, ranges, run-ID format) are implemented in aihwbench/schemas.py.",
   "type": "object",
   "required": [
     "schema_version",

@@ -7,7 +7,7 @@ import pathlib
 
 import pytest
 
-from benchmark.domain import BenchmarkResult, MetricSet, SystemInfo
+from aihwbench.domain import BenchmarkResult, MetricSet, SystemInfo
 
 
 def _published_results() -> list[dict]:

@@ -9,7 +9,7 @@ explicitly submit them.
 ## Sanitization
 
 Before any result can be published it must pass the privacy scanner
-(`benchmark/sanitize.py`), which fails closed on:
+(`aihwbench/sanitize.py`), which fails closed on:
 
 - MAC addresses
 - IPv4/IPv6 addresses

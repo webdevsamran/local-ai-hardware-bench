@@ -2,7 +2,7 @@
 
 import json
 
-from benchmark.cli import build_parser, main
+from aihwbench.cli import build_parser, main
 
 
 def test_system_info_command_outputs_json(capsys):

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from benchmark.hardware_db import HardwareClass, classify, normalize_cpu, normalize_gpu
+from aihwbench.hardware_db import HardwareClass, classify, normalize_cpu, normalize_gpu
 
 
 def test_nvidia_laptop_gpu_classification():

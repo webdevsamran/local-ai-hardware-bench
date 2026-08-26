@@ -8,23 +8,23 @@ from pathlib import Path
 
 import pytest
 
-from benchmark.comparability import (
+from aihwbench.comparability import (
     CONDITIONALLY_COMPARABLE,
     NOT_COMPARABLE,
     STRICTLY_COMPARABLE,
     compare_classification,
 )
-from benchmark.exit_codes import (
+from aihwbench.exit_codes import (
     EXIT_NOT_COMPARABLE,
     EXIT_OK,
     EXIT_USAGE_ERROR,
     EXIT_VALIDATION_ERROR,
 )
-from benchmark.export import export_dataset
-from benchmark.fingerprint import find_duplicates, result_fingerprint
-from benchmark.sanitize import scan_object
-from benchmark.suites import list_suites, load_suite
-from benchmark.trust import COMMUNITY_VALIDATED, UNVERIFIED, VERIFIED, trust_state
+from aihwbench.export import export_dataset
+from aihwbench.fingerprint import find_duplicates, result_fingerprint
+from aihwbench.sanitize import scan_object
+from aihwbench.suites import list_suites, load_suite
+from aihwbench.trust import COMMUNITY_VALIDATED, UNVERIFIED, VERIFIED, trust_state
 
 
 def _result(run_id: str, gen_tps: float) -> dict:

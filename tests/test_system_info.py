@@ -2,7 +2,7 @@
 
 import re
 
-from benchmark.system_info import detect_system
+from aihwbench.system_info import detect_system
 
 # Patterns that must never appear in sanitized output.
 #

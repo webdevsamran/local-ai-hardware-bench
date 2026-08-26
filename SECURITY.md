@@ -11,7 +11,7 @@ Benchmark results are public artifacts. Never include:
 - NDA-covered information
 
 Detection output produced by `aihwbench` is sanitized by design, and a
-fail-closed privacy scanner (`benchmark/sanitize.py`) checks published
+fail-closed privacy scanner (`aihwbench/sanitize.py`) checks published
 artifacts for accidental exposure. You remain responsible for anything
 you paste into issues or results files.
 

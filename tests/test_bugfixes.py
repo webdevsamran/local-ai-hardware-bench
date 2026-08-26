@@ -7,8 +7,8 @@ import re
 import uuid
 from unittest import mock
 
-from benchmark.backends.base import new_run_id
-from benchmark.schemas import validate_result
+from aihwbench.backends.base import new_run_id
+from aihwbench.schemas import validate_result
 
 
 def test_new_run_id_is_unique_within_same_second():
@@ -83,7 +83,7 @@ def test_linux_physical_cores_count_core_pairs_not_sockets():
         return real_open(path, *args, **kwargs)
 
     with mock.patch("builtins.open", fake_open):
-        from benchmark.system_info import get_cpu_info
+        from aihwbench.system_info import get_cpu_info
 
         info = get_cpu_info()
     assert info["cpu_cores_physical"] == 8

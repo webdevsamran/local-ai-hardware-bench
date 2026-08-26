@@ -1,3 +1,9 @@
+# Type checkers / coverage
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
 # Python
 __pycache__/
 *.py[cod]

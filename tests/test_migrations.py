@@ -8,13 +8,13 @@ import pathlib
 
 import pytest
 
-from benchmark.migrations import (
+from aihwbench.migrations import (
     SUPPORTED_SCHEMA_VERSIONS,
     MigrationError,
     migrate,
     read_result,
 )
-from benchmark.schemas import CURRENT_SCHEMA_VERSION, validate_result
+from aihwbench.schemas import CURRENT_SCHEMA_VERSION, validate_result
 
 
 def _published_docs() -> list[dict]:

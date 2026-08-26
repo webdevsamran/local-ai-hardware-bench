@@ -2,8 +2,8 @@
 
 AIHWBench supports two ways to add a runtime backend:
 
-1. **Built-in**: add a module under `benchmark/backends/` and register
-   it in `benchmark/backends/__init__.py`.
+1. **Built-in**: add a module under `aihwbench/backends/` and register
+   it in `aihwbench/backends/__init__.py`.
 2. **External plugin** (recommended for third parties): publish a Python
    package that registers an entry point in the `aihwbench.backends`
    group. No changes to this repository are required.

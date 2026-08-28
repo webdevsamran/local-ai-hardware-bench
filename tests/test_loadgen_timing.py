@@ -20,7 +20,7 @@ from aihwbench.loadgen import LoadgenConfig, generate_arrivals, run_load
 
 
 def _mean_interarrival(offsets: list[float]) -> float:
-    gaps = [b - a for a, b in zip(offsets, offsets[1:])]
+    gaps = [b - a for a, b in zip(offsets, offsets[1:], strict=False)]
     return sum(gaps) / len(gaps)
 
 
@@ -30,9 +30,7 @@ def test_gamma_mean_rate_independent_of_shape():
     rate = 50.0
     n = 400
     for shape in (0.5, 2.0, 4.0):
-        cfg = LoadgenConfig(
-            pattern="gamma", rate_per_second=rate, gamma_shape=shape, requests=n
-        )
+        cfg = LoadgenConfig(pattern="gamma", rate_per_second=rate, gamma_shape=shape, requests=n)
         offsets = list(generate_arrivals(cfg))
         assert len(offsets) == n
         mean_gap = _mean_interarrival(offsets)

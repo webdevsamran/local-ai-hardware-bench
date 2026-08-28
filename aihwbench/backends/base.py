@@ -143,7 +143,10 @@ def resolve_input_specs(
     """
     resolved: dict[str, dict[str, Any]] = {}
     for name, type_str, declared_shape in specs:
-        shape = [int(d) if isinstance(d, int) and not isinstance(d, bool) and d > 0 else 1 for d in declared_shape]
+        shape = [
+            int(d) if isinstance(d, int) and not isinstance(d, bool) and d > 0 else 1
+            for d in declared_shape
+        ]
         resolved[name] = {"shape": shape, "dtype": _normalize_dtype(name, type_str)}
     if not resolved:
         raise BackendError("model declares no inputs; cannot construct a benchmark feed")

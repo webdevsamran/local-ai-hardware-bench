@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from .schemas import validate_result
-from .trust import trust_state
+from .trust import effective_trust
 
 _DATASET_COLUMNS = [
     "run_id",
@@ -71,11 +71,10 @@ def _row(result: dict[str, Any]) -> dict[str, Any]:
     runtime = result.get("runtime", {})
     model = result.get("model", {})
     metrics = result.get("metrics", {})
-    repro = result.get("reproducibility", {})
     return {
         "run_id": result.get("run_id"),
         "timestamp": result.get("timestamp"),
-        "trust": trust_state(repro.get("trust")),
+        "trust": effective_trust(result),
         "os": system.get("os"),
         "cpu": system.get("cpu"),
         "gpu": system.get("gpu"),

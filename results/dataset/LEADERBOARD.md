@@ -1,6 +1,6 @@
 # AIHWBench Leaderboard
 
-Generated from 6 validated result(s) in `e:\LocalAIHardwareBenchmark\local-ai-hardware-bench\results\published`.
+Generated from 6 validated result(s) in `results\published`.
 
 | Run | Runtime | Model | GPU | Gen tok/s | TTFT ms | Perf/W |
 | --- | --- | --- | --- | --- | --- | --- |

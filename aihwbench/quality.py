@@ -18,6 +18,7 @@ from .repro import reproducibility_score
 from .sanitize import scan_object_detailed
 from .schemas import validate_result
 from .stats import summarize
+from .trust import TRUST_STATES, effective_trust
 
 __all__ = [
     "data_quality_report",
@@ -25,8 +26,6 @@ __all__ = [
     "flag_anomalies",
     "TRUST_STATES",
 ]
-
-TRUST_STATES = ("unreviewed", "verified", "flagged", "invalidated", "superseded")
 
 
 def _privacy_scan(result: dict[str, Any]) -> list[str]:
@@ -55,9 +54,7 @@ def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:
     variance = summarize(latencies) if latencies else None
     high_variance = bool(variance and variance["cv"] is not None and variance["cv"] > 0.5)
 
-    trust = result.get("trust_state", "unreviewed")
-    if trust not in TRUST_STATES:
-        trust = "unreviewed"
+    trust = effective_trust(result)
 
     checks = {
         "schema_valid": not schema_errors,

@@ -258,6 +258,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "checksum": f"sha256:{checksum}",
         },
         "metrics": metrics,
+        "telemetry": sampler.provenance(),
         "reproducibility": {
             "prompt": config.prompt,
             "max_tokens": config.max_tokens,

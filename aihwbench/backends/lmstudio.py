@@ -196,6 +196,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "checksum": None,
         },
         "metrics": metrics,
+        "telemetry": sampler.provenance(),
         "reproducibility": {
             "prompt": config.prompt,
             "max_tokens": config.max_tokens,

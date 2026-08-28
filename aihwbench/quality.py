@@ -12,10 +12,10 @@
 
 from __future__ import annotations
 
-import re
 from typing import Any
 
 from .repro import reproducibility_score
+from .sanitize import scan_object_detailed
 from .schemas import validate_result
 from .stats import summarize
 
@@ -28,33 +28,16 @@ __all__ = [
 
 TRUST_STATES = ("unreviewed", "verified", "flagged", "invalidated", "superseded")
 
-# Patterns that must never appear in published results (privacy scan).
-# Backslashes are built via chr(92) so the patterns stay readable and
-# shell/tooling safe.
-_BS = chr(92)  # one backslash character
-_DQ = chr(34)  # one double-quote character
-
-_PRIVACY_PATTERNS = {
-    # Windows user profile paths: C:\Users\<name>\...
-    # Regex needs literal backslashes, so each path separator is two
-    # backslash characters (_BS + _BS).
-    # One-or-more backslashes so both raw strings and repr() output
-    # (which doubles backslashes) are matched.
-    # Each path separator in regex is an escaped backslash followed by a
-    # one-or-more quantifier (_BS + _BS + "+").
-    "windows_path": re.compile(
-        "[A-Za-z]:" + _BS + _BS + "+Users" + _BS + _BS + "+[^" + _DQ + _BS + _BS + "]+"
-    ),
-    "home_path": re.compile("/home/[a-z0-9_-]+", re.IGNORECASE),
-    "mac_address": re.compile("([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}"),
-    "email": re.compile("[^@" + _BS + "s]+@[^@" + _BS + "s]+"),
-    "serial_like": re.compile("SN[-:]?" + _BS + "s?[0-9A-Z]{8,}"),
-}
-
 
 def _privacy_scan(result: dict[str, Any]) -> list[str]:
-    text = repr(result)
-    return [name for name, pattern in _PRIVACY_PATTERNS.items() if pattern.search(text)]
+    """Canonical privacy scan (delegates to aihwbench.sanitize).
+
+    Returns deduplicated pattern ids, in deterministic registry order.
+    All detection semantics — patterns, recursion, redaction — live in
+    the canonical scanner; this module adds no rules of its own.
+    """
+    findings = scan_object_detailed(result)
+    return list(dict.fromkeys(item["pattern"] for item in findings))
 
 
 def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:

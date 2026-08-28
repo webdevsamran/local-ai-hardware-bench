@@ -1,18 +1,21 @@
 """llama.cpp backend — real benchmarking via llama-server.
 
 Detection: locate `llama-server` (or `llama-cli`) on PATH or common
-install locations. Benchmark: start llama-server with the target GGUF
-model, wait for its health endpoint, then issue streaming OpenAI-compatible
-chat completions. TTFT is measured from the first streamed content chunk;
-token counts come from the server's usage object (never estimated).
+install locations. Benchmark: start llama-server on an OS-assigned free
+port (or a caller-supplied one), wait for its health endpoint, then issue
+streaming OpenAI-compatible chat completions. TTFT is measured from the
+first streamed content chunk; token counts come ONLY from the server's
+usage object — SSE chunks are transport-dependent (a chunk may carry
+several tokens or a partial one) and are counted separately under
+``stream_content_chunks``, never substituted for tokens.
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
+import socket
 import subprocess
 import time
 import urllib.error
@@ -26,6 +29,7 @@ from .base import (
     BackendInfo,
     BenchmarkConfig,
     RuntimeStatus,
+    file_sha256,
     new_run_id,
     run_command,
     which,
@@ -74,28 +78,29 @@ def detect() -> BackendInfo:
     return BackendInfo("llama.cpp", RuntimeStatus.AVAILABLE, version, server)
 
 
-def _file_sha256(path: Path, chunk_size: int = 1 << 20) -> str:
-    digest = hashlib.sha256()
-    with open(path, "rb") as fh:
-        while chunk := fh.read(chunk_size):
-            digest.update(chunk)
-    return digest.hexdigest()
+def _free_port() -> int:
+    """Ask the OS for a free TCP port (avoids fixed-port collisions)."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
 
 
 class LlamaServerHandle:
     """Managed llama-server subprocess."""
 
     def __init__(
-        self, binary: str, model_path: str, config: BenchmarkConfig, port: int = 8123
+        self, binary: str, model_path: str, config: BenchmarkConfig, port: int | None = None
     ) -> None:
         self.binary = binary
         self.model_path = model_path
         self.config = config
-        self.port = port
-        self.base_url = f"http://127.0.0.1:{port}"
+        self.port = port  # None -> OS-assigned free port at start
         self.proc: subprocess.Popen[bytes] | None = None
 
     def __enter__(self) -> LlamaServerHandle:
+        if self.port is None:
+            self.port = _free_port()
+        self.base_url = f"http://127.0.0.1:{self.port}"
         cmd = [
             self.binary,
             "-m",
@@ -129,12 +134,16 @@ class LlamaServerHandle:
         raise BackendError("llama-server did not become healthy within 120s")
 
     def __exit__(self, *exc: Any) -> None:
-        if self.proc is not None and self.proc.poll() is None:
+        if self.proc is None:
+            return
+        if self.proc.poll() is None:
             self.proc.terminate()
             try:
                 self.proc.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 self.proc.kill()
+                self.proc.wait(timeout=5)
+        self.proc = None
 
 
 def _chat_stream(handle: LlamaServerHandle, config: BenchmarkConfig) -> dict[str, Any]:
@@ -181,12 +190,12 @@ def _chat_stream(handle: LlamaServerHandle, config: BenchmarkConfig) -> dict[str
                 usage = chunk["usage"]
     total_ms = (time.perf_counter() - start) * 1000.0
 
+    # Token counts come ONLY from the server usage object. SSE content
+    # chunks are transport-dependent (a chunk may carry several tokens or
+    # a partial one) and are recorded separately for diagnostics only —
+    # they are never substituted for tokens.
     completion_tokens = usage.get("completion_tokens")
-    if completion_tokens is None and content_chunks > 0:
-        # llama.cpp streams one token per chunk; counting streamed content
-        # chunks is a measurement of received tokens, not an estimate.
-        completion_tokens = content_chunks
-    # Wall-clock streaming duration between first and last content token.
+    # Wall-clock streaming duration between first and last content chunk.
     stream_seconds = (
         (last_content_at - first_content_at)
         if first_content_at is not None and last_content_at is not None
@@ -199,6 +208,25 @@ def _chat_stream(handle: LlamaServerHandle, config: BenchmarkConfig) -> dict[str
         "prompt_tokens": usage.get("prompt_tokens"),
         "eval_seconds": stream_seconds,
         "prompt_eval_seconds": None,
+        "stream_content_chunks": content_chunks,
+    }
+
+
+def metric_source_block() -> dict[str, Any]:
+    """Metric provenance for llama.cpp results (never conflated).
+
+    ``completion_tokens`` is a llama-server usage-object counter; tok/s is
+    derived over the client wall-clock window between first and last
+    streamed content chunk — labeled explicitly as client-derived.
+    """
+    return {
+        "completion_tokens": "engine_usage",
+        "generation_tokens_per_second": "client_wall_clock",
+        "note": (
+            "tokens counted by the llama-server usage object; tok/s derived "
+            "over the client wall-clock window between first and last "
+            "streamed content chunk"
+        ),
     }
 
 
@@ -215,7 +243,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     from .. import SCHEMA_VERSION
     from ..metrics import aggregate_iteration_metrics
 
-    checksum = _file_sha256(Path(model_path))
+    checksum = file_sha256(model_path)
     handle = LlamaServerHandle(info.detail or "llama-server", str(model_path), config)
     sampler = TelemetrySampler(interval_seconds=0.5)
     sampler.start()
@@ -238,6 +266,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     metrics["performance_per_watt"] = performance_per_watt(
         metrics["generation_tokens_per_second"], telemetry.get("average_power_watts")
     )
+    metrics["metric_source"] = metric_source_block()
 
     return {
         "schema_version": SCHEMA_VERSION,

@@ -15,7 +15,15 @@ from pathlib import Path
 from typing import Any
 
 from ..telemetry import TelemetrySampler
-from .base import BackendError, BackendInfo, BenchmarkConfig, RuntimeStatus, new_run_id
+from .base import (
+    BackendError,
+    BackendInfo,
+    BenchmarkConfig,
+    RuntimeStatus,
+    file_sha256,
+    new_run_id,
+    resolve_input_specs,
+)
 
 
 def _numpy():
@@ -70,6 +78,14 @@ def _resolve_device(device: str, available: list[str]) -> str:
     )
 
 
+def _declared_inputs(specs: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    """Declared-input manifest recorded verbatim in reproducibility."""
+    return [
+        {"name": name, "dtype": spec["dtype"], "shape": spec["shape"]}
+        for name, spec in sorted(specs.items())
+    ]
+
+
 def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     """Execute a full OpenVINO benchmark and return a schema-1.0 result."""
     info = detect()
@@ -94,24 +110,31 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
         raise BackendError(f"failed to load/compile model on {target_device}: {exc}") from exc
     load_time_ms = (time.perf_counter() - load_start) * 1000.0
 
-    # Build deterministic zero inputs from the compiled model's inputs.
-    # Dynamic dimensions are pinned to 1 (documented in reproducibility).
+    # Build deterministic zero inputs for ALL declared inputs via the
+    # shared resolver. Dynamic dimensions are pinned to 1 in the feed;
+    # the declared shapes are recorded verbatim in reproducibility.
     np = _numpy()
-    feed: dict[Any, Any] = {}
-    for input_node in compiled.inputs:
-        pshape = input_node.get_partial_shape()
-        shape = [d.get_length() if d.is_static and d.get_length() > 0 else 1 for d in pshape]
-        etype = str(input_node.get_element_type())
-        dtype = np.float32
-        if "i64" in etype:
-            dtype = np.int64
-        elif "i32" in etype:
-            dtype = np.int32
-        feed[input_node] = np.zeros(shape, dtype=dtype)
-    first_input = next(iter(feed))
+    nodes = list(compiled.inputs)
+    specs = resolve_input_specs(
+        (
+            node.get_any_name() or f"input_{i}",
+            str(node.get_element_type()),
+            [
+                d.get_length() if d.is_static and d.get_length() > 0 else 1
+                for d in node.get_partial_shape()
+            ],
+        )
+        for i, node in enumerate(nodes)
+    )
+    feed: dict[Any, Any] = {
+        node: np.zeros(specs[key]["shape"], dtype=specs[key]["dtype"])
+        for node, key in zip(nodes, specs, strict=True)
+    }
 
     def infer() -> None:
-        compiled({first_input: feed[first_input]})
+        # Feed ALL declared inputs — a first-input-only feed silently
+        # mis-measures multi-input models.
+        compiled(feed)
 
     sampler = TelemetrySampler(interval_seconds=0.5)
     latencies: list[float] = []
@@ -169,7 +192,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "format": "onnx",
             "quantization": None,
             "parameters": None,
-            "checksum": None,
+            "checksum": file_sha256(model_path),
         },
         "metrics": metrics,
         "telemetry": sampler.provenance(),
@@ -186,6 +209,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
                 f"--device {config.device}"
             ),
             "workload_type": "graph-inference",
+            "graph_inputs": _declared_inputs(specs),
         },
         "iterations": [
             {"iteration": i, "latency_ms": round(v, 2)} for i, v in enumerate(latencies)

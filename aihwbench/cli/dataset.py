@@ -10,7 +10,7 @@ from pathlib import Path
 from ..dataset_versioning import build_snapshot_manifest
 from ..evaluators import list_evaluators, load_dataset, run_evaluation
 from ..exit_codes import EXIT_OK, EXIT_USAGE_ERROR, EXIT_VALIDATION_ERROR
-from ..export import export_dataset
+from ..export import DatasetLoadError, export_dataset
 from ..exporters import get_exporter, list_exporters
 from ..quality import data_quality_report, flag_anomalies, invalidate_result
 from ..quantization import compare_quantizations
@@ -24,7 +24,11 @@ def cmd_export(args: argparse.Namespace) -> int:
     if not results_dir.is_dir():
         fail(f"{results_dir} is not a directory")
         return EXIT_USAGE_ERROR
-    outputs = export_dataset(results_dir, Path(args.output))
+    try:
+        outputs = export_dataset(results_dir, Path(args.output), strict=args.strict)
+    except DatasetLoadError as exc:
+        fail(str(exc))
+        return EXIT_VALIDATION_ERROR
     for p in outputs:
         print(f"Written: {p}")
     return EXIT_OK
@@ -152,7 +156,11 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
     prev_path = Path(args.previous) if args.previous else None
     if prev_path and prev_path.is_file():
         previous = json.loads(prev_path.read_text(encoding="utf-8"))
-    manifest = build_snapshot_manifest(results_dir, args.version, previous)
+    try:
+        manifest = build_snapshot_manifest(results_dir, args.version, previous)
+    except ValueError as exc:
+        fail(str(exc))
+        return EXIT_VALIDATION_ERROR
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
@@ -164,6 +172,11 @@ def register(sub: argparse._SubParsersAction) -> None:
     exp = sub.add_parser("export", help="Generate dataset views from published results")
     exp.add_argument("results_dir", nargs="?", default="results/published")
     exp.add_argument("--output", default="results/dataset")
+    exp.add_argument(
+        "--strict",
+        action="store_true",
+        help="Fail closed on unreadable/schema-invalid results (default for publishing)",
+    )
     exp.set_defaults(func=cmd_export)
 
     sub.add_parser("evaluators", help="List registered evaluators").set_defaults(

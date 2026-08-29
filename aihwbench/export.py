@@ -53,17 +53,41 @@ _DATASET_COLUMNS = [
 ]
 
 
-def load_results(directory: Path) -> list[dict[str, Any]]:
-    """Load all valid result JSON files from a directory."""
+def load_results(directory: Path, *, strict: bool = False) -> list[dict[str, Any]]:
+    """Load result JSON files from a directory.
+
+    Lenient by default (exploratory local use): files that are unreadable
+    or fail schema validation are skipped. When ``strict=True``
+    (publishing/CI paths), any unreadable or schema-invalid file raises
+    ``DatasetLoadError`` with every offending path — silent data loss is
+    never acceptable when generating published artifacts.
+    """
+    problems: list[str] = []
     results = []
     for path in sorted(directory.glob("*.json")):
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, json.JSONDecodeError) as exc:
+            problems.append(f"unreadable or invalid JSON: {path}: {exc}")
             continue
-        if isinstance(data, dict) and not validate_result(data):
-            results.append(data)
+        if not isinstance(data, dict):
+            problems.append(f"not an object: {path}")
+            continue
+        errors = validate_result(data)
+        if errors:
+            problems.append(f"schema validation failed: {path}: {'; '.join(errors[:3])}")
+            continue
+        results.append(data)
+    if strict and problems:
+        raise DatasetLoadError(
+            f"refusing to load dataset from {directory}: "
+            f"{len(problems)} file(s) are unreadable or invalid:\n" + "\n".join(problems)
+        )
     return results
+
+
+class DatasetLoadError(ValueError):
+    """Raised when a published-dataset load fails closed (strict mode)."""
 
 
 def _row(result: dict[str, Any]) -> dict[str, Any]:
@@ -92,9 +116,13 @@ def _row(result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def export_dataset(results_dir: Path, output_dir: Path) -> list[Path]:
-    """Generate index.json, dataset.csv, LEADERBOARD.md from results."""
-    results = load_results(results_dir)
+def export_dataset(results_dir: Path, output_dir: Path, *, strict: bool = False) -> list[Path]:
+    """Generate index.json, dataset.csv, LEADERBOARD.md from results.
+
+    ``strict=True`` makes the load fail closed (publishing/CI); the default
+    is tolerant for exploratory local use.
+    """
+    results = load_results(results_dir, strict=strict)
     rows = [_row(r) for r in results]
     output_dir.mkdir(parents=True, exist_ok=True)
 

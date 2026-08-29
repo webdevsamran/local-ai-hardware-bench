@@ -1,0 +1,169 @@
+== aihwbench/npu.py (53 lines) ==
+20: def npu_telemetry(system: dict[str, Any] | None = None) -> dict[str, Any]:
+42: def enrich_with_npu(
+== aihwbench/backends/capabilities.py (79 lines) ==
+25: def probe(cmd: str, timeout: float = 10.0) -> dict[str, Any]:
+42: def capability_report(
+== aihwbench/formal_schema.py (65 lines) ==
+32: def load_formal_schema(version: str) -> dict[str, Any]:
+45: def validate_formal(doc: dict[str, Any], version: str | None = None) -> list[str]:
+== aihwbench/telemetry.py (273 lines) ==
+27: def _nvidia_smi_sample() -> dict[str, Any] | None:
+73: def _system_ram_sample() -> tuple[float | None, str | None]:
+121: def _cpu_util_sample() -> tuple[float | None, str | None]:
+131: class TelemetrySampler:
+134:     def __init__(self, interval_seconds: float = 0.5) -> None:
+142:     def start(self) -> None:
+147:     def stop(self) -> None:
+161:     def summary(self) -> dict[str, Any]:
+197:     def provenance(self) -> dict[str, Any]:
+227:     def raw_trace(self) -> list[dict[str, Any]]:
+237:     def _loop(self) -> None:
+268: def measure(fn: Callable[[], Any]) -> tuple[Any, float]:
+== aihwbench/export.py (172 lines) ==
+56: def load_results(directory: Path, *, strict: bool = False) -> list[dict[str, Any]]:
+89: class DatasetLoadError(ValueError):
+93: def _row(result: dict[str, Any]) -> dict[str, Any]:
+119: def export_dataset(results_dir: Path, output_dir: Path, *, strict: bool = False) -> list[Path]:
+== aihwbench/backends/tensorrt.py (63 lines) ==
+22: def detect() -> BackendInfo:
+58: def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
+== aihwbench/backends/rocm.py (50 lines) ==
+16: def detect() -> BackendInfo:
+45: def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
+== aihwbench/backends/qnn.py (51 lines) ==
+23: def detect() -> BackendInfo:
+46: def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
+== aihwbench/backends/hailo.py (49 lines) ==
+16: def detect() -> BackendInfo:
+44: def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
+== tests/test_issue_batch2.py (116 lines) ==
+14: def test_temperature_slope_flat_is_zero():
+19: def test_temperature_slope_rising():
+24: def test_temperature_slope_insufficient_points():
+30: def test_thermal_stability_classification():
+42: def test_thermal_stability_accepts_dicts():
+54: def test_npu_module_shape():
+65: def test_parquet_export(tmp_path):
+87: def test_parquet_extra_registered():
+93: def test_cli_export_has_parquet_flag():
+99: def test_genai_and_lemonade_registered():
+109: def test_formal_schema_20_exists():
+== pyproject extras ==
+[project.optional-dependencies]
+telemetry = 
+== release.yml ==
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, checksum, SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install build tooling
+        run: pip install build twine cyclonedx-bom
+      - name: Build sdist and wheel
+        run: python -m build
+      - name: Check distributions
+        run: twine check dist/*
+      - name: Generate SHA256SUMS
+        run: |
+          cd dist
+          sha256sum * > ../SHA256SUMS.txt
+          cd ..
+          mv SHA256SUMS.txt dist/SHA256SUMS.txt
+      - name: Generate SBOM (CycloneDX)
+        # A release security artifact must be produced or the release job
+        # fails. We never swallow SBOM failure with a "skipped" echo.
+        run: |
+          set -e
+          pip install .
+          cyclonedx-py requirements --output-format json --output-file dist/sbom.json
+
+      - name: Verify SBOM was generated and is valid
+        run: |
+          set -e
+          test -s dist/sbom.json || { echo "::error::dist/sbom.json is empty or missing"; exit 1; }
+          python - <<'PY'
+          import json
+          with open("dist/sbom.json", encoding="utf-8") as fh:
+              sbom = json.load(fh)
+          assert sbom.get("bomFormat") == "CycloneDX", "SBOM is not a CycloneDX document"
+          components = sbom.get("components", [])
+          print(f"SBOM valid: {len(components)} component(s), spec {sbom.get('specVersion')}")
+          PY
+      - name: Upload artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: release-artifacts
+          path: dist/
+
+  github-release:
+    name: GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-artifacts
+          path: dist/
+      - name: Create GitHub Release with artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --title "AIHWBench ${GITHUB_REF_NAME}" \
+            --generate-notes
+== test_issue_batch2.py defs ==
+5: import json
+6: import pathlib
+7: import tomllib
+9: import pytest
+11: from aihwbench.analysis.thermal import temperature_slope_c_per_min, thermal_stability
+14: def test_temperature_slope_flat_is_zero():
+19: def test_temperature_slope_rising():
+24: def test_temperature_slope_insufficient_points():
+30: def test_thermal_stability_classification():
+42: def test_thermal_stability_accepts_dicts():
+54: def test_npu_module_shape():
+65: def test_parquet_export(tmp_path):
+87: def test_parquet_extra_registered():
+93: def test_cli_export_has_parquet_flag():
+99: def test_genai_and_lemonade_registered():
+109: def test_formal_schema_20_exists():
+== CITATION.cff exists: True ==
+== git log ==
+77c9218 feat(backends/detection): Ollama engine load_time_ms; macOS CPU/RAM detection (#5, #24)
+468b70c docs: repository audit, remediation plan, ADRs 0001-0007, changelog for Phase A fixes
+0b520a5 ci: fail-closed validation and release gates - aggregated verdict fails the job, deterministic regression candidate, mandatory verified SBOM
+== git status ==
+M aihwbench/analysis/thermal.py
+ M aihwbench/backends/__init__.py
+?? .zenodo.json
+?? aihwbench/backends/capabilities.py
+?? aihwbench/backends/lemonade.py
+?? aihwbench/backends/openvino_genai.py
+?? aihwbench/formal_schema.py
+?? aihwbench/npu.py
+?? schemas/result-1.0.schema.json
+?? schemas/result-2.0.schema.json
+?? scripts/_facts.py
+?? scripts/_patch2c.py
+?? scripts/_patch_log.txt
+?? scripts/_pf2.py
+?? tests/test_issue_batch2.py

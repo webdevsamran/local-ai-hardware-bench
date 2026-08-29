@@ -13,12 +13,14 @@ from typing import Any
 
 from . import (
     hailo,
+    lemonade,
     llama_cpp,
     lmstudio,
     mlx,
     ollama,
     onnxruntime,
     openvino,
+    openvino_genai,
     qnn,
     rocm,
     tensorrt,
@@ -39,6 +41,8 @@ BACKENDS: dict[str, Any] = {
     "llama.cpp": llama_cpp,
     "onnxruntime": onnxruntime,
     "openvino": openvino,
+    "openvino_genai": openvino_genai,
+    "lemonade": lemonade,
     "lmstudio": lmstudio,
     "rocm": rocm,
     "mlx": mlx,

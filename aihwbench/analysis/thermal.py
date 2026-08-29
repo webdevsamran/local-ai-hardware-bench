@@ -11,10 +11,33 @@ from __future__ import annotations
 
 from typing import Any
 
-__all__ = ["analyze_thermal_stability"]
+__all__ = ["analyze_thermal_stability", "temperature_slope_c_per_min"]
 
 # A sample window is "steady state" once it is at least this long.
 MIN_STEADY_SAMPLES = 5
+
+
+def temperature_slope_c_per_min(
+    timestamps_s: list[float], temperature_c: list[float]
+) -> float | None:
+    """Least-squares temperature slope in °C/minute.
+
+    Measured from the supplied samples; returns ``None`` when fewer than
+    two distinct timestamps are available (no trend can be measured).
+    """
+    n = len(timestamps_s)
+    if n < 2 or n != len(temperature_c):
+        return None
+    if any(b < a for a, b in zip(timestamps_s, timestamps_s[1:], strict=False)):
+        raise ValueError("timestamps must be non-decreasing")
+    mean_t = sum(timestamps_s) / n
+    mean_c = sum(temperature_c) / n
+    var_t = sum((t - mean_t) ** 2 for t in timestamps_s)
+    if var_t <= 0.0:
+        return None
+    cov = sum((t - mean_t) * (c - mean_c) for t, c in zip(timestamps_s, temperature_c, strict=True))
+    slope_per_second = cov / var_t
+    return round(slope_per_second * 60.0, 4)
 
 
 def analyze_thermal_stability(
@@ -37,6 +60,7 @@ def analyze_thermal_stability(
             "time_to_throttle_s": None,
             "max_temperature_c": None,
             "final_temperature_c": None,
+            "temperature_slope_c_per_min": None,
             "temperature_curve": [],
             "reason": "insufficient samples for thermal analysis",
         }
@@ -63,6 +87,7 @@ def analyze_thermal_stability(
         "throttle_threshold_c": throttle_temp_c,
         "max_temperature_c": max(temperature_c),
         "final_temperature_c": temperature_c[-1],
+        "temperature_slope_c_per_min": temperature_slope_c_per_min(timestamps_s, temperature_c),
         "temperature_curve": [
             {"t_s": t, "temp_c": temp, "tps": tp}
             for t, temp, tp in zip(timestamps_s, temperature_c, throughput_tps, strict=True)

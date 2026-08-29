@@ -261,3 +261,70 @@ def test_new_provenance_fields_pass_semantic_validation() -> None:
     doc["iterations"][0]["stream_content_chunks"] = 11
     doc["model"]["checksum"] = hashlib.sha256(b"x").hexdigest()
     validate_or_raise(doc)
+
+
+# --- Issue #5: Ollama load time comes only from the engine's load_duration ---
+
+
+class _FakeOllamaResponse:
+    """Context-manager byte-line response mimicking /api/generate streaming."""
+
+    def __init__(self, lines: list[bytes]) -> None:
+        self._lines = lines
+
+    def __enter__(self) -> _FakeOllamaResponse:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+    def __iter__(self):
+        return iter(self._lines)
+
+
+def _ollama_stream_lines(load_duration_ns: int | None) -> list[bytes]:
+    lines = [json.dumps({"response": "Hello", "done": False}).encode("utf-8")]
+    final: dict[str, Any] = {
+        "done": True,
+        "eval_count": 42,
+        "eval_duration": 1_000_000_000,
+    }
+    if load_duration_ns is not None:
+        final["load_duration"] = load_duration_ns
+    lines.append(json.dumps(final).encode("utf-8"))
+    return lines
+
+
+def test_ollama_load_time_from_engine_counter(monkeypatch: pytest.MonkeyPatch) -> None:
+    from aihwbench.backends import ollama
+
+    monkeypatch.setattr(
+        ollama.urllib.request,
+        "urlopen",
+        lambda request, timeout: _FakeOllamaResponse(_ollama_stream_lines(250_000_000)),
+    )
+    it = ollama._generate_stream("m", "prompt", BenchmarkConfig(model="m"))
+    assert it["load_time_ms"] == 250.0
+
+
+def test_ollama_load_time_stays_null_when_engine_reports_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from aihwbench.backends import ollama
+
+    monkeypatch.setattr(
+        ollama.urllib.request,
+        "urlopen",
+        lambda request, timeout: _FakeOllamaResponse(_ollama_stream_lines(None)),
+    )
+    it = ollama._generate_stream("m", "prompt", BenchmarkConfig(model="m"))
+    assert it["load_time_ms"] is None  # never estimated (#5)
+
+
+def test_ollama_load_time_aggregates_into_metrics() -> None:
+    from aihwbench.metrics import aggregate_iteration_metrics
+
+    metrics = aggregate_iteration_metrics(
+        [{"load_time_ms": 250.0, "completion_tokens": 42, "eval_seconds": 1.0}]
+    )
+    assert metrics["load_time_ms"] == 250.0

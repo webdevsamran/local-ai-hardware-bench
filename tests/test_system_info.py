@@ -36,3 +36,36 @@ def test_ram_is_plausible():
     ram = detect_system()["ram_gb"]
     if ram is not None:
         assert 0.5 <= ram <= 8192
+
+
+# --- Issue #24: macOS (Darwin) CPU identity/topology and RAM detection ---
+
+
+def test_darwin_ram_and_cpu_detection(monkeypatch):
+    import aihwbench.system_info as si
+
+    monkeypatch.setattr(si.platform, "system", lambda: "Darwin")
+
+    def fake_run(cmd, timeout=10.0):
+        table = {
+            ("sysctl", "-n", "hw.memsize"): "34359738368",
+            ("sysctl", "-n", "machdep.cpu.brand_string"): "Apple M2 Pro",
+            ("sysctl", "-n", "hw.physicalcpu"): "10",
+            ("sysctl", "-n", "hw.logicalcpu"): "10",
+        }
+        return table.get(tuple(cmd))
+
+    monkeypatch.setattr(si, "_run", fake_run)
+    assert si.get_ram_gb() == 32.0
+    cpu = si.get_cpu_info()
+    assert cpu["cpu"] == "Apple M2 Pro"
+    assert cpu["cpu_cores_physical"] == 10
+    assert cpu["cpu_cores_logical"] == 10
+
+
+def test_darwin_missing_sysctl_stays_none(monkeypatch):
+    import aihwbench.system_info as si
+
+    monkeypatch.setattr(si.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(si, "_run", lambda cmd, timeout=10.0: None)
+    assert si.get_ram_gb() is None  # unavailable stays null, never estimated

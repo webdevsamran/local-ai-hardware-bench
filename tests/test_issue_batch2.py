@@ -6,7 +6,11 @@ import json
 import pathlib
 
 import pytest
-import tomllib
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python < 3.11; tomli is in the dev extra
+    import tomli as tomllib  # type: ignore[no-redef]
 
 from aihwbench.analysis.thermal import analyze_thermal_stability, temperature_slope_c_per_min
 

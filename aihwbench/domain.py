@@ -372,10 +372,14 @@ class MetricSet:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> MetricSet:
+        from .metrics import _MISSING, resolve_metric
+
         kwargs: dict[str, Any] = {}
         for name in cls._NUMERIC_FIELDS:
-            kwargs[name] = _num(data.get(name))
-        ci = data.get("ci95_latency_ms")
+            resolved = resolve_metric(data, name)
+            if resolved is not _MISSING:
+                kwargs[name] = _num(resolved)
+        ci = resolve_metric(data, "ci95_latency_ms")
         kwargs["ci95_latency_ms"] = (
             (_num(ci[0]), _num(ci[1])) if isinstance(ci, (list, tuple)) and len(ci) == 2 else None
         )

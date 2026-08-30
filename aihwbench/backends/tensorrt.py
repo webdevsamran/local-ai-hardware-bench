@@ -61,3 +61,13 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     if info.status is not RuntimeStatus.CONFIGURATION_REQUIRED:
         raise BackendError(f"tensorrt is not available: {info.status.value} ({info.detail})")
     raise BackendError("TensorRT benchmarking is planned for v0.6. See ROADMAP.md.")
+
+
+# Declared capability contract: truthful hardware/library prerequisites.
+# Detection never reports availability when these are missing.
+CAPABILITIES: tuple[str, ...] = (
+    "nvidia-gpu-required",
+    "tensorrt-libs-required",
+    "engine-build-required",
+    "fp16-int8",
+)

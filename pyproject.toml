@@ -42,12 +42,14 @@ Issues = "https://github.com/webdevsamran/local-ai-hardware-bench/issues"
 Changelog = "https://github.com/webdevsamran/local-ai-hardware-bench/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
+parquet = ["pyarrow>=14"]
 telemetry = ["psutil>=5.9"]
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
     "psutil>=5.9",
     "numpy>=1.26",
+    "tomli>=1.1.0; python_version < \"3.11\"",
 ]
 
 [project.scripts]

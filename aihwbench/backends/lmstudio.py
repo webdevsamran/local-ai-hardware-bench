@@ -2,10 +2,12 @@
 
 Detection: GET http://localhost:1234/v1/models.
 Benchmark: POST /v1/chat/completions with streaming. Time-to-first-token is
-measured from the first streamed content delta. Token counts come from the
-``usage`` object (requested via ``stream_options.include_usage``). LM Studio
-does not expose evaluation durations, so engine-counter tok/s stay null —
-never estimated.
+measured from the first streamed content delta. Token counts come ONLY from
+the ``usage`` object (requested via ``stream_options.include_usage``).
+LM Studio does not expose engine evaluation durations, so engine-counter
+tok/s are unavailable; the reported rate is real usage tokens over the
+client wall-clock decode window, labeled ``client_wall_clock`` in
+``metrics.metric_source`` — never presented as an engine counter.
 """
 
 from __future__ import annotations
@@ -134,6 +136,23 @@ def _chat_stream(model: str, prompt: str, config: BenchmarkConfig) -> dict[str, 
     }
 
 
+def metric_source_block() -> dict[str, Any]:
+    """Metric provenance for LM Studio results (labeled, never conflated).
+
+    LM Studio exposes usage-token counts but no engine evaluation timers,
+    so tok/s is usage tokens over the client wall-clock decode window —
+    labeled explicitly, never presented as an engine counter.
+    """
+    return {
+        "completion_tokens": "engine_usage",
+        "generation_tokens_per_second": "client_wall_clock",
+        "note": (
+            "LM Studio exposes no engine evaluation duration; tok/s divides "
+            "usage-token counts by the measured wall-clock decode window"
+        ),
+    }
+
+
 def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     """Execute a full benchmark and return a schema-1.0 result document."""
     info = detect()
@@ -166,16 +185,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     metrics["performance_per_watt"] = performance_per_watt(
         metrics["generation_tokens_per_second"], telemetry.get("average_power_watts")
     )
-    # Decode-window tok/s is derived only where the server reported real token
-    # counts; it is a wall-clock measurement, never an estimate.
-    if metrics.get("generation_tokens_per_second") is None:
-        rates = [
-            it["completion_tokens"] / it["eval_seconds"]
-            for it in iterations
-            if it.get("completion_tokens") and it.get("eval_seconds")
-        ]
-        if rates:
-            metrics["generation_tokens_per_second"] = round(sum(rates) / len(rates), 2)
+    metrics["metric_source"] = metric_source_block()
 
     return {
         "schema_version": SCHEMA_VERSION,
@@ -196,6 +206,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "checksum": None,
         },
         "metrics": metrics,
+        "telemetry": sampler.provenance(),
         "reproducibility": {
             "prompt": config.prompt,
             "max_tokens": config.max_tokens,

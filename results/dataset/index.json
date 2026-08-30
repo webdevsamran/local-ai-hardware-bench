@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "source": "e:\\LocalAIHardwareBenchmark\\local-ai-hardware-bench\\results\\published",
+  "source": "results\\published",
   "count": 6,
   "results": [
     {
       "run_id": "llamacpp-1787391945",
       "timestamp": "2026-08-22T09:45:45Z",
-      "trust": "UNVERIFIED",
+      "trust": "verified",
       "os": "Windows 11",
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
@@ -38,7 +38,7 @@
     {
       "run_id": "ollama-1787388930",
       "timestamp": "2026-08-22T08:55:30Z",
-      "trust": "UNVERIFIED",
+      "trust": "verified",
       "os": "Windows 11",
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
@@ -70,7 +70,7 @@
     {
       "run_id": "onnxruntime-1787391388",
       "timestamp": "2026-08-22T09:36:28Z",
-      "trust": "UNVERIFIED",
+      "trust": "verified",
       "os": "Windows 11",
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
@@ -102,7 +102,7 @@
     {
       "run_id": "onnxruntime-1787391455",
       "timestamp": "2026-08-22T09:37:35Z",
-      "trust": "UNVERIFIED",
+      "trust": "verified",
       "os": "Windows 11",
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
@@ -134,7 +134,7 @@
     {
       "run_id": "openvino-1787391625",
       "timestamp": "2026-08-22T09:40:25Z",
-      "trust": "UNVERIFIED",
+      "trust": "verified",
       "os": "Windows 11",
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
@@ -166,7 +166,7 @@
     {
       "run_id": "openvino-1787391710",
       "timestamp": "2026-08-22T09:41:50Z",
-      "trust": "UNVERIFIED",
+      "trust": "verified",
       "os": "Windows 11",
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",

@@ -34,6 +34,16 @@ on:
         required: false
         default: "3.12"
         type: string
+      fail-on-validation-failure:
+        description: Fail the calling workflow when any result is schema/privacy invalid
+        required: false
+        default: "true"
+        type: boolean
+      fail-on-regression:
+        description: Fail the calling workflow when the newest candidate regresses vs baseline
+        required: false
+        default: "false"
+        type: boolean
 
 permissions:
   contents: read
@@ -58,43 +68,102 @@ jobs:
         run: |
           set -e
           verdict="pass"
+          failure_reasons=""
           mkdir -p validation-output
           for f in "${{ inputs.results-dir }}"/*.json; do
             [ -e "$f" ] || { echo "No results found in ${{ inputs.results-dir }}" >&2; exit 1; }
+            # Hard gate: schema + privacy validation. A non-zero exit flips
+            # the verdict (fail-closed, never aggregated away).
             if ! aihwbench validate "$f"; then
               verdict="fail"
+              failure_reasons="$failure_reasons\nschema/privacy: $f"
+              continue
             fi
-            aihwbench quality "$f" > "validation-output/$(basename "$f")" || true
+            # Quality is advisory but must not crash silently: capture the
+            # report to the artifact; a crash also flips the verdict.
+            quality_file="validation-output/$(basename "$f").quality.json"
+            if ! aihwbench quality "$f" > "$quality_file" 2>&1; then
+              verdict="fail"
+              failure_reasons="$failure_reasons\nquality-crash: $f"
+            fi
           done
+          if [ -n "$failure_reasons" ]; then
+            echo -e "Validation failures detected:$failure_reasons" >&2
+          fi
           echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
 
       - name: Anomaly review flags
         run: |
           aihwbench anomalies --results-dir "${{ inputs.results-dir }}" \
-            > validation-output/anomalies.json || true
+            > validation-output/anomalies.json 2> validation-output/anomalies.err
           cat validation-output/anomalies.json
 
+      - name: Select newest candidate (deterministic)
+        id: candidate
+        shell: python
+        run: |
+          import json, pathlib
+          files = sorted(pathlib.Path("${{ inputs.results-dir }}").glob("*.json"))
+          if not files:
+              raise SystemExit(f"no result files in ${{ inputs.results-dir }}")
+          def ts(p):
+              try:
+                  data = json.loads(p.read_text(encoding="utf-8"))
+                  return str(data.get("timestamp") or "")
+              except Exception:
+                  return ""
+          newest = max(files, key=ts)
+          print(newest, file=open("validation-output/candidate.txt", "w", encoding="utf-8"))
+          print(f"candidate={newest}")
+
       - name: Regression check vs baseline
+        id: regression
         if: ${{ inputs.baseline-name != '' }}
         run: |
-          candidate=$(ls "${{ inputs.results-dir }}"/*.json | head -n 1)
+          candidate=$(cat validation-output/candidate.txt)
+          set +e
           aihwbench regression --baseline "${{ inputs.baseline-name }}" \
-            --json "$candidate" > validation-output/regression.json
+            --json "$candidate" > validation-output/regression.json 2>&1
+          reg_exit=$?
+          set -e
+          echo "regression_exit=$reg_exit" >> "$GITHUB_OUTPUT"
           cat validation-output/regression.json
+          exit 0
 
       - name: Machine-readable verdict
         run: |
           python - <<'PY'
-          import json, pathlib
+          import json, os, pathlib
           out = pathlib.Path("validation-output")
           verdict = {"validation": "${{ steps.validate.outputs.verdict }}"}
           anomalies = out / "anomalies.json"
           if anomalies.exists():
-              data = json.loads(anomalies.read_text())
-              verdict["anomaly_flags"] = len(data.get("flags", []))
+              try:
+                  data = json.loads(anomalies.read_text())
+                  verdict["anomaly_flags"] = len(data.get("flags", []))
+              except Exception:
+                  verdict["anomaly_flags"] = None
+          reg = out / "regression.json"
+          if reg.exists():
+              try:
+                  verdict["regression"] = json.loads(reg.read_text())
+              except Exception:
+                  verdict["regression"] = {"status": "unreadable"}
           (out / "verdict.json").write_text(json.dumps(verdict, indent=2))
           print(json.dumps(verdict, indent=2))
           PY
+
+      - name: Fail closed on validation verdict
+        if: ${{ inputs.fail-on-validation-failure && steps.validate.outputs.verdict == 'fail' }}
+        run: |
+          echo "::error::Benchmark validation failed (verdict=fail); see artifacts."
+          exit 1
+
+      - name: Fail closed on regression
+        if: ${{ inputs.fail-on-regression && inputs.baseline-name != '' && steps.regression.outputs.regression_exit != '0' }}
+        run: |
+          echo "::error::Regression gate failed against baseline '${{ inputs.baseline-name }}'; see validation-output/regression.json."
+          exit 1
 
       - name: Upload validation artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0

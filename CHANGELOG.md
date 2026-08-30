@@ -4,6 +4,40 @@ All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
+### Fixed
+- **Audit remediation (Phase A — P0 data-integrity/security):** see
+  `docs/audit/REPOSITORY_AUDIT.md` for evidence on every item.
+- Trust states unified on one canonical lowercase lifecycle
+  (`unreviewed→verified/community_validated→flagged→invalidated/superseded`);
+  legacy aliases and `reproducibility.trust` mapping preserved; the dataset
+  export no longer mislabels verified results as `UNVERIFIED` (#trust).
+- Open-loop loadgen records scheduled submit time (real queue latency);
+  gamma arrivals now honor `rate_per_second` independent of shape.
+- Telemetry platform-safe: Windows `ctypes` fallback guarded; per-metric
+  `scope`/`source`/`device` provenance + timestamped raw trace exposed.
+- `.aihwbench` verification is fail-closed: unmanifested members,
+  malformed/duplicate manifest entries, oversized/high-ratio archives all
+  invalidate the bundle.
+- Privacy scanning unified (one recursive structured scanner in
+  `sanitize.py`); findings are redacted — full secret values are never
+  echoed; `quality.py` delegates.
+- Backends:
+  - llama.cpp uses usage-object token counters (never SSE chunk counts);
+    port is OS-allocated (ephemeral) with robust cleanup.
+  - LM Studio separates engine-counter metrics from client wall-clock
+    rates via `metric_source`.
+  - ONNX Runtime / OpenVINO feed **all** declared inputs, normalize
+    dtypes, record model SHA-256 and a `graph_inputs` manifest.
+- Metric vocabulary unified: canonical `METRIC_REGISTRY` in
+  `metrics.py`; alias-tolerant readers in SDK/domain/exporters; the
+  aggregator and CSV/SQLite/Markdown exporters emit canonical names.
+- Publishing/dataset pipelines fail closed: `export --strict`, snapshot
+  integrity, frontend data generation validates schema and aborts (exit 2)
+  on any corrupt file.
+- CI/release gates fail closed: the reusable validation workflow's
+  `verdict=fail` now fails the job (configurable); regression candidate is
+  selected deterministically; the release SBOM is mandatory and verified.
+## [Unreleased]
 ### Changed
 - **Package renamed:** the import package is now `aihwbench` (was
   `benchmark`). The console script and `python -m aihwbench.cli` behave

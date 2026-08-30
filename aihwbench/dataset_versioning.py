@@ -37,8 +37,11 @@ def build_snapshot_manifest(
     for p in files:
         try:
             doc = json.loads(p.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError(
+                f"cannot snapshot {p.name}: unreadable or invalid JSON — {exc}. "
+                "A snapshot must account for every member file; aborting."
+            ) from exc
         run_id = doc.get("run_id") or p.stem
         run_ids.append(run_id)
         runtime = ((doc.get("runtime") or {}).get("name")) or "unknown"

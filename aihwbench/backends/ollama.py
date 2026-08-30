@@ -132,6 +132,10 @@ def _generate_stream(model: str, prompt: str, config: BenchmarkConfig) -> dict[s
     eval_duration_ns = final.get("eval_duration")
     prompt_count = final.get("prompt_eval_count")
     prompt_duration_ns = final.get("prompt_eval_duration")
+    # Model-load time is only reported by Ollama on requests that actually
+    # loaded the model (typically the first); when the model is already
+    # resident the field is absent — that stays None, never an estimate (#5).
+    load_duration_ns = final.get("load_duration")
 
     return {
         "ttft_ms": round(ttft_ms, 2) if ttft_ms is not None else None,
@@ -140,6 +144,7 @@ def _generate_stream(model: str, prompt: str, config: BenchmarkConfig) -> dict[s
         "eval_seconds": (eval_duration_ns / 1e9) if eval_duration_ns else None,
         "prompt_tokens": prompt_count,
         "prompt_eval_seconds": (prompt_duration_ns / 1e9) if prompt_duration_ns else None,
+        "load_time_ms": (round(load_duration_ns / 1e6, 2) if load_duration_ns else None),
     }
 
 
@@ -199,6 +204,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "checksum": model_digest(config.model),
         },
         "metrics": metrics,
+        "telemetry": sampler.provenance(),
         "reproducibility": {
             "prompt": config.prompt,
             "max_tokens": config.max_tokens,

@@ -49,3 +49,12 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     if info.status is not RuntimeStatus.CONFIGURATION_REQUIRED:
         raise BackendError(f"qnn is not available: {info.status.value} ({info.detail})")
     raise BackendError("QNN benchmarking is planned for v0.7. See ROADMAP.md.")
+
+
+# Declared capability contract: truthful hardware/library prerequisites.
+# Detection never reports availability when these are missing.
+CAPABILITIES: tuple[str, ...] = (
+    "qualcomm-soc-required",
+    "qnn-libs-required",
+    "context-binary-required",
+)

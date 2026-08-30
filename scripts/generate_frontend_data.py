@@ -25,20 +25,49 @@ from collections import defaultdict
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+# Allow running as `python scripts/generate_frontend_data.py` without an
+# installed package by placing the repo root on sys.path.
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
 RESULTS_DIR = REPO / "results" / "published"
 OUT_DIR = REPO / "web" / "public" / "data"
 
 
-def _load_results() -> list[dict]:
+def _load_results(strict: bool = True) -> list[dict]:
+    """Load published results.
+
+    ``strict=True`` (the default; used by CI and publishing) fails closed
+    on any unreadable or schema-invalid file — silent data loss is never
+    acceptable when generating published frontend data. ``strict=False``
+    (exploratory local use) warns and skips.
+    """
+    from aihwbench.schemas import validate_result
+
+    problems: list[str] = []
     results = []
     for path in sorted(RESULTS_DIR.glob("*.json")):
         try:
             doc = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            print(f"WARN: skipping unreadable {path.name}: {exc}", file=sys.stderr)
+            problems.append(f"{path.name}: unreadable JSON ({exc})")
+            continue
+        if not isinstance(doc, dict):
+            problems.append(f"{path.name}: not a JSON object")
+            continue
+        errors = validate_result(doc)
+        if errors:
+            problems.append(f"{path.name}: schema invalid ({'; '.join(errors[:2])})")
             continue
         doc["_file"] = path.name
         results.append(doc)
+    if problems:
+        message = (
+            f"cannot generate frontend data: {len(problems)} problem file(s) in "
+            f"{RESULTS_DIR}:\n" + "\n".join(problems)
+        )
+        if strict:
+            raise ValueError(message)
+        print(f"WARN: {message}", file=sys.stderr)
     return results
 
 
@@ -118,11 +147,7 @@ def build(results: list[dict]) -> dict[str, object]:
         key=lambda r: (_metric(r, "ttft_ms"),),
     )
     by_perf_watt = sorted(
-        (
-            r
-            for r in results
-            if _metric(r, "performance_per_watt") is not None
-        ),
+        (r for r in results if _metric(r, "performance_per_watt") is not None),
         key=lambda r: (-_metric(r, "performance_per_watt"),),
     )
 
@@ -178,9 +203,18 @@ def build(results: list[dict]) -> dict[str, object]:
     }
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    strict = True
+    if argv is not None:
+        # --tolerant enables warning-and-skip for exploratory local use.
+        if "--tolerant" in argv:
+            strict = False
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    results = _load_results()
+    try:
+        results = _load_results(strict=strict)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
     data = build(results)
     for key, payload in data.items():
         out_path = OUT_DIR / f"{key}.json"

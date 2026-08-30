@@ -34,11 +34,12 @@ __all__ = [
 
 ENTRY_POINT_GROUP = "aihwbench.exporters"
 
-# Flat columns used by tabular exporters. Missing values stay empty —
-# never fabricated zeros.
+# Flat columns used by tabular exporters. Column names are the canonical
+# metric ids (see aihwbench/metrics.py METRIC_REGISTRY). Missing values
+# stay empty — never fabricated zeros.
 CSV_COLUMNS = (
     "run_id",
-    "timestamp_utc",
+    "timestamp",
     "runtime",
     "runtime_version",
     "device",
@@ -51,12 +52,27 @@ CSV_COLUMNS = (
     "generation_tokens_per_second",
     "prompt_tokens_per_second",
     "ttft_ms",
-    "latency_p50_ms",
-    "latency_p95_ms",
-    "latency_p99_ms",
+    "p50_latency_ms",
+    "p95_latency_ms",
+    "p99_latency_ms",
     "peak_vram_mb",
     "peak_ram_mb",
     "average_power_watts",
+)
+
+# Metric columns resolved through the canonical registry (alias-tolerant).
+_METRIC_COLUMNS = frozenset(
+    {
+        "generation_tokens_per_second",
+        "prompt_tokens_per_second",
+        "ttft_ms",
+        "p50_latency_ms",
+        "p95_latency_ms",
+        "p99_latency_ms",
+        "peak_vram_mb",
+        "peak_ram_mb",
+        "average_power_watts",
+    }
 )
 
 
@@ -71,9 +87,18 @@ def _flat_row(result: dict[str, Any]) -> dict[str, Any]:
     model = result.get("model") or {}
     system = result.get("system") or {}
     metrics = result.get("metrics") or {}
+    from ..metrics import _MISSING, resolve_metric
+
+    timestamp = result.get("timestamp")
+    if timestamp is None:
+        timestamp = result.get("timestamp_utc")  # legacy key, read-only
+    metrics_row: dict[str, Any] = {}
+    for k in _METRIC_COLUMNS:
+        value = resolve_metric(metrics, k)
+        metrics_row[k] = None if value is _MISSING else value
     return {
         "run_id": result.get("run_id"),
-        "timestamp_utc": result.get("timestamp_utc"),
+        "timestamp": timestamp,
         "runtime": runtime.get("name"),
         "runtime_version": runtime.get("version"),
         "device": runtime.get("device"),
@@ -83,22 +108,7 @@ def _flat_row(result: dict[str, Any]) -> dict[str, Any]:
         "os": system.get("os"),
         "cpu": system.get("cpu"),
         "gpu": system.get("gpu"),
-        **{
-            k: metrics.get(k)
-            for k in CSV_COLUMNS
-            if k
-            in (
-                "generation_tokens_per_second",
-                "prompt_tokens_per_second",
-                "ttft_ms",
-                "latency_p50_ms",
-                "latency_p95_ms",
-                "latency_p99_ms",
-                "peak_vram_mb",
-                "peak_ram_mb",
-                "average_power_watts",
-            )
-        },
+        **metrics_row,
     }
 
 

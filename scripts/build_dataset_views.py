@@ -15,7 +15,8 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from aihwbench.export import export_dataset, load_results  # noqa: E402
+from aihwbench.export import DatasetLoadError, export_dataset, load_results  # noqa: E402
+from aihwbench.trust import TRUST_STATES, effective_trust  # noqa: E402
 
 NL = chr(10)
 
@@ -52,7 +53,7 @@ def build_markdown(results: list[dict]) -> str:
                 ttft=fmt(_get(r, "metrics", "ttft_ms")),
                 p95=fmt(_get(r, "metrics", "p95_latency_ms")),
                 ppw=fmt(_get(r, "metrics", "performance_per_watt")),
-                trust=fmt(_get(r, "reproducibility", "trust")),
+                trust=fmt(effective_trust(r)),
             )
         )
     header = (
@@ -62,7 +63,7 @@ def build_markdown(results: list[dict]) -> str:
         + "Generated from validated results in `results/published/` - do not edit by hand."
         + NL
         + NL
-        + "Trust states: VERIFIED / COMMUNITY_VALIDATED / UNVERIFIED."
+        + f"Trust states: {' / '.join(TRUST_STATES)}."
         + NL
         + NL
     )
@@ -80,7 +81,7 @@ def build_html(results: list[dict]) -> str:
             fmt(_get(r, "metrics", "ttft_ms")),
             fmt(_get(r, "metrics", "p95_latency_ms")),
             fmt(_get(r, "metrics", "performance_per_watt")),
-            fmt(_get(r, "reproducibility", "trust")),
+            fmt(effective_trust(r)),
         ]
         body_rows.append("<tr>" + "".join(f"<td>{html.escape(c)}</td>" for c in cells) + "</tr>")
     head = [
@@ -117,11 +118,15 @@ def main() -> None:
     output_dir = pathlib.Path(sys.argv[2])
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    written = export_dataset(results_dir, output_dir)
-    for p in written:
-        print(f"wrote {p}")
+    try:
+        written = export_dataset(results_dir, output_dir, strict=True)
+        for p in written:
+            print(f"wrote {p}")
 
-    results = load_results(results_dir)
+        results = load_results(results_dir, strict=True)
+    except DatasetLoadError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        sys.exit(3)
     md_path = output_dir / "LEADERBOARD.md"
     md_path.write_text(build_markdown(results), encoding="utf-8")
     print(f"wrote {md_path}")

@@ -222,6 +222,9 @@ class TelemetrySampler:
         }
         if device is not None:
             block["device"] = device
+        npu_block = npu_snapshot_safe()
+        if npu_block is not None:
+            block["npu"] = npu_block
         return block
 
     def raw_trace(self) -> list[dict[str, Any]]:
@@ -271,3 +274,19 @@ def measure(fn: Callable[[], Any]) -> tuple[Any, float]:
     result = fn()
     elapsed_ms = (time.perf_counter() - start) * 1000.0
     return result, elapsed_ms
+
+
+def npu_snapshot_safe():
+    """Best-effort NPU telemetry block (#18); None when no NPU is detected.
+
+    Never raises. Uses the structured hook contract from
+    :mod:`aihwbench.npu`: fields always exist, values stay ``None`` until
+    a real driver counter is wired — nothing is fabricated.
+    """
+    try:
+        from .npu import npu_telemetry
+
+        block = npu_telemetry()
+    except Exception:  # pragma: no cover - host-hardware dependent
+        return None
+    return block if block.get("npu_device") else None

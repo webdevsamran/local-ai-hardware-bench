@@ -170,3 +170,62 @@ def export_dataset(results_dir: Path, output_dir: Path, *, strict: bool = False)
     md_path.write_text(chr(10).join(lines), encoding="utf-8")
 
     return [index_path, csv_path, md_path]
+
+
+def export_parquet(results, output_path):
+    """Write the flattened results view as Parquet (#17).
+
+    ``results`` may be a results directory (``*.json`` files are loaded,
+    fail-closed) or an in-memory sequence of result documents. Requires
+    the optional ``parquet`` extra (pyarrow). A missing dependency or a
+    corrupted result raises instead of silently skipping; missing metrics
+    stay null and nothing is fabricated.
+    """
+    try:
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+    except ImportError as exc:
+        raise RuntimeError(
+            "Parquet export requires the 'parquet' extra: pip install 'aihwbench[parquet]'"
+        ) from exc
+
+    if isinstance(results, (str, Path)):
+        src = Path(results)
+        docs = []
+        for path in sorted(src.glob("*.json")):
+            try:
+                docs.append(json.loads(path.read_text(encoding="utf-8")))
+            except (OSError, ValueError) as exc:
+                raise ValueError(f"unreadable result {path.name}: {exc}") from exc
+        if not docs:
+            raise ValueError(f"no result JSON files found in {src}")
+    else:
+        docs = list(results)
+        if not docs:
+            raise ValueError("no results provided")
+    rows = [_flatten_result_row(doc) for doc in docs]
+    keys = sorted({k for row in rows for k in row})
+    table = pa.table({k: [row.get(k) for row in rows] for k in keys})
+    dst = Path(output_path)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    pq.write_table(table, dst)
+    return dst
+
+
+def _flatten_result_row(doc):
+    """One flat row per result; only scalar block fields are projected."""
+    row = {
+        "run_id": doc.get("run_id"),
+        "schema_version": doc.get("schema_version"),
+        "timestamp": doc.get("timestamp"),
+    }
+    for section in ("system", "runtime", "model", "metrics", "reproducibility"):
+        sub = doc.get(section)
+        if not isinstance(sub, dict):
+            continue
+        for k, v in sub.items():
+            if isinstance(v, (str, int, float, bool)) or v is None:
+                row[f"{section}_{k}"] = v
+    ts = doc.get("trust_state") or (doc.get("reproducibility") or {}).get("trust")
+    row["trust_state"] = ts
+    return row

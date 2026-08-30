@@ -132,9 +132,15 @@ def detect_all() -> list[dict[str, Any]]:
 
 
 def backend_metadata(name: str) -> BenchmarkMetadata | None:
-    """Return a backend's declared metadata, if it provides any."""
+    """Return a backend's declared metadata, synthesizing from its
+    CAPABILITIES tuple when it provides no full metadata block
+    (#7/#8/#10/#11 capability contract)."""
     module = resolve(name)
-    return getattr(module, "METADATA", None)
+    md = getattr(module, "METADATA", None)
+    caps = getattr(module, "CAPABILITIES", ())
+    if md is None and caps:
+        return BenchmarkMetadata(name=name, description=name, capabilities=tuple(caps))
+    return md
 
 
 __all__ = [

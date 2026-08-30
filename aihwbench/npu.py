@@ -30,9 +30,7 @@ def npu_telemetry(system: dict[str, Any] | None = None) -> dict[str, Any]:
     out: dict[str, Any] = {
         "npu_device": device,
         "npu_telemetry_source": (
-            "driver counters not wired for this platform"
-            if device
-            else "no NPU detected"
+            "driver counters not wired for this platform" if device else "no NPU detected"
         ),
     }
     out.update({field: None for field in NPU_FIELDS})

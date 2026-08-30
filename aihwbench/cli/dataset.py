@@ -10,7 +10,7 @@ from pathlib import Path
 from ..dataset_versioning import build_snapshot_manifest
 from ..evaluators import list_evaluators, load_dataset, run_evaluation
 from ..exit_codes import EXIT_OK, EXIT_USAGE_ERROR, EXIT_VALIDATION_ERROR
-from ..export import DatasetLoadError, export_dataset
+from ..export import DatasetLoadError, export_dataset, export_parquet
 from ..exporters import get_exporter, list_exporters
 from ..quality import data_quality_report, flag_anomalies, invalidate_result
 from ..quantization import compare_quantizations
@@ -31,6 +31,14 @@ def cmd_export(args: argparse.Namespace) -> int:
         return EXIT_VALIDATION_ERROR
     for p in outputs:
         print(f"Written: {p}")
+    if getattr(args, "parquet", False):
+        pq_path = Path(args.output) / "dataset.parquet"
+        try:
+            written = export_parquet(results_dir, pq_path)
+        except Exception as exc:  # noqa: BLE001 - surfaced as a CLI failure
+            fail(f"parquet export failed: {exc}")
+            return EXIT_VALIDATION_ERROR
+        print(f"Written: {written}")
     return EXIT_OK
 
 
@@ -176,6 +184,11 @@ def register(sub: argparse._SubParsersAction) -> None:
         "--strict",
         action="store_true",
         help="Fail closed on unreadable/schema-invalid results (default for publishing)",
+    )
+    exp.add_argument(
+        "--parquet",
+        action="store_true",
+        help="Also emit a Parquet copy of the dataset (requires the 'parquet' extra)",
     )
     exp.set_defaults(func=cmd_export)
 

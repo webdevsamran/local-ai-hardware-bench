@@ -83,9 +83,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     """Refuse to benchmark: detection-only until a protocol is validated."""
     info = detect()
     if info.status is not RuntimeStatus.AVAILABLE:
-        raise BackendError(
-            f"Lemonade is not available: {info.status.value} ({info.detail})"
-        )
+        raise BackendError(f"Lemonade is not available: {info.status.value} ({info.detail})")
     raise BackendError(
         "Lemonade benchmarking is not implemented yet: no validated "
         "measurement protocol exists for this runtime (issue #9). "

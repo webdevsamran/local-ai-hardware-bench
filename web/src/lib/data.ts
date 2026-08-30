@@ -13,13 +13,9 @@ let cache: Dataset | null = null
 let inflight: Promise<Dataset> | null = null
 
 async function fetchDataset(): Promise<Dataset> {
-  const res = await fetch('data/index.json')
-  if (!res.ok) throw new Error(`Failed to load dataset index (${res.status})`)
-  await res.json() // validate presence of index.json
-
-  const [results, hardware, runtimes, models, leaderboard, trends] =
+  const [index, results, hardware, runtimes, models, leaderboard, trends] =
     await Promise.all(
-      ['results', 'hardware', 'runtimes', 'models', 'leaderboard', 'trends'].map(
+      ['index', 'results', 'hardware', 'runtimes', 'models', 'leaderboard', 'trends'].map(
         async (name) => {
           const r = await fetch(`data/${name}.json`)
           if (!r.ok)
@@ -28,7 +24,6 @@ async function fetchDataset(): Promise<Dataset> {
         },
       ),
     )
-  const index = await (await fetch('data/index.json')).json()
   return { index, results, hardware, runtimes, models, leaderboard, trends }
 }
 

@@ -14,7 +14,15 @@ from pathlib import Path
 from typing import Any
 
 from ..telemetry import TelemetrySampler
-from .base import BackendError, BackendInfo, BenchmarkConfig, RuntimeStatus, new_run_id
+from .base import (
+    BackendError,
+    BackendInfo,
+    BenchmarkConfig,
+    RuntimeStatus,
+    file_sha256,
+    new_run_id,
+    resolve_input_specs,
+)
 
 
 def detect() -> BackendInfo:
@@ -71,20 +79,25 @@ def _numpy():
 
 
 def _make_inputs(session: Any) -> dict[str, Any]:
-    """Build deterministic zero inputs matching the model's declared shapes."""
+    """Build deterministic zero inputs for ALL declared model inputs.
+
+    Uses the shared resolver so every input is fed to the runtime —
+    first-input-only feeds mis-measure multi-input models. Dynamic or
+    unknown dimensions are pinned to 1 (documented in the result).
+    """
     np = _numpy()
-    inputs: dict[str, Any] = {}
-    for meta in session.get_inputs():
-        shape = []
-        for dim in meta.shape:
-            shape.append(dim if isinstance(dim, int) and dim > 0 else 1)
-        dtype = np.float32
-        if meta.type == "tensor(int64)":
-            dtype = np.int64
-        elif meta.type == "tensor(int32)":
-            dtype = np.int32
-        inputs[meta.name] = np.zeros(shape, dtype=dtype)
-    return inputs
+    specs = resolve_input_specs(
+        (meta.name, meta.type, list(meta.shape)) for meta in session.get_inputs()
+    )
+    return {name: np.zeros(s["shape"], dtype=s["dtype"]) for name, s in specs.items()}
+
+
+def _declared_inputs(session: Any) -> list[dict[str, Any]]:
+    """Declared-input manifest for the result's reproducibility block."""
+    return [
+        {"name": meta.name, "type": meta.type, "shape": list(meta.shape)}
+        for meta in session.get_inputs()
+    ]
 
 
 def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
@@ -125,10 +138,11 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
         )
     feed = _make_inputs(session)
     output_names = [o.name for o in session.get_outputs()]
-    input_name = next(iter(feed))
 
     def infer() -> None:
-        session.run(output_names, {input_name: feed[input_name]})
+        # Feed ALL declared inputs — a first-input-only feed silently
+        # mis-measures multi-input models.
+        session.run(output_names, feed)
 
     sampler = TelemetrySampler(interval_seconds=0.5)
     sampler.start()
@@ -187,9 +201,10 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "format": "onnx",
             "quantization": None,
             "parameters": None,
-            "checksum": None,
+            "checksum": file_sha256(model_path),
         },
         "metrics": metrics,
+        "telemetry": sampler.provenance(),
         "reproducibility": {
             "prompt": None,
             "max_tokens": None,
@@ -203,6 +218,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
                 f"--device {config.device}"
             ),
             "workload_type": "graph-inference",
+            "graph_inputs": _declared_inputs(session),
         },
         "iterations": [
             {"iteration": i, "latency_ms": round(v, 2)} for i, v in enumerate(latencies)

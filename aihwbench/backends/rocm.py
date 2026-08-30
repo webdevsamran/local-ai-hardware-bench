@@ -48,3 +48,12 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     if info.status is not RuntimeStatus.AVAILABLE:
         raise BackendError(f"rocm is not available: {info.status.value} ({info.detail})")
     raise BackendError("ROCm benchmarking is planned for v0.5. See ROADMAP.md.")
+
+
+# Declared capability contract: truthful hardware/library prerequisites.
+# Detection never reports availability when these are missing.
+CAPABILITIES: tuple[str, ...] = (
+    "amd-gpu-required",
+    "hip-runtime-required",
+    "linux-primary",
+)

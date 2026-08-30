@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { HashRouter, Route, Routes } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import Layout from './components/Layout'
 import Home from './pages/Home'
@@ -55,8 +55,8 @@ export function AppRoutes() {
 
 export default function App({ children }: { children?: ReactNode }) {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Layout>{children ?? <AppRoutes />}</Layout>
-    </BrowserRouter>
+    </HashRouter>
   )
 }

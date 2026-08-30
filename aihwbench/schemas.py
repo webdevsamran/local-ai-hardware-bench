@@ -76,6 +76,12 @@ _METRIC_FIELDS: dict[str, tuple[tuple[type, ...], float | None, float | None]] =
     "energy_joules_per_1k_tokens": ((int, float), 0.0, None),
     "requests_per_second": ((int, float), 0.0, None),
     "error_rate": ((int, float), 0.0, 1.0),
+    # Canonical aggregator emissions (metrics.py aggregate_iteration_metrics).
+    "ttft_stddev_ms": ((int, float), 0.0, None),
+    "generation_tps_stddev": ((int, float), 0.0, None),
+    "gen_tps_min": ((int, float), 0.0, None),
+    "gen_tps_max": ((int, float), 0.0, None),
+    "generation_tps_cv": ((int, float), 0.0, None),
 }
 
 # Schema 2.0 block specs (all fields optional; present values type-checked).

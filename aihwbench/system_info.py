@@ -97,6 +97,17 @@ def _linux_total_ram_gb() -> float | None:
     return None
 
 
+def _darwin_total_ram_gb() -> float | None:
+    """Total physical RAM in GB via sysctl hw.memsize (no deps)."""
+    out = _run(["sysctl", "-n", "hw.memsize"])
+    if out:
+        try:
+            return round(int(out.strip()) / (1024**3), 1)
+        except ValueError:
+            return None
+    return None
+
+
 def get_ram_gb() -> float | None:
     """Total physical RAM in GB."""
     system = platform.system()
@@ -104,6 +115,8 @@ def get_ram_gb() -> float | None:
         return _windows_total_ram_gb()
     if system == "Linux":
         return _linux_total_ram_gb()
+    if system == "Darwin":
+        return _darwin_total_ram_gb()
     return None
 
 
@@ -165,6 +178,19 @@ def get_cpu_info() -> dict[str, Any]:
             info["cpu"] = names[0]
         if core_pairs:
             info["cpu_cores_physical"] = len(core_pairs)
+    elif system == "Darwin":
+        # Apple Silicon / Intel Macs expose identity and topology via sysctl.
+        brand = _run(["sysctl", "-n", "machdep.cpu.brand_string"])
+        if brand and brand.strip():
+            info["cpu"] = brand.strip()
+        else:
+            info["cpu"] = platform.processor() or None
+        physical = _run(["sysctl", "-n", "hw.physicalcpu"])
+        if physical and physical.strip().isdigit():
+            info["cpu_cores_physical"] = int(physical.strip())
+        logical = _run(["sysctl", "-n", "hw.logicalcpu"])
+        if logical and logical.strip().isdigit():
+            info["cpu_cores_logical"] = int(logical.strip())
     else:
         info["cpu"] = platform.processor() or None
     return info

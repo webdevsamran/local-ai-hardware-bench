@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from .schemas import validate_result
-from .trust import trust_state
+from .trust import effective_trust
 
 _DATASET_COLUMNS = [
     "run_id",
@@ -53,17 +53,41 @@ _DATASET_COLUMNS = [
 ]
 
 
-def load_results(directory: Path) -> list[dict[str, Any]]:
-    """Load all valid result JSON files from a directory."""
+def load_results(directory: Path, *, strict: bool = False) -> list[dict[str, Any]]:
+    """Load result JSON files from a directory.
+
+    Lenient by default (exploratory local use): files that are unreadable
+    or fail schema validation are skipped. When ``strict=True``
+    (publishing/CI paths), any unreadable or schema-invalid file raises
+    ``DatasetLoadError`` with every offending path — silent data loss is
+    never acceptable when generating published artifacts.
+    """
+    problems: list[str] = []
     results = []
     for path in sorted(directory.glob("*.json")):
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, json.JSONDecodeError) as exc:
+            problems.append(f"unreadable or invalid JSON: {path}: {exc}")
             continue
-        if isinstance(data, dict) and not validate_result(data):
-            results.append(data)
+        if not isinstance(data, dict):
+            problems.append(f"not an object: {path}")
+            continue
+        errors = validate_result(data)
+        if errors:
+            problems.append(f"schema validation failed: {path}: {'; '.join(errors[:3])}")
+            continue
+        results.append(data)
+    if strict and problems:
+        raise DatasetLoadError(
+            f"refusing to load dataset from {directory}: "
+            f"{len(problems)} file(s) are unreadable or invalid:\n" + "\n".join(problems)
+        )
     return results
+
+
+class DatasetLoadError(ValueError):
+    """Raised when a published-dataset load fails closed (strict mode)."""
 
 
 def _row(result: dict[str, Any]) -> dict[str, Any]:
@@ -71,11 +95,10 @@ def _row(result: dict[str, Any]) -> dict[str, Any]:
     runtime = result.get("runtime", {})
     model = result.get("model", {})
     metrics = result.get("metrics", {})
-    repro = result.get("reproducibility", {})
     return {
         "run_id": result.get("run_id"),
         "timestamp": result.get("timestamp"),
-        "trust": trust_state(repro.get("trust")),
+        "trust": effective_trust(result),
         "os": system.get("os"),
         "cpu": system.get("cpu"),
         "gpu": system.get("gpu"),
@@ -93,9 +116,13 @@ def _row(result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def export_dataset(results_dir: Path, output_dir: Path) -> list[Path]:
-    """Generate index.json, dataset.csv, LEADERBOARD.md from results."""
-    results = load_results(results_dir)
+def export_dataset(results_dir: Path, output_dir: Path, *, strict: bool = False) -> list[Path]:
+    """Generate index.json, dataset.csv, LEADERBOARD.md from results.
+
+    ``strict=True`` makes the load fail closed (publishing/CI); the default
+    is tolerant for exploratory local use.
+    """
+    results = load_results(results_dir, strict=strict)
     rows = [_row(r) for r in results]
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -143,3 +170,62 @@ def export_dataset(results_dir: Path, output_dir: Path) -> list[Path]:
     md_path.write_text(chr(10).join(lines), encoding="utf-8")
 
     return [index_path, csv_path, md_path]
+
+
+def export_parquet(results, output_path):
+    """Write the flattened results view as Parquet (#17).
+
+    ``results`` may be a results directory (``*.json`` files are loaded,
+    fail-closed) or an in-memory sequence of result documents. Requires
+    the optional ``parquet`` extra (pyarrow). A missing dependency or a
+    corrupted result raises instead of silently skipping; missing metrics
+    stay null and nothing is fabricated.
+    """
+    try:
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+    except ImportError as exc:
+        raise RuntimeError(
+            "Parquet export requires the 'parquet' extra: pip install 'aihwbench[parquet]'"
+        ) from exc
+
+    if isinstance(results, (str, Path)):
+        src = Path(results)
+        docs = []
+        for path in sorted(src.glob("*.json")):
+            try:
+                docs.append(json.loads(path.read_text(encoding="utf-8")))
+            except (OSError, ValueError) as exc:
+                raise ValueError(f"unreadable result {path.name}: {exc}") from exc
+        if not docs:
+            raise ValueError(f"no result JSON files found in {src}")
+    else:
+        docs = list(results)
+        if not docs:
+            raise ValueError("no results provided")
+    rows = [_flatten_result_row(doc) for doc in docs]
+    keys = sorted({k for row in rows for k in row})
+    table = pa.table({k: [row.get(k) for row in rows] for k in keys})
+    dst = Path(output_path)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    pq.write_table(table, dst)
+    return dst
+
+
+def _flatten_result_row(doc):
+    """One flat row per result; only scalar block fields are projected."""
+    row = {
+        "run_id": doc.get("run_id"),
+        "schema_version": doc.get("schema_version"),
+        "timestamp": doc.get("timestamp"),
+    }
+    for section in ("system", "runtime", "model", "metrics", "reproducibility"):
+        sub = doc.get(section)
+        if not isinstance(sub, dict):
+            continue
+        for k, v in sub.items():
+            if isinstance(v, (str, int, float, bool)) or v is None:
+                row[f"{section}_{k}"] = v
+    ts = doc.get("trust_state") or (doc.get("reproducibility") or {}).get("trust")
+    row["trust_state"] = ts
+    return row

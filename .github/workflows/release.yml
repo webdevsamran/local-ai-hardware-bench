@@ -6,6 +6,8 @@ on:
       - "v*.*.*"
 
 permissions:
+  id-token: write
+  attestations: write
   contents: read
 
 jobs:
@@ -30,10 +32,31 @@ jobs:
           cd ..
           mv SHA256SUMS.txt dist/SHA256SUMS.txt
       - name: Generate SBOM (CycloneDX)
+        # A release security artifact must be produced or the release job
+        # fails. We never swallow SBOM failure with a "skipped" echo.
         run: |
+          set -e
           pip install .
-          cyclonedx-py requirements --output-format json --output-file dist/sbom.json || \
-            echo "SBOM generation skipped (tool unavailable)"
+          cyclonedx-py requirements --output-format json --output-file dist/sbom.json
+
+      - name: Verify SBOM was generated and is valid
+        run: |
+          set -e
+          test -s dist/sbom.json || { echo "::error::dist/sbom.json is empty or missing"; exit 1; }
+          python - <<'PY'
+          import json
+          with open("dist/sbom.json", encoding="utf-8") as fh:
+              sbom = json.load(fh)
+          assert sbom.get("bomFormat") == "CycloneDX", "SBOM is not a CycloneDX document"
+          components = sbom.get("components", [])
+          print(f"SBOM valid: {len(components)} component(s), spec {sbom.get('specVersion')}")
+          PY
+      - name: Attest build provenance (SLSa, #4)
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/*.whl
+            dist/*.tar.gz
       - name: Upload artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
         with:

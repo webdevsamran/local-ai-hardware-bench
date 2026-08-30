@@ -134,8 +134,12 @@ def generate_arrivals(config: LoadgenConfig) -> Iterator[float]:
         elif config.pattern == "poisson":
             t += rng.expovariate(config.rate_per_second)
         elif config.pattern == "gamma":
-            # Gamma(shape, scale=1/rate): shape>1 smooths, shape<1 bursts.
-            t += rng.gammavariate(config.gamma_shape, 1.0 / config.rate_per_second)
+            # Gamma(shape, scale): mean gap = shape * scale. To keep
+            # rate_per_second as the *mean* arrival rate for any shape,
+            # scale must be 1/(rate*shape) — using 1/rate would change the
+            # mean rate whenever the shape changes (audited defect).
+            scale = 1.0 / (config.rate_per_second * config.gamma_shape)
+            t += rng.gammavariate(config.gamma_shape, scale)
         elif config.pattern == "burst":
             position_in_burst = count % config.burst_size
             if position_in_burst == 0 and count > 0:
@@ -212,16 +216,16 @@ def run_load(
             with pending_lock:
                 if not pending:
                     continue
-                _, request_id = pending.pop(0)
+                submit_at, request_id = pending.pop(0)
             start = time.perf_counter()
             try:
                 detail = execute(request_id)
                 end = time.perf_counter()
-                recorder.add(RequestRecord(request_id, start, start, end, True, detail))
+                recorder.add(RequestRecord(request_id, submit_at, start, end, True, detail))
             except Exception as exc:  # noqa: BLE001
                 end = time.perf_counter()
                 recorder.add(
-                    RequestRecord(request_id, start, start, end, False, {"error": str(exc)})
+                    RequestRecord(request_id, submit_at, start, end, False, {"error": str(exc)})
                 )
 
     threads = [

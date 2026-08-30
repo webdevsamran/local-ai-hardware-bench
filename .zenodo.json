@@ -1,0 +1,29 @@
+{
+  "title": "AIHWBench: vendor-neutral benchmarking of local AI runtimes",
+  "description": "AIHWBench is a local-first, offline-capable, zero-dependency Python framework for benchmarking local AI inference runtimes (Ollama, llama.cpp, ONNX Runtime, OpenVINO, LM Studio and others) across CPUs, GPUs and NPUs. It records measured metrics only — unavailable metrics stay null, never estimated — with schema-validated result documents, reproducibility metadata, privacy scanning, provenance bundles and comparability classification.",
+  "creators": [
+    {
+      "name": "webdevsamran"
+    }
+  ],
+  "license": "Apache-2.0",
+  "upload_type": "software",
+  "access_right": "open",
+  "keywords": [
+    "benchmark",
+    "llm",
+    "inference",
+    "onnxruntime",
+    "openvino",
+    "npu",
+    "gpu",
+    "edge-ai"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/webdevsamran/local-ai-hardware-bench",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    }
+  ]
+}

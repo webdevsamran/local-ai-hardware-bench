@@ -108,14 +108,17 @@ class ModelInfo:
 
 @dataclass(frozen=True)
 class MetricSet:
-    """One measured metrics block. Missing measurements are None."""
+    """One measured metrics block. Missing measurements are None.
+    Field names are the canonical metric ids (see aihwbench/metrics.py
+    ``METRIC_REGISTRY``); legacy aliases are accepted on read.
+    """
 
     generation_tokens_per_second: float | None = None
     prompt_tokens_per_second: float | None = None
     ttft_ms: float | None = None
-    latency_p50_ms: float | None = None
-    latency_p95_ms: float | None = None
-    latency_p99_ms: float | None = None
+    p50_latency_ms: float | None = None
+    p95_latency_ms: float | None = None
+    p99_latency_ms: float | None = None
     peak_vram_mb: float | None = None
     peak_ram_mb: float | None = None
     average_power_watts: float | None = None
@@ -124,23 +127,26 @@ class MetricSet:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> MetricSet:
-        known = _pick(
-            data,
-            (
-                "generation_tokens_per_second",
-                "prompt_tokens_per_second",
-                "ttft_ms",
-                "latency_p50_ms",
-                "latency_p95_ms",
-                "latency_p99_ms",
-                "peak_vram_mb",
-                "peak_ram_mb",
-                "average_power_watts",
-                "energy_joules_per_token",
-            ),
-        )
-        extra = {k: v for k, v in data.items() if k not in known}
-        return cls(**known, extra=extra)
+        from .metrics import _MISSING, resolve_metric
+
+        value: dict[str, Any] = {}
+        for name in (
+            "generation_tokens_per_second",
+            "prompt_tokens_per_second",
+            "ttft_ms",
+            "p50_latency_ms",
+            "p95_latency_ms",
+            "p99_latency_ms",
+            "peak_vram_mb",
+            "peak_ram_mb",
+            "average_power_watts",
+            "energy_joules_per_token",
+        ):
+            resolved = resolve_metric(data, name)
+            if resolved is not _MISSING:
+                value[name] = None if resolved is None else resolved
+        extra = {k: v for k, v in data.items() if k not in value}
+        return cls(**value, extra=extra)
 
 
 @dataclass(frozen=True)
@@ -172,10 +178,13 @@ class BenchmarkResult:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> BenchmarkResult:
+        timestamp = data.get("timestamp")
+        if timestamp is None:
+            timestamp = data.get("timestamp_utc")  # legacy key, read-only
         return cls(
             run_id=data.get("run_id") or "",
             schema_version=data.get("schema_version") or "1.0",
-            timestamp_utc=data.get("timestamp_utc"),
+            timestamp_utc=timestamp,
             system=SystemInfo.from_dict(data["system"]) if data.get("system") else None,
             runtime=RuntimeInfo.from_dict(data["runtime"]) if data.get("runtime") else None,
             model=ModelInfo.from_dict(data["model"]) if data.get("model") else None,
@@ -183,6 +192,11 @@ class BenchmarkResult:
             metrics=MetricSet.from_dict(data["metrics"]) if data.get("metrics") else None,
             raw=dict(data),
         )
+
+    @property
+    def timestamp(self) -> str | None:
+        """Canonical result timestamp (from the ``timestamp`` key)."""
+        return self.timestamp_utc
 
     @property
     def throughput(self) -> float | None:

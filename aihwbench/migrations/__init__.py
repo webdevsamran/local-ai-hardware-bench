@@ -11,9 +11,11 @@ current reader.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any
 
-from ..schemas import CURRENT_SCHEMA_VERSION, validate_result
+from ..schemas import validate_result
+from ..versions import CURRENT_SCHEMA_VERSION, SUPPORTED_SCHEMA_VERSIONS
 
 __all__ = [
     "SUPPORTED_SCHEMA_VERSIONS",
@@ -21,8 +23,6 @@ __all__ = [
     "read_result",
     "MigrationError",
 ]
-
-SUPPORTED_SCHEMA_VERSIONS = ("1.0", "2.0")
 
 
 class MigrationError(ValueError):
@@ -37,13 +37,18 @@ def _migrate_1_to_2(data: dict[str, Any]) -> dict[str, Any]:
     new metric fields that default to null ("not measured"). The migration
     is therefore additive: copy everything, bump the version, and record
     which migrator produced the document.
+
+    The copy is deep and the input is never mutated, so migrations are pure
+    and idempotent. The recorded ``migrator`` name is the canonical module
+    path under the current package name (``aihwbench``), not the historical
+    ``benchmark`` package that predates the rename.
     """
-    migrated = dict(data)
-    migrated["schema_version"] = "2.0"
+    migrated = deepcopy(data)
+    migrated["schema_version"] = CURRENT_SCHEMA_VERSION
     migrated.setdefault("migration", {})
     if isinstance(migrated["migration"], dict):
         migrated["migration"]["from_version"] = "1.0"
-        migrated["migration"]["migrator"] = "benchmark.migrations._migrate_1_to_2"
+        migrated["migration"]["migrator"] = "aihwbench.migrations._migrate_1_to_2"
     return migrated
 
 

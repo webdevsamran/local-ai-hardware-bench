@@ -4,11 +4,21 @@ A vendor-neutral framework for benchmarking local AI runtimes across
 CPUs, GPUs, NPUs, AI PCs, workstations, mini PCs, and edge accelerators.
 """
 
-__version__ = "0.1.0"
+from aihwbench.versions import (
+    CURRENT_SCHEMA_VERSION,
+    PACKAGE_VERSION,
+    PROTOCOL_VERSION,
+    SCHEMA_VERSION,
+    SUPPORTED_SCHEMA_VERSIONS,
+)
 
-SCHEMA_VERSION = "1.0"
+__version__ = PACKAGE_VERSION
 
-# Benchmark protocol version: identifies the measurement methodology
-# (workload definitions, aggregation rules, telemetry policy).
-# Bumped independently of the package version and result schema.
-PROTOCOL_VERSION = "1"
+__all__ = [
+    "__version__",
+    "PACKAGE_VERSION",
+    "SCHEMA_VERSION",
+    "CURRENT_SCHEMA_VERSION",
+    "SUPPORTED_SCHEMA_VERSIONS",
+    "PROTOCOL_VERSION",
+]

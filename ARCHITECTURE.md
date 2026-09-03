@@ -29,14 +29,17 @@ Workloads (aihwbench/workloads/)     typed definitions + registry +
                                      aihwbench.workloads entry points
 Load generator (aihwbench/loadgen/)  arrival processes, scheduler,
                                      workers, recorder
-Experiments (aihwbench/experiments)  declarative manifests -> sweep /
-                                     capacity / showdown / tune
+Experiments (aihwbench/sweep.py,        declarative manifests -> sweep /
+aihwbench/capacity.py,                  capacity ladder / showdown / tune
+aihwbench/cli/benchmark.py)
 Evaluation (aihwbench/evaluators/)   quality evaluators + plugin API
 Analysis (aihwbench/analysis/)       bottleneck, thermal, energy,
                                      cost/TCO, Pareto frontier
 Provenance (aihwbench/provenance/)   hashing, bundles, cosign wrappers
 Migrations (aihwbench/migrations/)   schema_version evolution
-Hardware DB (aihwbench/hardware/)    normalized identifiers/topology
+Hardware detection (aihwbench/       sanitized OS/CPU/GPU/NPU/RAM;
+system_info.py); fingerprints          fingerprints/topology in
+(aihwbench/provenance/)              provenance/
 Quality (aihwbench/quality.py)       data-quality checks, anomalies,
                                      invalidation records
 Public SDK (aihwbench/sdk.py)        typed domain objects for consumers
@@ -48,7 +51,7 @@ Dashboard (web/)                     React SPA deployed to GitHub Pages
 
 | Module | Responsibility | Stability |
 | --- | --- | --- |
-| `cli.py` | Argument parsing, exit codes, command dispatch | Public CLI contract |
+| `cli/` package | Argument parsing, exit codes, command dispatch | Public CLI contract |
 | `exit_codes.py` | Stable exit codes for CI automation | Public contract |
 | `system_info.py` | Sanitized hardware/OS detection | Public |
 | `backends/base.py` | Plugin types: `BackendInfo`, `BenchmarkConfig`, `BenchmarkMetadata`, statuses | **Plugin API v1** |

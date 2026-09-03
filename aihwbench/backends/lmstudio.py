@@ -165,8 +165,8 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             f"Model {config.model!r} not loaded in LM Studio. Loaded models: {', '.join(available)}"
         )
 
-    from .. import SCHEMA_VERSION
     from ..metrics import aggregate_iteration_metrics, performance_per_watt
+    from ..versions import CURRENT_SCHEMA_VERSION
 
     sampler = TelemetrySampler(interval_seconds=0.5)
     sampler.start()
@@ -188,7 +188,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     metrics["metric_source"] = metric_source_block()
 
     return {
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": CURRENT_SCHEMA_VERSION,
         "run_id": new_run_id("lmstudio"),
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "system": system,

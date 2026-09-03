@@ -15,6 +15,9 @@ from typing import Any
 
 __all__ = ["build_snapshot_manifest", "diff_snapshots"]
 
+# Dataset-manifest format version. This is a separate contract from the
+# result-document schema (aihwbench.versions): it versions the layout of
+# dataset/index files produced for the frontend, not benchmark results.
 SCHEMA_VERSION = "1.0"
 
 

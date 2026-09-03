@@ -47,6 +47,7 @@ telemetry = ["psutil>=5.9"]
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
+    "mypy>=1.14,<2",
     "psutil>=5.9",
     "numpy>=1.26",
     "tomli>=1.1.0; python_version < \"3.11\"",

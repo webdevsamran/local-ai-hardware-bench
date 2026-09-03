@@ -7,6 +7,9 @@ result documents, never invent values, and keep unavailable metrics as
 
 All ``from_dict`` constructors are lenient about missing optional fields
 (they become ``None``) and strict about types of fields that are present.
+Pass ``strict=True`` to raise :class:`DomainParseError` on a wrong-typed
+field instead of silently turning it into ``None`` — corrupt input is never
+disguised as "not measured".
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 __all__ = [
+    "DomainParseError",
     "SystemInfo",
     "GpuInfo",
     "TopologyInfo",
@@ -30,27 +34,58 @@ __all__ = [
 ]
 
 
-def _num(value: Any) -> float | None:
-    """Coerce a JSON number to float; pass None through; reject bools."""
-    if value is None or isinstance(value, bool):
+class DomainParseError(ValueError):
+    """Raised when a strict parse encounters a wrong-typed field.
+
+    In strict mode a wrong-typed value is an error, not "not measured".
+    In lenient mode the same value becomes ``None`` (backwards compatible).
+    """
+
+
+def _num(value: Any, strict: bool = False) -> float | None:
+    """Coerce a JSON number to float.
+
+    ``None`` passes through as None ("not present"). Wrong types return None
+    in lenient mode and raise :class:`DomainParseError` in strict mode.
+    Bools are rejected in both modes (JSON true/false is not a number).
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        if strict:
+            raise DomainParseError(f"expected a number, got boolean {value!r}")
         return None
     if isinstance(value, (int, float)):
         return float(value)
+    if strict:
+        raise DomainParseError(f"expected a number, got {type(value).__name__} {value!r}")
     return None
 
 
-def _int(value: Any) -> int | None:
-    if value is None or isinstance(value, bool):
+def _int(value: Any, strict: bool = False) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        if strict:
+            raise DomainParseError(f"expected an integer, got boolean {value!r}")
         return None
     if isinstance(value, int):
         return value
     if isinstance(value, float) and value.is_integer():
         return int(value)
+    if strict:
+        raise DomainParseError(f"expected an integer, got {type(value).__name__} {value!r}")
     return None
 
 
-def _str(value: Any) -> str | None:
-    return value if isinstance(value, str) else None
+def _str(value: Any, strict: bool = False) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    if strict:
+        raise DomainParseError(f"expected a string, got {type(value).__name__} {value!r}")
+    return None
 
 
 @dataclass
@@ -67,16 +102,16 @@ class GpuInfo:
     index: int | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> GpuInfo:
+    def from_dict(cls, data: dict[str, Any], strict: bool = False) -> GpuInfo:
         return cls(
-            vendor=_str(data.get("vendor")),
-            name=_str(data.get("name")),
-            vram_mb=_int(data.get("vram_mb")),
-            driver_version=_str(data.get("driver_version")),
-            compute_capability=_str(data.get("compute_capability")),
-            pcie_gen=_int(data.get("pcie_gen")),
-            pcie_width=_int(data.get("pcie_width")),
-            index=_int(data.get("index")),
+            vendor=_str(data.get("vendor"), strict),
+            name=_str(data.get("name"), strict),
+            vram_mb=_int(data.get("vram_mb"), strict),
+            driver_version=_str(data.get("driver_version"), strict),
+            compute_capability=_str(data.get("compute_capability"), strict),
+            pcie_gen=_int(data.get("pcie_gen"), strict),
+            pcie_width=_int(data.get("pcie_width"), strict),
+            index=_int(data.get("index"), strict),
         )
 
     def as_dict(self) -> dict[str, Any]:
@@ -103,15 +138,19 @@ class TopologyInfo:
     gpu_count: int | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> TopologyInfo:
+    def from_dict(cls, data: dict[str, Any], strict: bool = False) -> TopologyInfo:
         features = data.get("cpu_features")
         unified = data.get("unified_memory")
+        if strict and not isinstance(unified, (bool, type(None))):
+            raise DomainParseError(f"expected a boolean, got {type(unified).__name__} {unified!r}")
+        if strict and features is not None and not isinstance(features, list):
+            raise DomainParseError(f"expected a list, got {type(features).__name__} {features!r}")
         return cls(
-            numa_nodes=_int(data.get("numa_nodes")),
-            sockets=_int(data.get("sockets")),
+            numa_nodes=_int(data.get("numa_nodes"), strict),
+            sockets=_int(data.get("sockets"), strict),
             unified_memory=unified if isinstance(unified, bool) else None,
             cpu_features=tuple(features) if isinstance(features, list) else (),
-            gpu_count=_int(data.get("gpu_count")),
+            gpu_count=_int(data.get("gpu_count"), strict),
         )
 
     def as_dict(self) -> dict[str, Any]:
@@ -143,29 +182,37 @@ class SystemInfo:
     topology: TopologyInfo = field(default_factory=TopologyInfo)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> SystemInfo:
+    def from_dict(cls, data: dict[str, Any], strict: bool = False) -> SystemInfo:
         gpus_raw = data.get("gpus")
         gpus = (
-            tuple(GpuInfo.from_dict(g) for g in gpus_raw if isinstance(g, dict))
+            tuple(GpuInfo.from_dict(g, strict) for g in gpus_raw if isinstance(g, dict))
             if isinstance(gpus_raw, list)
             else ()
         )
+        if strict and gpus_raw is not None and not isinstance(gpus_raw, list):
+            raise DomainParseError(f"expected a list, got {type(gpus_raw).__name__} {gpus_raw!r}")
         topo_raw = data.get("topology")
         topology = (
-            TopologyInfo.from_dict(topo_raw) if isinstance(topo_raw, dict) else TopologyInfo()
+            TopologyInfo.from_dict(topo_raw, strict)
+            if isinstance(topo_raw, dict)
+            else TopologyInfo()
         )
+        if strict and topo_raw is not None and not isinstance(topo_raw, dict):
+            raise DomainParseError(
+                f"expected an object, got {type(topo_raw).__name__} {topo_raw!r}"
+            )
         return cls(
-            os=_str(data.get("os")),
-            os_version=_str(data.get("os_version")),
-            cpu=_str(data.get("cpu")),
-            cpu_cores_physical=_int(data.get("cpu_cores_physical")),
-            cpu_cores_logical=_int(data.get("cpu_cores_logical")),
-            gpu=_str(data.get("gpu")),
-            gpu_vram_mb=_int(data.get("gpu_vram_mb")),
-            gpu_driver_version=_str(data.get("gpu_driver_version")),
-            npu=_str(data.get("npu")),
-            ram_gb=_num(data.get("ram_gb")),
-            platform_name=_str(data.get("platform_name")),
+            os=_str(data.get("os"), strict),
+            os_version=_str(data.get("os_version"), strict),
+            cpu=_str(data.get("cpu"), strict),
+            cpu_cores_physical=_int(data.get("cpu_cores_physical"), strict),
+            cpu_cores_logical=_int(data.get("cpu_cores_logical"), strict),
+            gpu=_str(data.get("gpu"), strict),
+            gpu_vram_mb=_int(data.get("gpu_vram_mb"), strict),
+            gpu_driver_version=_str(data.get("gpu_driver_version"), strict),
+            npu=_str(data.get("npu"), strict),
+            ram_gb=_num(data.get("ram_gb"), strict),
+            platform_name=_str(data.get("platform_name"), strict),
             gpus=gpus,
             topology=topology,
         )
@@ -199,12 +246,12 @@ class RuntimeInfo:
     device: str | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> RuntimeInfo:
+    def from_dict(cls, data: dict[str, Any], strict: bool = False) -> RuntimeInfo:
         return cls(
-            name=_str(data.get("name")),
-            version=_str(data.get("version")),
-            backend=_str(data.get("backend")),
-            device=_str(data.get("device")),
+            name=_str(data.get("name"), strict),
+            version=_str(data.get("version"), strict),
+            backend=_str(data.get("backend"), strict),
+            device=_str(data.get("device"), strict),
         )
 
     def as_dict(self) -> dict[str, Any]:
@@ -227,15 +274,15 @@ class ModelInfo:
     tokenizer: str | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> ModelInfo:
+    def from_dict(cls, data: dict[str, Any], strict: bool = False) -> ModelInfo:
         return cls(
-            name=_str(data.get("name")),
-            format=_str(data.get("format")),
-            quantization=_str(data.get("quantization")),
-            parameters=_str(data.get("parameters")),
-            checksum=_str(data.get("checksum")),
-            revision=_str(data.get("revision")),
-            tokenizer=_str(data.get("tokenizer")),
+            name=_str(data.get("name"), strict),
+            format=_str(data.get("format"), strict),
+            quantization=_str(data.get("quantization"), strict),
+            parameters=_str(data.get("parameters"), strict),
+            checksum=_str(data.get("checksum"), strict),
+            revision=_str(data.get("revision"), strict),
+            tokenizer=_str(data.get("tokenizer"), strict),
         )
 
     def as_dict(self) -> dict[str, Any]:
@@ -262,14 +309,14 @@ class WorkloadInfo:
     dataset: str | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> WorkloadInfo:
+    def from_dict(cls, data: dict[str, Any], strict: bool = False) -> WorkloadInfo:
         return cls(
-            id=_str(data.get("id")),
-            version=_str(data.get("version")),
-            kind=_str(data.get("kind")),
-            isl_tokens=_int(data.get("isl_tokens")),
-            osl_tokens=_int(data.get("osl_tokens")),
-            dataset=_str(data.get("dataset")),
+            id=_str(data.get("id"), strict),
+            version=_str(data.get("version"), strict),
+            kind=_str(data.get("kind"), strict),
+            isl_tokens=_int(data.get("isl_tokens"), strict),
+            osl_tokens=_int(data.get("osl_tokens"), strict),
+            dataset=_str(data.get("dataset"), strict),
         )
 
     def as_dict(self) -> dict[str, Any]:
@@ -371,17 +418,21 @@ class MetricSet:
     )
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> MetricSet:
+    def from_dict(cls, data: dict[str, Any], strict: bool = False) -> MetricSet:
         from .metrics import _MISSING, resolve_metric
 
         kwargs: dict[str, Any] = {}
         for name in cls._NUMERIC_FIELDS:
             resolved = resolve_metric(data, name)
             if resolved is not _MISSING:
-                kwargs[name] = _num(resolved)
+                kwargs[name] = _num(resolved, strict)
         ci = resolve_metric(data, "ci95_latency_ms")
+        if strict and ci is not _MISSING and not (isinstance(ci, (list, tuple)) and len(ci) == 2):
+            raise DomainParseError(f"expected a 2-element array, got {ci!r}")
         kwargs["ci95_latency_ms"] = (
-            (_num(ci[0]), _num(ci[1])) if isinstance(ci, (list, tuple)) and len(ci) == 2 else None
+            (_num(ci[0], strict), _num(ci[1], strict))
+            if isinstance(ci, (list, tuple)) and len(ci) == 2
+            else None
         )
         return cls(**kwargs)
 
@@ -414,21 +465,25 @@ class IterationSample:
     extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> IterationSample:
+    def from_dict(cls, data: dict[str, Any], strict: bool = False) -> IterationSample:
         known: dict[str, Any] = {
-            "ttft_ms": _num(data.get("ttft_ms")),
-            "total_latency_ms": _num(data.get("total_latency_ms")),
-            "completion_tokens": _int(data.get("completion_tokens")),
-            "prompt_tokens": _int(data.get("prompt_tokens")),
-            "eval_seconds": _num(data.get("eval_seconds")),
-            "prompt_eval_seconds": _num(data.get("prompt_eval_seconds")),
-            "tpot_ms": _num(data.get("tpot_ms")),
-            "prefill_latency_ms": _num(data.get("prefill_latency_ms")),
-            "decode_duration_ms": _num(data.get("decode_duration_ms")),
-            "queue_latency_ms": _num(data.get("queue_latency_ms")),
-            "request_latency_ms": _num(data.get("request_latency_ms")),
+            "ttft_ms": _num(data.get("ttft_ms"), strict),
+            "total_latency_ms": _num(data.get("total_latency_ms"), strict),
+            "completion_tokens": _int(data.get("completion_tokens"), strict),
+            "prompt_tokens": _int(data.get("prompt_tokens"), strict),
+            "eval_seconds": _num(data.get("eval_seconds"), strict),
+            "prompt_eval_seconds": _num(data.get("prompt_eval_seconds"), strict),
+            "tpot_ms": _num(data.get("tpot_ms"), strict),
+            "prefill_latency_ms": _num(data.get("prefill_latency_ms"), strict),
+            "decode_duration_ms": _num(data.get("decode_duration_ms"), strict),
+            "queue_latency_ms": _num(data.get("queue_latency_ms"), strict),
+            "request_latency_ms": _num(data.get("request_latency_ms"), strict),
         }
         success_raw = data.get("success")
+        if strict and success_raw is not None and not isinstance(success_raw, bool):
+            raise DomainParseError(
+                f"expected a boolean, got {type(success_raw).__name__} {success_raw!r}"
+            )
         known["success"] = success_raw if isinstance(success_raw, bool) else None
         known["extra"] = {
             k: v for k, v in data.items() if k not in (*known.keys(), "success", "extra")
@@ -469,17 +524,17 @@ class TelemetrySummary:
     samples: int | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> TelemetrySummary:
+    def from_dict(cls, data: dict[str, Any], strict: bool = False) -> TelemetrySummary:
         return cls(
-            peak_ram_mb=_num(data.get("peak_ram_mb")),
-            peak_vram_mb=_num(data.get("peak_vram_mb")),
-            avg_cpu_util_percent=_num(data.get("avg_cpu_util_percent")),
-            avg_gpu_util_percent=_num(data.get("avg_gpu_util_percent")),
-            max_temperature_c=_num(data.get("max_temperature_c")),
-            average_power_watts=_num(data.get("average_power_watts")),
-            source=_str(data.get("source")),
-            interval_seconds=_num(data.get("interval_seconds")),
-            samples=_int(data.get("samples")),
+            peak_ram_mb=_num(data.get("peak_ram_mb"), strict),
+            peak_vram_mb=_num(data.get("peak_vram_mb"), strict),
+            avg_cpu_util_percent=_num(data.get("avg_cpu_util_percent"), strict),
+            avg_gpu_util_percent=_num(data.get("avg_gpu_util_percent"), strict),
+            max_temperature_c=_num(data.get("max_temperature_c"), strict),
+            average_power_watts=_num(data.get("average_power_watts"), strict),
+            source=_str(data.get("source"), strict),
+            interval_seconds=_num(data.get("interval_seconds"), strict),
+            samples=_int(data.get("samples"), strict),
         )
 
     def as_dict(self) -> dict[str, Any]:
@@ -514,23 +569,23 @@ class ReproducibilityInfo:
     workload_type: str | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> ReproducibilityInfo:
+    def from_dict(cls, data: dict[str, Any], strict: bool = False) -> ReproducibilityInfo:
         temp = data.get("temperature")
         return cls(
-            prompt=_str(data.get("prompt")),
-            max_tokens=_int(data.get("max_tokens")),
-            temperature=_num(temp),
-            seed=_int(data.get("seed")),
-            context_length=_int(data.get("context_length")),
-            warmup_runs=_int(data.get("warmup_runs")),
-            iterations=_int(data.get("iterations")),
-            command=_str(data.get("command")),
-            python_version=_str(data.get("python_version")),
-            power_profile=_str(data.get("power_profile")),
-            trust=_str(data.get("trust")),
-            batch_size=_int(data.get("batch_size")),
-            concurrency=_int(data.get("concurrency")),
-            workload_type=_str(data.get("workload_type")),
+            prompt=_str(data.get("prompt"), strict),
+            max_tokens=_int(data.get("max_tokens"), strict),
+            temperature=_num(temp, strict),
+            seed=_int(data.get("seed"), strict),
+            context_length=_int(data.get("context_length"), strict),
+            warmup_runs=_int(data.get("warmup_runs"), strict),
+            iterations=_int(data.get("iterations"), strict),
+            command=_str(data.get("command"), strict),
+            python_version=_str(data.get("python_version"), strict),
+            power_profile=_str(data.get("power_profile"), strict),
+            trust=_str(data.get("trust"), strict),
+            batch_size=_int(data.get("batch_size"), strict),
+            concurrency=_int(data.get("concurrency"), strict),
+            workload_type=_str(data.get("workload_type"), strict),
         )
 
     def as_dict(self) -> dict[str, Any]:
@@ -565,15 +620,15 @@ class ProvenanceInfo:
     signature_provider: str | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> ProvenanceInfo:
+    def from_dict(cls, data: dict[str, Any], strict: bool = False) -> ProvenanceInfo:
         return cls(
-            result_hash=_str(data.get("result_hash")),
-            workload_hash=_str(data.get("workload_hash")),
-            environment_hash=_str(data.get("environment_hash")),
-            model_identity_hash=_str(data.get("model_identity_hash")),
-            hash_algorithm=_str(data.get("hash_algorithm")),
-            signature=_str(data.get("signature")),
-            signature_provider=_str(data.get("signature_provider")),
+            result_hash=_str(data.get("result_hash"), strict),
+            workload_hash=_str(data.get("workload_hash"), strict),
+            environment_hash=_str(data.get("environment_hash"), strict),
+            model_identity_hash=_str(data.get("model_identity_hash"), strict),
+            hash_algorithm=_str(data.get("hash_algorithm"), strict),
+            signature=_str(data.get("signature"), strict),
+            signature_provider=_str(data.get("signature_provider"), strict),
         )
 
     def as_dict(self) -> dict[str, Any]:
@@ -609,7 +664,15 @@ class BenchmarkResult:
     raw: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> BenchmarkResult:
+    def from_dict(cls, data: dict[str, Any], strict: bool = False) -> BenchmarkResult:
+        """Parse a result document.
+
+        In lenient mode (default) wrong-typed fields become ``None`` so a
+        single corrupt field degrades gracefully. In strict mode a wrong-typed
+        field raises :class:`DomainParseError` — corrupt input is never
+        silently disguised as "not measured". Genuine missing fields and
+        explicit JSON ``null`` remain ``None`` in both modes.
+        """
         if not isinstance(data, dict):
             raise TypeError("result document must be a JSON object")
         workload_raw = data.get("workload")
@@ -617,28 +680,32 @@ class BenchmarkResult:
         tele_raw = data.get("telemetry") or data.get("telemetry_summary")
         iterations_raw = data.get("iterations")
         return cls(
-            run_id=_str(data.get("run_id")),
-            timestamp=_str(data.get("timestamp")),
-            schema_version=_str(data.get("schema_version")),
-            protocol_version=_str(data.get("protocol_version")),
-            system=SystemInfo.from_dict(data.get("system") or {}),
-            runtime=RuntimeInfo.from_dict(data.get("runtime") or {}),
-            model=ModelInfo.from_dict(data.get("model") or {}),
-            metrics=MetricSet.from_dict(data.get("metrics") or {}),
-            reproducibility=ReproducibilityInfo.from_dict(data.get("reproducibility") or {}),
-            workload=WorkloadInfo.from_dict(workload_raw)
+            run_id=_str(data.get("run_id"), strict),
+            timestamp=_str(data.get("timestamp"), strict),
+            schema_version=_str(data.get("schema_version"), strict),
+            protocol_version=_str(data.get("protocol_version"), strict),
+            system=SystemInfo.from_dict(data.get("system") or {}, strict),
+            runtime=RuntimeInfo.from_dict(data.get("runtime") or {}, strict),
+            model=ModelInfo.from_dict(data.get("model") or {}, strict),
+            metrics=MetricSet.from_dict(data.get("metrics") or {}, strict),
+            reproducibility=ReproducibilityInfo.from_dict(
+                data.get("reproducibility") or {}, strict
+            ),
+            workload=WorkloadInfo.from_dict(workload_raw, strict)
             if isinstance(workload_raw, dict)
             else None,
-            provenance=(ProvenanceInfo.from_dict(prov_raw) if isinstance(prov_raw, dict) else None),
+            provenance=(
+                ProvenanceInfo.from_dict(prov_raw, strict) if isinstance(prov_raw, dict) else None
+            ),
             telemetry=(
-                TelemetrySummary.from_dict(tele_raw) if isinstance(tele_raw, dict) else None
+                TelemetrySummary.from_dict(tele_raw, strict) if isinstance(tele_raw, dict) else None
             ),
             iterations=tuple(
-                IterationSample.from_dict(i) for i in iterations_raw if isinstance(i, dict)
+                IterationSample.from_dict(i, strict) for i in iterations_raw if isinstance(i, dict)
             )
             if isinstance(iterations_raw, list)
             else (),
-            git_commit=_str(data.get("git_commit")),
+            git_commit=_str(data.get("git_commit"), strict),
             raw=data,
         )
 

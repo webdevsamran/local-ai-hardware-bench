@@ -2,6 +2,7 @@
 // The production site is fully static; no backend is required.
 
 import type { Dataset } from './types'
+import { assertDataset } from './validate'
 
 export interface LoadState<T> {
   data: T | null
@@ -24,7 +25,11 @@ async function fetchDataset(): Promise<Dataset> {
         },
       ),
     )
-  return { index, results, hardware, runtimes, models, leaderboard, trends }
+  const dataset = { index, results, hardware, runtimes, models, leaderboard, trends }
+  // Fail closed: corruption or schema drift must surface here, not as
+  // silently undefined fields in the UI.
+  assertDataset(dataset)
+  return dataset
 }
 
 /** Loads the full dataset once and caches it for the session. */

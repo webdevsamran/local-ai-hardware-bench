@@ -157,8 +157,8 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     finally:
         sampler.stop()
 
-    from .. import SCHEMA_VERSION
     from ..metrics import percentile, performance_per_watt
+    from ..versions import CURRENT_SCHEMA_VERSION
 
     telemetry = sampler.summary()
     mean_latency = sum(latencies) / len(latencies)
@@ -186,7 +186,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     }
 
     return {
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": CURRENT_SCHEMA_VERSION,
         "run_id": new_run_id("onnxruntime"),
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "system": system,

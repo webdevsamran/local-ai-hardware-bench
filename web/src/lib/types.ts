@@ -62,6 +62,7 @@ export interface BenchmarkResultDoc {
   schema_version: string
   run_id: string
   timestamp?: string
+  trust_state?: string | null
   system?: SystemInfo
   runtime?: RuntimeBlock
   model?: ModelBlock

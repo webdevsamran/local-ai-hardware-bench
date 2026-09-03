@@ -4,6 +4,24 @@ All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
+### Changed
+- **Schema writer emits 2.0 via `aihwbench.versions`** — the single
+  authoritative source for package/schema/protocol versions. All backends
+  stamp `CURRENT_SCHEMA_VERSION`; readers still accept 1.0 and migrate
+  forward. Migrations are pure (deep-copy, canonical `aihwbench.migrations`
+  migrator name); `domain` parsing is strict by default (MISSING/null/
+  INVALID separated, wrong-typed values no longer silently become `None`);
+  anomaly detection cohorts results by comparability profile
+  (protocol/runtime/model/device) with robust median/MAD statistics and a
+  minimum cohort size.
+
+### Added
+- Web runtime validators (`web/src/lib/validate.ts`) with Vitest contract
+  tests; `index.json` fetched once instead of twice; `trust_state` exposed
+  in TypeScript types; CI adds a dependency-review job and a raised
+  coverage gate.
+
+### Fixed
 ### Fixed
 - **Audit remediation (Phase A — P0 data-integrity/security):** see
   `docs/audit/REPOSITORY_AUDIT.md` for evidence on every item.

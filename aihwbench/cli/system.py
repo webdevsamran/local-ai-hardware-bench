@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-from typing import Any
 
 from ..backends import detect_all
 from ..exit_codes import EXIT_CONFIGURATION_ERROR, EXIT_OK

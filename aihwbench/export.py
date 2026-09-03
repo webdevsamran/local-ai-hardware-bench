@@ -173,9 +173,7 @@ def export_dataset(results_dir: Path, output_dir: Path, *, strict: bool = False)
     return [index_path, csv_path, md_path]
 
 
-def export_parquet(
-    results: Sequence[dict[str, Any]] | str | Path, output_path: str | Path
-) -> Path:
+def export_parquet(results: Sequence[dict[str, Any]] | str | Path, output_path: str | Path) -> Path:
     """Write the flattened results view as Parquet (#17).
 
     ``results`` may be a results directory (``*.json`` files are loaded,

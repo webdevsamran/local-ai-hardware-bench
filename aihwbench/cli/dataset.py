@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any
 
 from ..dataset_versioning import build_snapshot_manifest
 from ..evaluators import list_evaluators, load_dataset, run_evaluation

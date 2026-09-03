@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any
 
 from ..bundles import create_bundle, verify_bundle
 from ..exit_codes import EXIT_CONFIGURATION_ERROR, EXIT_OK, EXIT_VALIDATION_ERROR

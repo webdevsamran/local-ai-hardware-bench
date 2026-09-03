@@ -7,7 +7,6 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any
 
 from ..analysis import analyze_bottlenecks, estimate_model_fit, recommend_configuration
 from ..comparability import NOT_COMPARABLE

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import csv
 import json
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -172,7 +173,7 @@ def export_dataset(results_dir: Path, output_dir: Path, *, strict: bool = False)
     return [index_path, csv_path, md_path]
 
 
-def export_parquet(results, output_path):
+def export_parquet(results: Sequence[dict[str, Any]] | str | Path, output_path: str | Path) -> Path:
     """Write the flattened results view as Parquet (#17).
 
     ``results`` may be a results directory (``*.json`` files are loaded,
@@ -212,7 +213,7 @@ def export_parquet(results, output_path):
     return dst
 
 
-def _flatten_result_row(doc):
+def _flatten_result_row(doc: dict[str, Any]) -> dict[str, Any]:
     """One flat row per result; only scalar block fields are projected."""
     row = {
         "run_id": doc.get("run_id"),

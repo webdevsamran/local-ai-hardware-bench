@@ -136,7 +136,7 @@ def backend_metadata(name: str) -> BenchmarkMetadata | None:
     CAPABILITIES tuple when it provides no full metadata block
     (#7/#8/#10/#11 capability contract)."""
     module = resolve(name)
-    md = getattr(module, "METADATA", None)
+    md: BenchmarkMetadata | None = getattr(module, "METADATA", None)
     caps = getattr(module, "CAPABILITIES", ())
     if md is None and caps:
         return BenchmarkMetadata(name=name, description=name, capabilities=tuple(caps))

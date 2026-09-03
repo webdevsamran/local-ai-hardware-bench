@@ -36,7 +36,7 @@ class RegressionThresholds:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> RegressionThresholds:
-        valid = {f for f in cls.__dataclass_fields__}  # type: ignore[attr-defined]
+        valid = {f for f in cls.__dataclass_fields__}
         return cls(**{k: v for k, v in data.items() if k in valid})
 
 

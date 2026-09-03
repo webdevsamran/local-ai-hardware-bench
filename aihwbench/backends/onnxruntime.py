@@ -28,7 +28,7 @@ from .base import (
 def detect() -> BackendInfo:
     """Detect ONNX Runtime via package import."""
     try:
-        import onnxruntime  # type: ignore[import-untyped]
+        import onnxruntime
     except ImportError:
         return BackendInfo(
             "onnxruntime",
@@ -63,12 +63,12 @@ def _providers_for_device(device: str) -> list[str] | None:
 
 
 def _available_providers() -> list[str]:
-    import onnxruntime  # type: ignore[import-untyped]
+    import onnxruntime
 
     return list(onnxruntime.get_available_providers())
 
 
-def _numpy():
+def _numpy() -> Any:
     """Import numpy lazily; it is only needed when actually benchmarking."""
     try:
         import numpy
@@ -112,7 +112,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "onnxruntime backend requires --model-path pointing to a local .onnx file"
         )
 
-    import onnxruntime  # type: ignore[import-untyped]
+    import onnxruntime
 
     providers = _providers_for_device(config.device)
     sess_options = onnxruntime.SessionOptions()

@@ -86,7 +86,7 @@ def cmd_self_test(_args: argparse.Namespace) -> int:
     return EXIT_OK if report["overall"] != "fail" else EXIT_CONFIGURATION_ERROR
 
 
-def register(sub: argparse._SubParsersAction) -> None:
+def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     bun = sub.add_parser("bundle", help="Create a portable .aihwbench bundle")
     bun.add_argument("result")
     bun.add_argument("--environment", default=None, help="Optional environment.json")

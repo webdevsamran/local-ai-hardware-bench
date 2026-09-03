@@ -73,7 +73,7 @@ def _nvidia_smi_sample() -> dict[str, Any] | None:
 def _system_ram_sample() -> tuple[float | None, str | None]:
     """Used system RAM in MB as (value, source). Platform-safe fallback."""
     try:
-        import psutil  # type: ignore[import-untyped]
+        import psutil
 
         vm = psutil.virtual_memory()
         return (
@@ -276,7 +276,7 @@ def measure(fn: Callable[[], Any]) -> tuple[Any, float]:
     return result, elapsed_ms
 
 
-def npu_snapshot_safe():
+def npu_snapshot_safe() -> dict[str, Any] | None:
     """Best-effort NPU telemetry block (#18); None when no NPU is detected.
 
     Never raises. Uses the structured hook contract from

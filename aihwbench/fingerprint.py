@@ -1,13 +1,20 @@
-"""Deterministic result fingerprints for duplicate detection and integrity.
+"""Deterministic result fingerprints for duplicate detection.
 
-A fingerprint is a stable digest over the comparison-relevant identity of
-a result: protocol, model, workload, runtime, hardware class, and
+A fingerprint is a stable digest over the *experiment identity* of a
+result: protocol/schema versions, model, workload, runtime, hardware, and
 configuration. Two results with the same fingerprint describe the same
-experiment; differing fingerprints mean the results are not duplicates.
+experiment and are legitimate repeats; differing fingerprints mean the
+results are not duplicates.
 
-Fingerprints are NOT cryptographic attestations. They detect accidental
-duplicates and support regression baselines; they do not prove that a
-result was produced by a trusted process.
+Identity vs. integrity: a fingerprint identifies *what was measured*
+(experiment identity). It is deliberately NOT an artifact-integrity hash
+— result/provenance hashes (``provenance.result_hash``) cover *whether
+the artifact bytes were altered*. Neither proves a result was produced by
+a trusted process.
+
+The algorithm is versioned via ``FINGERPRINT_ALGORITHM_VERSION``, embedded
+in every digest so stored fingerprints remain interpretable when the
+field set evolves.
 """
 
 from __future__ import annotations
@@ -16,15 +23,27 @@ import hashlib
 import json
 from typing import Any
 
+FINGERPRINT_ALGORITHM_VERSION = 2
+
 _FINGERPRINT_FIELDS = (
+    ("fingerprint_algorithm_version", None),
+    # Protocol / contract identity
     ("schema_version", None),
+    ("protocol_version", None),
+    # Model identity
     ("model.name", None),
     ("model.checksum", None),
     ("model.format", None),
     ("model.quantization", None),
+    # Runtime identity
     ("runtime.name", None),
     ("runtime.backend", None),
+    ("runtime.version", None),
     ("runtime.device", None),
+    # Workload identity (typed block and legacy reproducibility fields)
+    ("workload.id", None),
+    ("workload.kind", None),
+    ("workload.version", None),
     ("reproducibility.workload_type", "llm-generation"),
     ("reproducibility.prompt", None),
     ("reproducibility.max_tokens", None),
@@ -33,8 +52,12 @@ _FINGERPRINT_FIELDS = (
     ("reproducibility.context_length", None),
     ("reproducibility.batch_size", 1),
     ("reproducibility.concurrency", 1),
+    # Hardware identity (CPU/GPU strings plus OS and RAM so two distinct
+    # machines with identical CPU model strings do not merge)
     ("system.cpu", None),
     ("system.gpu", None),
+    ("system.os", None),
+    ("system.ram_gb", None),
 )
 
 
@@ -50,9 +73,18 @@ def _get(data: dict[str, Any], path: str) -> Any:
 
 
 def result_fingerprint(result: dict[str, Any]) -> str:
-    """Deterministic sha256 fingerprint of a result's experiment identity."""
-    payload: dict[str, Any] = {}
+    """Deterministic sha256 fingerprint of a result's experiment identity.
+
+    The digest covers ``FINGERPRINT_ALGORITHM_VERSION`` and every field in
+    ``_FINGERPRINT_FIELDS`` (absent fields normalize to ``None``, so results
+    from both older and newer writers compare consistently). Field values
+    are taken positionally, never by dict order, making the output stable
+    across JSON key ordering.
+    """
+    payload: dict[str, Any] = {"fingerprint_algorithm_version": FINGERPRINT_ALGORITHM_VERSION}
     for path, default in _FINGERPRINT_FIELDS:
+        if path == "fingerprint_algorithm_version":
+            continue
         value = _get(result, path)
         payload[path] = default if value is None else value
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
@@ -60,7 +92,12 @@ def result_fingerprint(result: dict[str, Any]) -> str:
 
 
 def find_duplicates(results: list[dict[str, Any]]) -> list[list[str]]:
-    """Group results by fingerprint; return groups with more than one run."""
+    """Group results by fingerprint; return groups with more than one run.
+
+    Groups are computed under the current ``FINGERPRINT_ALGORITHM_VERSION``;
+    fingerprints stored by older algorithm versions are not comparable and
+    must be recomputed before dedup decisions.
+    """
     groups: dict[str, list[str]] = {}
     for r in results:
         run_id = r.get("run_id") or "<unknown>"

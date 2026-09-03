@@ -39,11 +39,21 @@ happy to help reproduce.
 - Dependabot monitors both GitHub Actions and pip dependencies (weekly).
 - No secrets are required to build or test the project.
 - Model downloads never happen in CI.
-- Release artifacts should ship with checksums; SBOM generation is on the
-  roadmap (see ROADMAP.md).
+- Release artifacts ship with SHA-256 checksums and a CycloneDX SBOM that
+  the release workflow generates **and verifies** (format, component
+  count, JSON validity); a missing or empty SBOM fails the release. See
+  `ROADMAP.md` for the security-artifact track.
+- Dependabot vulnerability alerts and automated security fixes are
+  enabled on the upstream repository; `npm audit --audit-level=high` is a
+  fail-closed CI gate for the web client.
+- Dependency Review runs advisorially until the repository setting
+  "Dependency graph" is enabled (UI-only; cannot be set via API). Once
+  enabled, remove `continue-on-error` from the Dependency Review step in
+  `.github/workflows/ci.yml`.
 
 ## Secret scanning
 
-Enable GitHub secret scanning and push protection on your fork. Never
+Secret scanning and push protection are enabled on the upstream
+repository. Enable both on your fork too. Never
 commit tokens; if one leaks, revoke it immediately before history
 cleanup.

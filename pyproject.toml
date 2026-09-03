@@ -89,3 +89,9 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = ["aihwbench.system_info", "aihwbench.telemetry"]
 disable_error_code = ["attr-defined"]
+
+# Strict-typed modules (strictened module-by-module; extend this list as
+# more modules are cleaned up — do not weaken the global config instead).
+[[tool.mypy.overrides]]
+module = ["aihwbench.versions", "aihwbench.fingerprint", "aihwbench.capacity"]
+strict = true

@@ -6,11 +6,10 @@ and error rate — then identifies the *sustainable* concurrency under an
 explicit, documented rule:
 
     sustainable = highest concurrency level where error_rate == 0 AND
-                  p95 latency <= sustainability_factor x the best
-                  (lowest) level's p95.
+                  p95 latency <= sustainability_factor x the best p95 observed across measured levels (the minimum).
 
 The rule is reported alongside the verdict so it can be audited or
-changed; it is never hidden inside an opaque score.
+changed; it is never hidden inside an opaque score. The methodology is pinned by tests/test_capacity.py.
 """
 
 from __future__ import annotations
@@ -22,7 +21,13 @@ from typing import Any
 from .loadgen import LoadgenConfig, RequestRecord, run_load
 from .stats import summarize
 
-__all__ = ["CapacityConfig", "run_capacity_ladder", "LevelResult", "CapacityReport"]
+__all__ = [
+    "CapacityConfig",
+    "run_capacity_ladder",
+    "LevelResult",
+    "CapacityReport",
+    "sustainable_concurrency",
+]
 
 ExecuteFn = Callable[[int], dict[str, Any]]
 
@@ -109,6 +114,21 @@ def _level_result(concurrency: int, records: list[RequestRecord]) -> LevelResult
     )
 
 
+def sustainable_concurrency(levels: list[LevelResult], sustainability_factor: float) -> int | None:
+    """Highest zero-error concurrency whose p95 stays within
+    ``sustainability_factor`` times the best (minimum) p95 observed across
+    measured levels. Returns None when no level is measurable or none is
+    within the threshold. Pure function; pinned by tests/test_capacity.py.
+    """
+    measured = [lv for lv in levels if lv.p95_latency_ms is not None and lv.errors == 0]
+    if not measured:
+        return None
+    best_p95 = min(lv.p95_latency_ms for lv in measured if lv.p95_latency_ms is not None)
+    threshold = sustainability_factor * best_p95
+    ok = [lv for lv in measured if lv.p95_latency_ms is not None and lv.p95_latency_ms <= threshold]
+    return max(ok, key=lambda lv: lv.concurrency).concurrency if ok else None
+
+
 def run_capacity_ladder(config: CapacityConfig, execute: ExecuteFn) -> CapacityReport:
     """Run every concurrency level and compute the sustainable verdict."""
     levels: list[LevelResult] = []
@@ -122,13 +142,7 @@ def run_capacity_ladder(config: CapacityConfig, execute: ExecuteFn) -> CapacityR
         records = run_load(lc, execute)
         levels.append(_level_result(concurrency, records))
 
-    measured = [lv for lv in levels if lv.p95_latency_ms is not None and lv.errors == 0]
-    sustainable: int | None = None
-    if measured:
-        best_p95 = min(lv.p95_latency_ms for lv in measured)
-        threshold = config.sustainability_factor * best_p95
-        ok = [lv for lv in measured if lv.p95_latency_ms <= threshold]
-        sustainable = max(ok, key=lambda lv: lv.concurrency).concurrency if ok else None
+    sustainable = sustainable_concurrency(levels, config.sustainability_factor)
     rule = (
         f"sustainable = max concurrency with error_rate == 0 and "
         f"p95 <= {config.sustainability_factor:g}x best-level p95"

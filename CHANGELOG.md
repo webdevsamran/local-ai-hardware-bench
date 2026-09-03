@@ -16,10 +16,27 @@ Format based on Keep a Changelog; versioning is SemVer.
   minimum cohort size.
 
 ### Added
+- **Fingerprint algorithm v2** (`FINGERPRINT_ALGORITHM_VERSION`): result
+  identity now includes `protocol_version`, the typed workload block,
+  runtime version, OS and RAM, distinguishing distinct machines/systems
+  that share a CPU string; algorithm version is embedded in every digest.
+- **Capacity methodology pinned**: `sustainable_concurrency()` extracted
+  as a pure, documented rule (min p95 across zero-error measured levels)
+  with dedicated tests; docstring no longer ambiguous about "lowest".
 - Web runtime validators (`web/src/lib/validate.ts`) with Vitest contract
   tests; `index.json` fetched once instead of twice; `trust_state` exposed
   in TypeScript types; CI adds a dependency-review job and a raised
-  coverage gate.
+  coverage gate; ADR-0008 (HashRouter) records the routing decision.
+- mypy strict mode applied module-by-module (`versions`, `fingerprint`,
+  `capacity`).
+
+### Changed
+- Generated-data hardware fingerprint is now versioned (`hwfp-v2-…`),
+  normalized and includes OS/RAM; regenerated `web/public/data`.
+- SECURITY.md now reflects reality: release SBOM is generated *and
+  verified*; Dependabot alerts/fixes and secret scanning enabled;
+  Dependency Review advisory until the repo's Dependency graph toggle is
+  flipped (UI-only).
 
 ### Fixed
 ### Fixed

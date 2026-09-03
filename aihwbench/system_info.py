@@ -79,7 +79,8 @@ def _windows_total_ram_gb() -> float | None:
     stat.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
     try:
         ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat))
-        return round(stat.ullTotalPhys / (1024**3), 1)
+        total_bytes = float(stat.ullTotalPhys)
+        return round(total_bytes / (1024**3), 1)
     except OSError:
         return None
 

@@ -59,7 +59,7 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     backend = resolve(runtime)
     system = detect_system()
 
-    result = backend.run(config, system)
+    result: dict[str, Any] = backend.run(config, system)
 
     # Enrich with environment/reproducibility metadata.
     result.setdefault("run_id", f"{runtime}-{uuid.uuid4().hex[:8]}")

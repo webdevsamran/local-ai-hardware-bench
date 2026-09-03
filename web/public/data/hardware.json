@@ -1,7 +1,7 @@
 [
   {
     "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
-    "fingerprint": "0d2605644fb5f221",
+    "fingerprint": "hwfp-v2-b9384139a0793fe1",
     "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
     "npu": null,
     "os": "Windows 11",

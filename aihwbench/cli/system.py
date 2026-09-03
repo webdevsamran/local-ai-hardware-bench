@@ -57,7 +57,7 @@ def cmd_runtimes(_args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
-def register(sub: argparse._SubParsersAction) -> None:
+def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     sub.add_parser("system-info", help="Print detected hardware").set_defaults(func=cmd_system_info)
     sub.add_parser("detect", help="Full system + runtime detection as JSON").set_defaults(
         func=cmd_detect

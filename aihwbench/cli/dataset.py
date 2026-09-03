@@ -176,7 +176,7 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
-def register(sub: argparse._SubParsersAction) -> None:
+def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     exp = sub.add_parser("export", help="Generate dataset views from published results")
     exp.add_argument("results_dir", nargs="?", default="results/published")
     exp.add_argument("--output", default="results/dataset")

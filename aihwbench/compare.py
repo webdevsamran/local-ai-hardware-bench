@@ -35,7 +35,8 @@ _COMPARABLE_METRICS = [
 
 def comparability_warnings(a: dict[str, Any], b: dict[str, Any]) -> list[str]:
     """Return warnings when two results are not materially comparable."""
-    return compare_classification(a, b)["reasons"]
+    reasons: list[str] = compare_classification(a, b)["reasons"]
+    return reasons
 
 
 def compare_results(a: dict[str, Any], b: dict[str, Any], force: bool = False) -> dict[str, Any]:

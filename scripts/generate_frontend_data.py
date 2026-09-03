@@ -75,10 +75,29 @@ def _metric(result: dict, key: str):
     return (result.get("metrics") or {}).get(key)
 
 
+def _normalize(value: object) -> str:
+    if not value:
+        return ""
+    return " ".join(str(value).split()).casefold()
+
+
 def _hardware_fingerprint(system: dict) -> str:
-    parts = [system.get("cpu"), system.get("gpu"), system.get("npu")]
-    raw = "|".join(str(p) for p in parts)
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+    """Versioned hardware identity (v2).
+
+    v1 hashed only CPU/GPU/NPU strings and merged distinct machines that
+    shared a CPU model string. v2 normalizes strings (whitespace/case) and
+    includes OS and RAM; the algorithm version is embedded in the key so
+    regenerations remain comparable.
+    """
+    parts = [
+        system.get("cpu"),
+        system.get("gpu"),
+        system.get("npu"),
+        system.get("os"),
+        system.get("ram_gb"),
+    ]
+    raw = "|".join(_normalize(p) for p in parts)
+    return "hwfp-v2-" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
 
 def build(results: list[dict]) -> dict[str, object]:

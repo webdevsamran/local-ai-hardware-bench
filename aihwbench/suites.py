@@ -28,7 +28,8 @@ def load_suite(name: str) -> dict[str, Any]:
     path = SUITES_DIR / f"{name}.json"
     if not path.is_file():
         raise FileNotFoundError(f"suite {name!r} not found. Available: {', '.join(list_suites())}")
-    return json.loads(path.read_text(encoding="utf-8"))
+    data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+    return data
 
 
 def suite_config(suite: dict[str, Any], runtime: str, model: str | None) -> BenchmarkConfig:

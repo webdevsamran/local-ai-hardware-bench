@@ -79,7 +79,8 @@ def model_digest(model: str) -> str | None:
         return None
     for m in data.get("models", []):
         if m.get("name") == model:
-            return m.get("digest")
+            digest: str | None = m.get("digest")
+            return digest
     return None
 
 

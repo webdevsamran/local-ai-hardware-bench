@@ -27,9 +27,9 @@ METADATA = BenchmarkMetadata(
 )
 
 
-def _import_openvino_genai():
+def _import_openvino_genai() -> Any:
     try:
-        import openvino_genai  # type: ignore[import-not-found]
+        import openvino_genai
 
         return openvino_genai
     except ImportError:

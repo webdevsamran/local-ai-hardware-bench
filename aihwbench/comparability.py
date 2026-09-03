@@ -65,12 +65,13 @@ def _same(a: Any, b: Any) -> bool:
         return True
     if a is None or b is None:
         return False
-    return a == b
+    return bool(a == b)
 
 
 def comparability_warnings(a: dict[str, Any], b: dict[str, Any]) -> list[str]:
     """Human-readable warnings when results are not strictly comparable."""
-    return compare_classification(a, b)["reasons"]
+    reasons: list[str] = compare_classification(a, b)["reasons"]
+    return reasons
 
 
 def compare_classification(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:

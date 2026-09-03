@@ -9,7 +9,8 @@ import sys
 from pathlib import Path
 
 from ..analysis import analyze_bottlenecks, estimate_model_fit, recommend_configuration
-from ..compare import NOT_COMPARABLE, compare_results, render_comparison
+from ..comparability import NOT_COMPARABLE
+from ..compare import compare_results, render_comparison
 from ..exit_codes import (
     EXIT_NOT_COMPARABLE,
     EXIT_OK,
@@ -167,7 +168,7 @@ def cmd_score(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
-def register(sub: argparse._SubParsersAction) -> None:
+def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     val = sub.add_parser("validate", help="Validate a result JSON file")
     val.add_argument("result")
     val.set_defaults(func=cmd_validate)

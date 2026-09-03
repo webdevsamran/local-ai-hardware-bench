@@ -47,8 +47,10 @@ telemetry = ["psutil>=5.9"]
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
+    "mypy>=1.14,<2",
     "psutil>=5.9",
     "numpy>=1.26",
+    "types-PyYAML>=6.0",
     "tomli>=1.1.0; python_version < \"3.11\"",
 ]
 
@@ -89,3 +91,9 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = ["aihwbench.system_info", "aihwbench.telemetry"]
 disable_error_code = ["attr-defined"]
+
+# Strict-typed modules (strictened module-by-module; extend this list as
+# more modules are cleaned up — do not weaken the global config instead).
+[[tool.mypy.overrides]]
+module = ["aihwbench.versions", "aihwbench.fingerprint", "aihwbench.capacity"]
+strict = true

@@ -57,7 +57,9 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      - run: pip install -e ".[dev]" mypy
+      # mypy pinned to 1.x: mypy 2.x (released 2026-09) introduces stricter
+      # defaults; adopt deliberately in a dedicated PR, not via CI drift.
+      - run: pip install -e ".[dev]" "mypy>=1.14,<2"
       - run: mypy aihwbench
 
   package:

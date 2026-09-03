@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 
 def echo_json(data: object) -> None:
@@ -17,7 +18,7 @@ def fail(message: str) -> None:
     print(f"ERROR: {message}", file=sys.stderr)
 
 
-def load_results_dir(results_dir: Path) -> list[dict]:
+def load_results_dir(results_dir: Path) -> list[dict[str, Any]]:
     """Load every parseable result JSON in a directory (skips bad files)."""
     results = []
     for path in sorted(results_dir.glob("*.json")):

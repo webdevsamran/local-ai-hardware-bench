@@ -26,7 +26,7 @@ from .base import (
 )
 
 
-def _numpy():
+def _numpy() -> Any:
     """Import numpy lazily; it is only needed when actually benchmarking."""
     try:
         import numpy
@@ -41,7 +41,7 @@ def _numpy():
 def detect() -> BackendInfo:
     """Detect OpenVINO via package import."""
     try:
-        import openvino  # type: ignore[import-untyped]
+        import openvino
     except ImportError:
         return BackendInfo(
             "openvino",

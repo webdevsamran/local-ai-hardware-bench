@@ -39,7 +39,8 @@ def load_formal_schema(version: str) -> dict[str, Any]:
     path = _SCHEMA_DIR / name
     if not path.is_file():
         raise FileNotFoundError(f"formal schema missing: {path}")
-    return json.loads(path.read_text(encoding="utf-8"))
+    data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+    return data
 
 
 def validate_formal(doc: dict[str, Any], version: str | None = None) -> list[str]:

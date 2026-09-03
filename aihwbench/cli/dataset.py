@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 
 from ..dataset_versioning import build_snapshot_manifest
 from ..evaluators import list_evaluators, load_dataset, run_evaluation
@@ -176,7 +177,7 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
-def register(sub: argparse._SubParsersAction) -> None:
+def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     exp = sub.add_parser("export", help="Generate dataset views from published results")
     exp.add_argument("results_dir", nargs="?", default="results/published")
     exp.add_argument("--output", default="results/dataset")

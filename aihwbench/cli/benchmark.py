@@ -7,6 +7,7 @@ import argparse
 import csv
 import json
 from pathlib import Path
+from typing import Any
 
 from ..analysis.tune import run_tuner
 from ..backends import BACKENDS, BackendError, BenchmarkConfig, resolve
@@ -78,7 +79,7 @@ def cmd_suite(args: argparse.Namespace) -> int:
 
 def cmd_sweep(args: argparse.Namespace) -> int:
     """Run a parameter sweep over one runtime/model (#5)."""
-    axes: dict[str, tuple] = {}
+    axes: dict[str, tuple[Any, ...]] = {}
     if args.max_tokens_list:
         axes["max_tokens"] = tuple(int(v) for v in args.max_tokens_list.split(","))
     if args.iterations_list:
@@ -95,7 +96,7 @@ def cmd_sweep(args: argparse.Namespace) -> int:
         return EXIT_USAGE_ERROR
     spec = SweepSpec(axes=axes, base={"runtime": args.runtime, "model": args.model or ""})
 
-    def run_fn(point: dict) -> dict:
+    def run_fn(point: dict[str, Any]) -> dict[str, Any]:
         config = BenchmarkConfig(
             model=point.get("model", ""),
             max_tokens=point.get("max_tokens", 128),
@@ -175,7 +176,7 @@ def cmd_capacity(args: argparse.Namespace) -> int:
         sustainability_factor=args.sustainability_factor,
     )
 
-    def execute(_request_id: int) -> dict:
+    def execute(_request_id: int) -> dict[str, Any]:
         bench_config = BenchmarkConfig(
             model=args.model or "",
             max_tokens=args.max_tokens,
@@ -203,7 +204,7 @@ def cmd_capacity(args: argparse.Namespace) -> int:
 
 def cmd_tune(args: argparse.Namespace) -> int:
     """Auto-tune a safe configuration space (#50)."""
-    axes: dict[str, tuple] = {}
+    axes: dict[str, tuple[Any, ...]] = {}
     if args.threads_list:
         axes["threads"] = tuple(int(v) for v in args.threads_list.split(","))
     if args.batch_list:
@@ -215,7 +216,7 @@ def cmd_tune(args: argparse.Namespace) -> int:
     if args.concurrency_list:
         axes["concurrency"] = tuple(int(v) for v in args.concurrency_list.split(","))
 
-    def run_fn(point: dict) -> dict:
+    def run_fn(point: dict[str, Any]) -> dict[str, Any]:
         config = BenchmarkConfig(
             model=args.model or "",
             max_tokens=args.max_tokens,
@@ -241,7 +242,7 @@ def cmd_tune(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
-def register(sub: argparse._SubParsersAction) -> None:
+def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     bench = sub.add_parser("benchmark", help="Run a real benchmark")
     bench.add_argument("--runtime", required=True, choices=sorted(BACKENDS))
     bench.add_argument("--model", default=None, help="Model identifier (e.g. ollama tag)")

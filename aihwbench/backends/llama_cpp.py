@@ -240,8 +240,8 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     if not model_path or not Path(model_path).is_file():
         raise BackendError("llama.cpp backend requires --model-path pointing to a local .gguf file")
 
-    from .. import SCHEMA_VERSION
     from ..metrics import aggregate_iteration_metrics
+    from ..versions import CURRENT_SCHEMA_VERSION
 
     checksum = file_sha256(model_path)
     handle = LlamaServerHandle(info.detail or "llama-server", str(model_path), config)
@@ -269,7 +269,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     metrics["metric_source"] = metric_source_block()
 
     return {
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": CURRENT_SCHEMA_VERSION,
         "run_id": new_run_id("llamacpp"),
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "system": system,

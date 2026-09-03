@@ -12,9 +12,19 @@ from __future__ import annotations
 import re
 from typing import Any
 
-SCHEMA_VERSION = "1.0"  # historical constant kept for backwards compatibility
-CURRENT_SCHEMA_VERSION = "2.0"
-SUPPORTED_SCHEMA_VERSIONS = ("1.0", "2.0")
+from aihwbench.versions import (
+    # Redundant aliases mark intentional re-exports: this module is the
+    # public validation API and callers import the schema-version constants
+    # from here (e.g. migrations, tests). The authoritative definitions
+    # live in aihwbench.versions.
+    CURRENT_SCHEMA_VERSION as CURRENT_SCHEMA_VERSION,
+)
+from aihwbench.versions import (
+    SCHEMA_VERSION as SCHEMA_VERSION,
+)
+from aihwbench.versions import (
+    SUPPORTED_SCHEMA_VERSIONS,
+)
 
 # Fields that must be present at the top level of every result document.
 _TOP_LEVEL_REQUIRED = (

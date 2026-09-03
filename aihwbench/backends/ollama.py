@@ -161,8 +161,8 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             f"Run: ollama pull {config.model}. Local models: {', '.join(available)}"
         )
 
-    from .. import SCHEMA_VERSION
     from ..metrics import aggregate_iteration_metrics
+    from ..versions import CURRENT_SCHEMA_VERSION
 
     sampler = TelemetrySampler(interval_seconds=0.5)
     sampler.start()
@@ -186,7 +186,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     )
 
     return {
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": CURRENT_SCHEMA_VERSION,
         "run_id": new_run_id("ollama"),
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "system": system,

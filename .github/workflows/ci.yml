@@ -47,7 +47,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e ".[dev]" pytest-cov
-      - run: pytest --cov=aihwbench --cov-report=term --cov-fail-under=55
+      - run: pytest --cov=aihwbench --cov-branch --cov-report=term --cov-fail-under=68
 
   types:
     name: Type check (mypy)
@@ -105,6 +105,29 @@ jobs:
         working-directory: web
         run: npm run build
 
+  dependencies:
+    name: Dependency review (npm audit + action)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install dependencies (locked)
+        working-directory: web
+        run: npm ci --no-fund
+      - name: npm audit (fail on high+)
+        working-directory: web
+        run: npm audit --audit-level=high
+      - name: Dependency Review
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
   data-freshness:
     name: Generated frontend data is up to date
     runs-on: ubuntu-latest

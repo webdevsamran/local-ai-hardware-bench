@@ -93,7 +93,9 @@ it is real.
 ## Track 8 — Research / Standards
 
 - [x] CITATION.cff with creator attribution
-- [ ] Methodology review with external maintainers
+- [ ] Methodology review with external maintainers — review packet ready at
+      [`docs/methodology-review.md`](docs/methodology-review.md) with five
+      specific questions; needs external reviewers, tracked in #21
 - [x] Schema 2.0 fields (schema_version/protocol_version/workload_version)
       with migration machinery and backward-compatible reader for all
       published schema 1.0 results

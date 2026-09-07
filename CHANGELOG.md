@@ -3,7 +3,39 @@
 All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
-## [Unreleased]
+## [0.2.0] - 2026-09-07
+
+### Changed — BREAKING
+- **The import package is `aihwbench` (was `benchmark`).** The console script
+  and `python -m aihwbench.cli` are unchanged; update external imports from
+  `benchmark.*` to `aihwbench.*`. This landed before any release, so no
+  published version is affected — it is called out because the CHANGELOG
+  described it as unreleased for two weeks.
+
+### Fixed — measurement integrity
+- **Performance-per-watt now publishes its unit.** The value is tok/s/W for
+  generative runtimes and inf/s/W for graph runtimes, but the metric registry
+  declared a single unit, so `results/dataset/LEADERBOARD.md` ranked both in
+  one column and every per-run report printed "(tok/s/W)" — including runs
+  that produced zero tokens. The unit now travels with the value and the
+  leaderboard states that the two are not comparable. No measurement changed.
+- Leaderboard values were published to 16 significant figures from a division
+  of two 2-decimal inputs; now rounded to measured precision. Missing metrics
+  render as "not measured" rather than the literal "None".
+- `ROADMAP.md` was committed with a UTF-8 BOM and mojibake, so GitHub rendered
+  every track heading as "## Track 1 â€" Benchmark Core".
+- Documentation reconciled with the code: three documents described the trust
+  states three different ways (none matching `trust.py`), a duplicated schema
+  file advertised another file's `$id`, and `README` documented an
+  `experiments/` workflow that shipped no example manifest.
+
+### Added
+- `AGENTS.md`, `experiments/` with a runnable manifest, and
+  `docs/methodology-review.md` — a review packet with five specific questions,
+  since the methodology has never been externally reviewed (#21).
+- A PyPI publish job in `release.yml`, which previously had none, so
+  `pip install aihwbench` could not have worked from any tag.
+
 ### Changed
 - **Schema writer emits 2.0 via `aihwbench.versions`** — the single
   authoritative source for package/schema/protocol versions. All backends

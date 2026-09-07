@@ -93,9 +93,20 @@ it is real.
 ## Track 8 — Research / Standards
 
 - [x] CITATION.cff with creator attribution
-- [ ] Methodology review with external maintainers — review packet ready at
-      [`docs/methodology-review.md`](docs/methodology-review.md) with five
-      specific questions; needs external reviewers, tracked in #21
+- [ ] **Methodology review with external maintainers — not yet done.** The
+      review packet is ready at
+      [`docs/methodology-review.md`](docs/methodology-review.md): five specific
+      questions where an outside answer would change what this project does,
+      not a general invitation. What remains is a reviewer, which the
+      maintainer cannot supply. Tracked here rather than as an open issue
+      (#21 was closed for that reason, not because the review happened);
+      `docs/methodology.md` states above its own limitations section that it
+      has not been externally reviewed, and that stays until one is.
+
+      **If you work on a runtime, benchmark hardware, or research inference
+      performance and are willing to answer any of the five questions — open a
+      discussion or a PR against `docs/methodology-review.md`.** Partial
+      answers are useful; you do not have to take all five.
 - [x] Schema 2.0 fields (schema_version/protocol_version/workload_version)
       with migration machinery and backward-compatible reader for all
       published schema 1.0 results

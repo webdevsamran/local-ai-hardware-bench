@@ -69,3 +69,33 @@ def test_every_schema_id_matches_its_filename() -> None:
         assert schema_id.endswith(path.name), (
             f"{path.name} advertises $id {schema_id!r}, which is a different file"
         )
+
+
+def test_the_unreviewed_notice_stays_until_the_review_happens() -> None:
+    """`docs/methodology.md` says it has not been externally reviewed.
+
+    That notice is the honest half of publishing a methodology nobody outside
+    the project has checked, and it is exactly the kind of caveat that gets
+    quietly dropped in a later edit. Issue #21 tracked the review and was
+    closed -- for tidiness, not because the review happened -- so the ROADMAP
+    checkbox is now the only thing recording that it is still outstanding.
+    This ties the two together: while the box is unchecked, the notice stays.
+    """
+    root = Path(__file__).resolve().parent.parent
+    roadmap = (root / "ROADMAP.md").read_text(encoding="utf-8")
+    methodology = (root / "docs" / "methodology.md").read_text(encoding="utf-8")
+
+    reviewed = "- [x] **Methodology review with external maintainers" in roadmap
+    unreviewed = "- [ ] **Methodology review with external maintainers" in roadmap
+    assert reviewed or unreviewed, (
+        "the ROADMAP entry for the methodology review was renamed; update this test "
+        "with it rather than deleting it"
+    )
+    if unreviewed:
+        assert "has not yet been externally reviewed" in methodology, (
+            "the ROADMAP still says the external methodology review has not happened, "
+            "but docs/methodology.md no longer says so. One of the two is now wrong."
+        )
+        assert (root / "docs" / "methodology-review.md").is_file(), (
+            "the ROADMAP points readers at a review packet that does not exist"
+        )

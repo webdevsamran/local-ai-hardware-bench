@@ -57,9 +57,11 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      # mypy pinned to 1.x: mypy 2.x (released 2026-09) introduces stricter
-      # defaults; adopt deliberately in a dedicated PR, not via CI drift.
-      - run: pip install -e ".[dev]" "mypy>=1.14,<2"
+      # mypy 2.x adopted deliberately (see CHANGELOG): 2.3.1 was run against
+      # the full package and reported no issues, so the CI-side pin that held
+      # this at 1.x is gone. The range now comes from pyproject alone -- an
+      # override here would hide exactly the drift it was meant to catch.
+      - run: pip install -e ".[dev]"
       - run: mypy aihwbench
 
   package:

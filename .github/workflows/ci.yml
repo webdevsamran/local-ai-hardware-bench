@@ -18,7 +18,11 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      - run: pip install ruff
+      # Pinned to the same version .pre-commit-config.yaml uses. Unpinned,
+      # this installed whatever was newest (0.16.x) while pre-commit ran
+      # 0.11.13, so `ruff format` locally and `ruff format --check` here
+      # disagreed about the same file.
+      - run: pip install ruff==0.16.4
       - run: ruff check aihwbench tests
       - run: ruff format --check aihwbench tests
 
@@ -29,7 +33,9 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python: ["3.10", "3.12", "3.13"]
+        # pyproject classifies 3.10-3.13; 3.11 was the one gap, so a
+        # 3.11 user ran code the matrix never exercised.
+        python: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0

@@ -46,6 +46,11 @@ Every benchmark run records and fixes:
   used, and the two units must never be ranked against each other.
   Only meaningful when both are measured on the same interval.
 
+> **This methodology has not yet been externally reviewed.** A review packet
+> with the specific questions that need outside answers is at
+> [methodology-review.md](methodology-review.md); the open invitation is
+> tracked in [#21](https://github.com/webdevsamran/local-ai-hardware-bench/issues/21).
+
 ## Known limitations (honesty section)
 
 - Ollama does not expose model load time separately; `load_time_ms` is null

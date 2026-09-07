@@ -72,7 +72,7 @@ Format based on Keep a Changelog; versioning is SemVer.
 - CI/release gates fail closed: the reusable validation workflow's
   `verdict=fail` now fails the job (configurable); regression candidate is
   selected deterministically; the release SBOM is mandatory and verified.
-## [Unreleased]
+### Earlier unreleased work
 ### Changed
 - **Package renamed:** the import package is now `aihwbench` (was
   `benchmark`). The console script and `python -m aihwbench.cli` behave

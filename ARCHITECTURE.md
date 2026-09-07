@@ -65,7 +65,7 @@ Dashboard (web/)                     React SPA deployed to GitHub Pages
 | `compare.py` | Metric deltas guarded by the classifier | Public |
 | `fingerprint.py` | Deterministic experiment fingerprints; duplicate detection | Public |
 | `sanitize.py` | Fail-closed privacy scanning of artifacts | Public |
-| `trust.py` | VERIFIED / COMMUNITY_VALIDATED / UNVERIFIED states | Public |
+| `trust.py` | Six trust states: `unreviewed`, `verified`, `community_validated`, `flagged`, `invalidated`, `superseded` | Public |
 | `suites.py` | Versioned suite profiles under `configs/suites/` | Public |
 | `export.py` | index.json / dataset.csv / LEADERBOARD.md generation | Public |
 | `workloads/` | Typed workload abstractions, registry, plugin discovery | **Plugin API v1** |

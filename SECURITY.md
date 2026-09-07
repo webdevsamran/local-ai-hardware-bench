@@ -19,7 +19,9 @@ you paste into issues or results files.
 
 Report security issues privately via GitHub Security Advisories
 ("Report a vulnerability" on the repository) rather than public issues.
-You will receive an acknowledgment within 7 days.
+You will receive an acknowledgment within 7 days and a status update within 30
+days. This project has a single maintainer; those are the windows that can
+actually be met, rather than a shorter number that sounds better.
 
 Scope: the `aihwbench` CLI, detection/telemetry code, and CI workflows.
 Out of scope: vulnerabilities in upstream runtimes (Ollama, llama.cpp,

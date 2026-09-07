@@ -388,6 +388,21 @@ Detection output is sanitized: no serial numbers, MAC addresses, usernames,
 home paths, or network identifiers are collected. Published artifacts pass
 a fail-closed privacy scan. See [SECURITY.md](SECURITY.md).
 
+<!-- related-projects -->
+## Related projects
+
+Also by [@webdevsamran](https://github.com/webdevsamran):
+
+- **[api-verity-lab](https://github.com/webdevsamran/api-verity-lab)** — API contract governance. Spec diffing with stable change ids, direction-aware breaking-change rules, schema-driven testing, runtime drift detection, traffic replay and performance budgets for OpenAPI, AsyncAPI, GraphQL and gRPC.
+
+- **[devrepro-doctor](https://github.com/webdevsamran/devrepro-doctor)** — "works on my machine", diagnosed. Read-only scans of developer machines and project toolchains, privacy-sanitized reproducibility snapshots, machine-to-machine diffs, and repair plans that never apply themselves above LOW risk.
+
+- **[tooltrace-bench](https://github.com/webdevsamran/tooltrace-bench)** — vendor-neutral, reproducible benchmarking of AI agents on real tool-use tasks: coding, file operations, multi-step workflows and failure recovery, scored deterministically from traces rather than from the agent's own account of what it did.
+
+These are independent projects: no shared library, no coupled releases, and each is usable on its own. What they do share is a rule — anything a README or a report claims has to be traceable to something the code actually produced, which is why each of them checks its own documentation in CI.
+
+<!-- /related-projects -->
+
 ## License & attribution
 
 Apache-2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).

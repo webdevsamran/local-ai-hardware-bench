@@ -200,7 +200,7 @@ aihwbench benchmark --runtime llama.cpp \
 | Peak RAM / VRAM | sampled | background telemetry thread |
 | CPU/GPU utilization | sampled | `psutil` / `nvidia-smi` |
 | Temperature, power draw | sampled | `nvidia-smi`; null elsewhere |
-| Performance per watt | derived | gen tok/s ÷ average watts |
+| Performance per watt | derived | throughput ÷ average watts — **tok/s/W** for generative runtimes, **inf/s/W** for graph/vision runtimes. Published results carry the unit; the two are not comparable |
 
 **Metrics that cannot be measured reliably are reported as `null` and shown
 as "not measured" in reports. They are never estimated.**

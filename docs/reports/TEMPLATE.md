@@ -62,7 +62,7 @@ or transcribe from the result JSON. Mark anything not captured as
 | GPU utilization (avg) | |
 | Max temperature | |
 | Average power | |
-| Performance per watt (tok/s/W) | |
+| Performance per watt | |
 
 ## Reproducibility
 

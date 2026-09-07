@@ -36,7 +36,7 @@
 | GPU utilization (avg) | 38.00% |
 | Max temperature | 64.00 C |
 | Average power | 22.27 W |
-| Performance per watt (tok/s/W) | 13.47 |
+| Performance per watt | 13.47 inf/s/W |
 
 ## Reproducibility
 

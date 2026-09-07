@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .metrics import performance_per_watt_unit
+
 NL = chr(10)
 
 _METRIC_LABELS = [
@@ -20,7 +22,8 @@ _METRIC_LABELS = [
     ("avg_gpu_util_percent", "GPU utilization (avg)"),
     ("max_temperature_c", "Max temperature"),
     ("average_power_watts", "Average power"),
-    ("performance_per_watt", "Performance per watt (tok/s/W)"),
+    # performance_per_watt is appended separately: its unit depends on the
+    # workload, so the label cannot be a constant.
 ]
 
 
@@ -101,6 +104,13 @@ def render_report(result: dict[str, Any]) -> str:
         else:
             rendered = f"{value}{unit}"
         lines.append(f"| {label} | {rendered} |")
+    # Rendered outside the table above because its unit is workload-dependent:
+    # tok/s/W for generative runtimes, inf/s/W for graph/vision ones. A run
+    # that produced zero tokens must never be labelled "tok/s/W".
+    ppw = metrics.get("performance_per_watt")
+    ppw_unit = performance_per_watt_unit(metrics)
+    ppw_rendered = "not measured" if ppw is None else f"{ppw:,.2f} {ppw_unit}"
+    lines.append(f"| Performance per watt | {ppw_rendered} |")
     lines.append("")
     lines.append("## Reproducibility")
     lines.append("")

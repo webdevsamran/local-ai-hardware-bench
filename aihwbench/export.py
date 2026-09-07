@@ -17,6 +17,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+from .metrics import performance_per_watt_unit
 from .schemas import validate_result
 from .trust import effective_trust
 
@@ -117,6 +118,21 @@ def _row(result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _num(value: object, places: int = 3) -> str:
+    """Render a metric for the leaderboard.
+
+    Floats are rounded to ``places`` significant decimals. Publishing
+    ``13.48542600896861`` from a division of two 2-decimal inputs implies
+    precision that was never measured. ``None`` stays visible as "not
+    measured" rather than being dropped or interpolated.
+    """
+    if value is None:
+        return "not measured"
+    if isinstance(value, float):
+        return f"{value:,.{places}f}".rstrip("0").rstrip(".")
+    return str(value)
+
+
 def export_dataset(results_dir: Path, output_dir: Path, *, strict: bool = False) -> list[Path]:
     """Generate index.json, dataset.csv, LEADERBOARD.md from results.
 
@@ -152,21 +168,30 @@ def export_dataset(results_dir: Path, output_dir: Path, *, strict: bool = False)
     lines = [
         "# AIHWBench Leaderboard",
         "",
-        f"Generated from {len(rows)} validated result(s) in `{results_dir}`.",
+        f"Generated from {len(rows)} validated result(s) in `{results_dir.as_posix()}`.",
         "",
-        "| Run | Runtime | Model | GPU | Gen tok/s | TTFT ms | Perf/W |",
-        "| --- | --- | --- | --- | --- | --- | --- |",
+        "| Run | Runtime | Model | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
-    for r in rows:
+    for r, result in zip(rows, results, strict=True):
+        # Perf/W is tok/s/W for generative runtimes and inf/s/W for graph ones.
+        # The unit is published alongside the number: without it the column
+        # silently mixes two different quantities.
+        unit = performance_per_watt_unit(result.get("metrics") or {})
         lines.append(
             f"| {r['run_id']} | {r['runtime']} | {r['model']} | {r['gpu']} "
-            f"| {r['generation_tokens_per_second']} | {r['ttft_ms']} "
-            f"| {r['performance_per_watt']} |"
+            f"| {_num(r['generation_tokens_per_second'])} | {_num(r['ttft_ms'])} "
+            f"| {_num(r['performance_per_watt'])} | {unit} |"
         )
     lines.append("")
     lines.append(
         "> Only schema-validated results are listed. Cross-runtime comparisons "
         "require identical workloads; see docs/methodology.md."
+    )
+    lines.append(
+        "> **Perf/W is not one quantity.** `tok/s/W` rows are generative "
+        "throughput per watt; `inf/s/W` rows are inferences per watt. They "
+        "are not comparable to each other."
     )
     md_path.write_text(chr(10).join(lines), encoding="utf-8")
 

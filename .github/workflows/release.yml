@@ -82,3 +82,41 @@ jobs:
           gh release create "${GITHUB_REF_NAME}" dist/* \
             --title "AIHWBench ${GITHUB_REF_NAME}" \
             --generate-notes
+  publish-pypi:
+    name: Publish to PyPI (only if Trusted Publishing is configured)
+    needs: [build, github-release]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/aihwbench
+    permissions:
+      id-token: write # OIDC for Trusted Publishing -- no stored API token
+    steps:
+      - name: Download built distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-artifacts
+          path: dist/
+      # Guarded rather than unconditional: publishing needs a Trusted Publisher
+      # registered for this project on pypi.org, which cannot be created from
+      # this repository. Without the guard a tagged release would fail at the
+      # upload step even though the build, SBOM, checksums and GitHub Release
+      # all succeeded. Set the repository variable PUBLISH_ENABLED=true once the
+      # publisher exists.
+      - name: Is Trusted Publishing configured?
+        id: guard
+        env:
+          PUBLISH_ENABLED: ${{ vars.PUBLISH_ENABLED }}
+        run: |
+          if [ "${PUBLISH_ENABLED}" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping PyPI upload: set PUBLISH_ENABLED=true after registering a Trusted Publisher (owner webdevsamran, repo local-ai-hardware-bench, workflow release.yml, environment pypi)."
+          fi
+      - name: Publish to PyPI
+        if: steps.guard.outputs.enabled == 'true'
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+        with:
+          packages-dir: dist/
+          print-hash: true

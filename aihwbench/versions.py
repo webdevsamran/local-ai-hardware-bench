@@ -16,7 +16,7 @@ they change the on-disk/data contract.
 from __future__ import annotations
 
 # Package (distribution) version.
-PACKAGE_VERSION = "0.1.0"
+PACKAGE_VERSION = "0.2.0"
 
 # Result-document schema version: the CURRENT writer version.
 CURRENT_SCHEMA_VERSION = "2.0"

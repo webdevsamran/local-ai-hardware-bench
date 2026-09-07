@@ -31,9 +31,17 @@ Real execution on that hardware produced a validated result. Anything
 else is labeled NOT_INSTALLED / HARDWARE_REQUIRED / CONFIGURATION_REQUIRED.
 
 **What do trust states mean?**
-- `VERIFIED` — executed on a maintainer-controlled reference machine
-- `COMMUNITY_VALIDATED` — independently reproduced by a community member
-- `UNVERIFIED` — single submission, not yet reproduced
+The canonical values are lowercase and defined in `aihwbench/trust.py`:
+
+- `verified` — executed on a maintainer-controlled reference machine
+- `community_validated` — independently reproduced by a community member
+- `unreviewed` — submitted, not yet reproduced (the default for new results)
+- `flagged` — statistically anomalous; queued for human review, never auto-rejected
+- `invalidated` — withdrawn with a recorded reason; history is preserved
+- `superseded` — replaced by a referenced newer result
+
+`UNVERIFIED` appears in older code as a deprecated alias of `unreviewed`; new
+code should use `unreviewed`.
 
 ## Contributing
 

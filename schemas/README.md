@@ -5,7 +5,15 @@ documents.
 
 | File | Description |
 | --- | --- |
-| `result_schema.schema.json` | JSON Schema (draft 2020-12) for result documents, schema version 1.0 |
+| `result-1.0.schema.json` | JSON Schema (draft 2020-12) for schema-version 1.0 result documents |
+| `result-2.0.schema.json` | JSON Schema (draft 2020-12) for schema-version 2.0 result documents — **what the current writer emits** |
+
+Both files are loaded by `aihwbench/formal_schema.py`, which selects one from
+the document's own `schema_version`. A previously shipped
+`result_schema.schema.json` was a byte-identical copy of the 1.0 file that no
+code path loaded, and it carried the `$id` that `result-1.0.schema.json` was
+also claiming; it has been removed and each file's `$id` now matches its own
+filename.
 
 ## Schema versioning
 

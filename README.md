@@ -209,7 +209,8 @@ as "not measured" in reports. They are never estimated.**
 
 Every result is a JSON document validated against schema 1.0:
 
-- Formal JSON Schema: [`schemas/result_schema.schema.json`](schemas/result_schema.schema.json)
+- Formal JSON Schema: [`schemas/result-1.0.schema.json`](schemas/result-1.0.schema.json) and
+  [`schemas/result-2.0.schema.json`](schemas/result-2.0.schema.json) — the writer currently emits 2.0
 - Semantic validator: [`aihwbench/schemas.py`](aihwbench/schemas.py)
 - Full field reference: [`schemas/README.md`](schemas/README.md)
 
@@ -242,6 +243,7 @@ pipeline and the dashboard badges (see
 | State | Meaning |
 | --- | --- |
 | `verified` | Executed/reproduced by the project on real hardware |
+| `community_validated` | Independently reproduced by a community member |
 | `unreviewed` | Default for new submissions pending review |
 | `flagged` | Statistically anomalous; queued for human review — never auto-rejected |
 | `invalidated` | Superseded with a recorded reason; original history is preserved |

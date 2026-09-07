@@ -1,0 +1,11 @@
+{
+  "name": "quickstart-context-sweep",
+  "description": "Minimal runnable example: one small model on one runtime, swept across three context lengths. Copy this file, change the model and runtime to ones `aihwbench runtimes` reports as available, and run `aihwbench run experiments/my-experiment.json`.",
+  "models": ["qwen2.5:0.5b-instruct-q4_K_M"],
+  "runtimes": ["ollama"],
+  "devices": ["auto"],
+  "workloads": ["default_chat"],
+  "repetitions": 3,
+  "telemetry": {"interval_s": 0.5},
+  "sweep": {"context_length": [1024, 2048, 4096]}
+}

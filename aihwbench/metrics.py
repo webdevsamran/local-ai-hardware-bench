@@ -85,7 +85,9 @@ METRIC_REGISTRY: dict[str, dict[str, Any]] = {
     "idle_power_watts": {"unit": "W", "aliases": (), "family": "telemetry"},
     "incremental_power_watts": {"unit": "W", "aliases": (), "family": "telemetry"},
     "performance_per_watt": {
-        "unit": "tokens/s/W",
+        # Workload-dependent: tok/s/W for generative runtimes, inf/s/W for
+        # graph/vision ones. Use performance_per_watt_unit() to render it.
+        "unit": "throughput/s/W",
         "aliases": (),
         "family": "efficiency",
     },
@@ -172,11 +174,44 @@ def tokens_per_second(token_count: int | None, duration_seconds: float | None) -
 
 
 def performance_per_watt(
-    generation_tokens_per_second: float | None,
+    throughput: float | None,
     average_power_watts: float | None,
 ) -> float | None:
-    """Generation throughput per watt (tokens/s/W)."""
-    return safe_div(generation_tokens_per_second, average_power_watts)
+    """Throughput per watt.
+
+    The *unit depends on the workload*: generative runtimes pass tokens/s and
+    get tokens/s/W; graph/vision runtimes pass inferences/s and get
+    inferences/s/W. The number alone is therefore not self-describing --
+    always pair it with :func:`performance_per_watt_basis` before displaying
+    or comparing it. Mixing the two in one column silently compares
+    unlike quantities.
+    """
+    return safe_div(throughput, average_power_watts)
+
+
+def performance_per_watt_basis(metrics: dict[str, Any] | None) -> str | None:
+    """Which throughput a result's ``performance_per_watt`` was derived from.
+
+    Returns ``"tokens"``, ``"inferences"`` or ``None`` when the basis cannot
+    be established. Derived from the metrics actually present, so it is
+    correct for results recorded before the basis was tracked explicitly.
+    """
+    if not metrics or metrics.get("performance_per_watt") is None:
+        return None
+    if metrics.get("generation_tokens_per_second") is not None:
+        return "tokens"
+    if metrics.get("throughput_inferences_per_second") is not None:
+        return "inferences"
+    return None
+
+
+PERF_PER_WATT_UNITS = {"tokens": "tok/s/W", "inferences": "inf/s/W"}
+
+
+def performance_per_watt_unit(metrics: dict[str, Any] | None) -> str:
+    """Display unit for a result's ``performance_per_watt``."""
+    basis = performance_per_watt_basis(metrics)
+    return PERF_PER_WATT_UNITS.get(basis or "", "per W")
 
 
 def aggregate_iteration_metrics(iterations: list[dict[str, Any]]) -> dict[str, Any]:

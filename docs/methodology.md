@@ -39,7 +39,11 @@ Every benchmark run records and fixes:
 - **p50/p95** — linear-interpolated percentiles across measured iterations.
 - **Peak RAM/VRAM, utilization, temperature, power** — sampled every 0.5 s
   by a background telemetry thread (`psutil`, `nvidia-smi`).
-- **Performance per watt** — mean generation tok/s ÷ mean power draw.
+- **Performance per watt** — mean throughput ÷ mean power draw. The unit
+  depends on the workload: generative runtimes yield **tok/s/W**, graph and
+  vision runtimes (ONNX Runtime, OpenVINO) yield **inf/s/W**, because those
+  workloads emit no tokens. Every published result states which basis it
+  used, and the two units must never be ranked against each other.
   Only meaningful when both are measured on the same interval.
 
 ## Known limitations (honesty section)

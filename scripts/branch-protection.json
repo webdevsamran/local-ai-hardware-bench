@@ -1,0 +1,44 @@
+{
+  "_comment": [
+    "Applied with:",
+    "  gh api -X PUT repos/webdevsamran/local-ai-hardware-bench/branches/main/protection \\",
+    "    --input scripts/branch-protection.json",
+    "",
+    "Contexts must match CI job names byte-for-byte. The matrix job is named",
+    "'Unit tests (${{ matrix.os }}, py${{ matrix.python }})', so each of the nine",
+    "legs is its own context -- a name without the python suffix can never match",
+    "and would leave every pull request waiting forever. These were taken from a",
+    "real run's job list rather than derived by hand."
+  ],
+  "required_status_checks": {
+    "strict": false,
+    "contexts": [
+      "Lint & format check",
+      "Type check (mypy)",
+      "Test coverage",
+      "Build package",
+      "Docs link check",
+      "Frontend (lint, tests, build)",
+      "Dependency review (npm audit + action)",
+      "Generated frontend data is up to date",
+      "Result pipeline (schema + privacy + duplicates)",
+      "Analyze (python)",
+      "Unit tests (ubuntu-latest, py3.10)",
+      "Unit tests (ubuntu-latest, py3.12)",
+      "Unit tests (ubuntu-latest, py3.13)",
+      "Unit tests (windows-latest, py3.10)",
+      "Unit tests (windows-latest, py3.12)",
+      "Unit tests (windows-latest, py3.13)",
+      "Unit tests (macos-latest, py3.10)",
+      "Unit tests (macos-latest, py3.12)",
+      "Unit tests (macos-latest, py3.13)"
+    ]
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": null,
+  "restrictions": null,
+  "required_linear_history": false,
+  "allow_force_pushes": false,
+  "allow_deletions": false,
+  "required_conversation_resolution": true
+}

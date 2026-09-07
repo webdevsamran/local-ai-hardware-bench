@@ -1,4 +1,4 @@
-﻿# Independent Reproducible Benchmark Report - TEMPLATE
+# Independent Reproducible Benchmark Report - TEMPLATE
 
 Copy this file, rename it to `<runtime>-<run_id>.md`, fill in every field
 from a **real** run, and open a PR adding both the report and the raw

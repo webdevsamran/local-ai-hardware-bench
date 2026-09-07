@@ -4,11 +4,34 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      # init and analyze must move together: CodeQL refuses a version-skewed
+      # pair with "Loaded a configuration file for version 'X', but running
+      # version 'Y'". Ungrouped, Dependabot opens one PR per sub-action and
+      # neither can pass on its own -- that is what stalled #47 and #48.
+      codeql:
+        patterns:
+          - "github/codeql-action*"
+      actions:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "github/codeql-action*"
+
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      python:
+        patterns:
+          - "*"
+
   - package-ecosystem: "npm"
     directory: "/web"
     schedule:
       interval: "weekly"
+    groups:
+      frontend:
+        patterns:
+          - "*"

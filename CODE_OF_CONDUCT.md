@@ -28,8 +28,16 @@ stand as measured; responses may be published alongside them.
 
 ## Enforcement
 
-Report violations by opening a private issue tagged `conduct` or contacting
-the maintainer directly. Repeated violations result in blocking from the
+Instances of abusive, harassing, or otherwise unacceptable behavior may be
+reported to the lead maintainer at **webdevsamran@users.noreply.github.com**, or
+through GitHub's report-abuse form at
+<https://github.com/contact/report-abuse>. All complaints will be reviewed and
+investigated promptly and fairly.
+
+All community leaders are obligated to respect the privacy and security of the
+reporter of any incident.
+
+Repeated violations result in blocking from the
 repository and its spaces.
 
 This project follows the spirit of the Contributor Covenant; where this

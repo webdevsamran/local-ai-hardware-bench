@@ -7,8 +7,6 @@ best (minimum) p95 across measured levels.
 
 from __future__ import annotations
 
-import time
-
 from aihwbench.capacity import (
     CapacityConfig,
     LevelResult,
@@ -111,15 +109,54 @@ def test_level_result_summary_math():
 # ---------------------------------------------------------------------------
 
 
-def test_ladder_equal_latency_sustainable_at_max_level():
+def _level(concurrency: int, p95: float, *, errors: int = 0) -> LevelResult:
+    """A LevelResult with only the fields the verdict actually reads."""
+    return LevelResult(
+        concurrency=concurrency,
+        requests=6,
+        errors=errors,
+        requests_per_second=100.0,
+        throughput_tokens_per_second=500.0,
+        ttft_ms_mean=1.0,
+        p95_latency_ms=p95,
+        p99_latency_ms=p95,
+        mean_queue_latency_ms=0.0,
+    )
+
+
+def test_equal_latency_across_levels_is_sustainable_at_the_top():
+    """The verdict rule, on levels whose latencies really are equal.
+
+    This used to drive real threads against `time.sleep(0.002)` and assert the
+    verdict was the highest level. Two milliseconds is small enough that
+    scheduler jitter dominates it, so on a loaded macOS runner level 4's p95
+    exceeded twice level 1's and the verdict came back 2 -- a test that fails
+    because of the machine it ran on, in a project whose whole subject is
+    measuring machines. The premise "equal latency at every level" is now
+    stated directly instead of hoped for.
+    """
+    levels = [_level(1, 10.0), _level(2, 10.0), _level(4, 10.0)]
+    assert sustainable_concurrency(levels, 2.0) == 4
+
+
+def test_a_level_beyond_the_latency_factor_is_not_sustainable():
+    """The other half of the rule, which the timing-based test never reached."""
+    levels = [_level(1, 10.0), _level(2, 15.0), _level(4, 25.0)]
+    assert sustainable_concurrency(levels, 2.0) == 2
+
+
+def test_ladder_runs_every_level_and_states_its_rule():
+    """The integration half: the ladder wires each level through and explains
+    the verdict it applied. Deliberately asserts nothing timing-derived."""
+
     def execute(request_id: int) -> dict:
-        time.sleep(0.002)
         return {"completion_tokens": 5, "ttft_ms": 1.0}
 
     cfg = CapacityConfig(concurrency_levels=(1, 2, 4), requests_per_level=6)
     report = run_capacity_ladder(cfg, execute)
     assert [lv.concurrency for lv in report.levels] == [1, 2, 4]
-    assert report.sustainable_concurrency == 4
+    assert all(lv.errors == 0 for lv in report.levels)
+    assert all(lv.requests == 6 for lv in report.levels)
     assert "2x" in report.rule or "2" in report.rule
 
 

@@ -64,6 +64,24 @@ include = ["aihwbench*"]
 aihwbench = ["py.typed"]
 "aihwbench.backends" = ["py.typed"]
 
+[tool.coverage.run]
+source = ["aihwbench"]
+# CI passes --cov-branch; declaring it here means a local run measures the
+# same thing rather than a laxer statement-only number.
+branch = true
+
+[tool.coverage.report]
+# Matches the --cov-fail-under=68 CI passes on the command line. The floor
+# lived only in the workflow, so running `pytest --cov` locally enforced
+# nothing and could pass on coverage CI would reject.
+fail_under = 68
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+  "@abstractmethod",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"

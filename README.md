@@ -1,5 +1,14 @@
 # AIHWBench — Open Local AI Hardware Benchmark
 
+<!-- badges -->
+[![CI](https://github.com/webdevsamran/local-ai-hardware-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/webdevsamran/local-ai-hardware-bench/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/webdevsamran/local-ai-hardware-bench/actions/workflows/codeql.yml/badge.svg)](https://github.com/webdevsamran/local-ai-hardware-bench/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/webdevsamran/local-ai-hardware-bench?sort=semver)](https://github.com/webdevsamran/local-ai-hardware-bench/releases)
+[![License](https://img.shields.io/github/license/webdevsamran/local-ai-hardware-bench)](https://github.com/webdevsamran/local-ai-hardware-bench/blob/main/LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](pyproject.toml)
+[![Coverage floor](https://img.shields.io/badge/coverage%20floor-68%25-informational)](pyproject.toml)
+<!-- /badges -->
+
 **A vendor-neutral, reproducible framework for evaluating local AI runtimes across CPUs, GPUs, NPUs, AI PCs, workstations, mini PCs, and edge accelerators.**
 
 > Originally created by **[@webdevsamran](https://github.com/webdevsamran)** (Original Creator / Founder / Lead Maintainer) and developed with contributions from the open-source community.
@@ -205,6 +214,41 @@ aihwbench benchmark --runtime llama.cpp \
 **Metrics that cannot be measured reliably are reported as `null` and shown
 as "not measured" in reports. They are never estimated.**
 
+## How a benchmark run is put together
+
+One loadgen drives every backend, so a number from ONNX Runtime and a number
+from llama.cpp were produced by the same measurement code and differ only in
+what they measured. Provenance is captured at run time, not written down
+afterwards: CPU, cores, GPU and VRAM, driver, RAM, runtime version, model
+checksum, seed, warmup and iteration counts and the git commit all land in the
+result document. Boxes are real modules under [`aihwbench/`](aihwbench):
+
+<!-- mermaid:architecture -->
+```mermaid
+flowchart TB
+    subgraph runtimes [backends/ - one adapter per runtime]
+        A[llama_cpp · ollama · lmstudio]
+        B[onnxruntime · openvino · openvino_genai]
+        C[tensorrt · rocm · mlx · qnn]
+        D[hailo · lemonade · windows_ml]
+    end
+
+    WORK[workloads/<br/>prompt sets · shapes · seeds] --> LOAD[loadgen/<br/>warmup · iterations · timing]
+    runtimes --> LOAD
+    CAP[backends/capabilities<br/>what this runtime can do] --> LOAD
+
+    LOAD --> PROV[provenance/<br/>CPU · GPU · driver · RAM ·<br/>runtime version · model checksum ·<br/>seed · git commit]
+    PROV --> RESULT[result JSON<br/>schema 2.0, validated on write]
+
+    RESULT --> EVAL[evaluators/<br/>accuracy + quality checks]
+    RESULT --> ANALYSIS[analysis/<br/>comparison-safety classifier]
+    ANALYSIS -.refuses unsafe comparisons.-> LEADER[results/dataset/<br/>LEADERBOARD.md]
+    RESULT --> LEADER
+    RESULT --> EXPORT[exporters/<br/>CSV · Markdown · HTML]
+    LEADER --> WEB[web/<br/>dashboard]
+```
+<!-- /mermaid:architecture -->
+
 ## Result format & schema
 
 Every result is a JSON document validated against schema 1.0:
@@ -343,6 +387,21 @@ PRs. We do not promise favorable results — see
 Detection output is sanitized: no serial numbers, MAC addresses, usernames,
 home paths, or network identifiers are collected. Published artifacts pass
 a fail-closed privacy scan. See [SECURITY.md](SECURITY.md).
+
+<!-- related-projects -->
+## Related projects
+
+Also by [@webdevsamran](https://github.com/webdevsamran):
+
+- **[api-verity-lab](https://github.com/webdevsamran/api-verity-lab)** — API contract governance. Spec diffing with stable change ids, direction-aware breaking-change rules, schema-driven testing, runtime drift detection, traffic replay and performance budgets for OpenAPI, AsyncAPI, GraphQL and gRPC.
+
+- **[devrepro-doctor](https://github.com/webdevsamran/devrepro-doctor)** — "works on my machine", diagnosed. Read-only scans of developer machines and project toolchains, privacy-sanitized reproducibility snapshots, machine-to-machine diffs, and repair plans that never apply themselves above LOW risk.
+
+- **[tooltrace-bench](https://github.com/webdevsamran/tooltrace-bench)** — vendor-neutral, reproducible benchmarking of AI agents on real tool-use tasks: coding, file operations, multi-step workflows and failure recovery, scored deterministically from traces rather than from the agent's own account of what it did.
+
+These are independent projects: no shared library, no coupled releases, and each is usable on its own. What they do share is a rule — anything a README or a report claims has to be traceable to something the code actually produced, which is why each of them checks its own documentation in CI.
+
+<!-- /related-projects -->
 
 ## License & attribution
 

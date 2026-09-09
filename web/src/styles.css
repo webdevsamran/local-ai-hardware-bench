@@ -811,3 +811,43 @@ button:focus-visible,
     min-width: 100%;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   VRAM cliff chart
+   --------------------------------------------------------------------------- */
+
+.cliff-safe {
+  fill: color-mix(in srgb, var(--ok) 12%, transparent);
+}
+
+.cliff-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.cliff-edge {
+  stroke: var(--ok);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.cliff-you {
+  stroke: var(--accent-strong);
+  stroke-width: 2;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cliff-line {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: draw-in 900ms var(--ease) forwards;
+  }
+}
+
+@keyframes draw-in {
+  to {
+    stroke-dashoffset: 0;
+  }
+}

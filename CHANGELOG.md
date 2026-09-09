@@ -349,6 +349,21 @@ a workload validation set. The claim is now backed by an implementation.
   `aihwbench/fingerprint.py` and in CI, with no way for a contributor to run
   either before submitting.
 
+### Added — the VRAM cliff, drawn
+
+- The feasibility wizard now plots the share of a model that would sit outside
+  VRAM across the range of card sizes people actually own, marking where it
+  becomes fully resident and where the reader's own card falls. The shape is
+  the point: offload is flat at zero until the model stops fitting, then
+  climbs — and that transition is where throughput collapses. A "fits / does
+  not fit" verdict cannot show a discontinuity.
+- The curve is computed from the same estimate as the headline verdict, so the
+  chart and the text cannot disagree, and the caption states plainly that it
+  is arithmetic on an estimate rather than measured throughput.
+- The chart carries an accessible label naming the fully-resident threshold,
+  so a screen reader gets the number rather than "chart", and its draw-in
+  animation is behind `prefers-reduced-motion`.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

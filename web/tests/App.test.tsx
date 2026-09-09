@@ -155,6 +155,15 @@ describe('App routes (smoke)', () => {
     expect(await screen.findByText('test-run-1')).toBeTruthy()
   })
 
+  it('draws the VRAM cliff on the wizard', async () => {
+    renderAt('/will-it-run')
+    // The chart is labelled with the size at which the model becomes fully
+    // resident, so a screen reader gets the number and not just "chart".
+    expect(
+      await screen.findByLabelText(/Share of the model running outside VRAM/),
+    ).toBeTruthy()
+  })
+
   it('renders result detail for a known run', async () => {
     renderAt('/results/test-run-1')
     expect(await screen.findByText('Reproducibility')).toBeTruthy()

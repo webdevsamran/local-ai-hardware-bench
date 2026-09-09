@@ -60,8 +60,15 @@ _FIT_REFERENCE_CASES = [
 
 
 #: VRAM buckets, in the sizes consumer cards are actually sold in.
-_VRAM_TIERS = ((0, "No discrete GPU"), (6, "<= 6 GB"), (8, "8 GB"), (12, "12 GB"),
-               (16, "16 GB"), (24, "24 GB"), (48, "24-48 GB"))
+_VRAM_TIERS = (
+    (0, "No discrete GPU"),
+    (6, "<= 6 GB"),
+    (8, "8 GB"),
+    (12, "12 GB"),
+    (16, "16 GB"),
+    (24, "24 GB"),
+    (48, "24-48 GB"),
+)
 
 
 def _vram_tier(vram_mb: object) -> str | None:

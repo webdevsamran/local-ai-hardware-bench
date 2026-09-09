@@ -85,6 +85,8 @@ shipped-but-unreachable is not done.
 - [x] Parquet export behind an optional dependency
 - [x] Invalidation records preserving history with reasons/replacements
 - [x] Data-quality checks and anomaly flags for manual review
+- [x] Written dispute process for published results
+      ([docs/disputes.md](docs/disputes.md))
 - [x] Versioned dataset snapshot manifests
 - [ ] Zenodo DOI for versioned dataset snapshots (when dataset matures)
 

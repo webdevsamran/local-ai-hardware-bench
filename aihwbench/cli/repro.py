@@ -9,7 +9,7 @@ from pathlib import Path
 
 from ..bundles import create_bundle, verify_bundle
 from ..exit_codes import EXIT_CONFIGURATION_ERROR, EXIT_OK, EXIT_VALIDATION_ERROR
-from ..provenance import compute_provenance
+from ..provenance import compute_provenance, sign_bundle_cosign, verify_bundle_cosign
 from ..repro import check_reproduction, env_diff, reproducibility_score
 from ..selftest import run_self_test
 from ..system_info import detect_system
@@ -33,13 +33,48 @@ def cmd_bundle(args: argparse.Namespace) -> int:
     bundle_path = create_bundle(out_path, result, environment=environment)
     print(f"Bundle created: {bundle_path}")
     verification = verify_bundle(bundle_path)
+
+    if args.sign:
+        # Checksums prove a bundle is internally consistent; they say nothing
+        # about who produced it, because anyone who edits the contents can
+        # recompute them. A signature is the part that carries authorship.
+        signature = sign_bundle_cosign(bundle_path, key_ref=args.key)
+        verification["signature"] = signature
+        if not signature["signed"]:
+            fail(
+                "signing failed: "
+                + (signature.get("reason") or signature.get("stderr") or "unknown error")
+                + ". The bundle was written and is valid; it is simply unsigned."
+            )
+            echo_json(verification)
+            # The bundle itself is fine, so this is a configuration error
+            # rather than an invalid artifact.
+            return EXIT_CONFIGURATION_ERROR
+        signature_path = bundle_path.with_suffix(bundle_path.suffix + ".sig")
+        signature_path.write_text(signature["signature"] + "\n", encoding="utf-8")
+        print(f"Signature written: {signature_path}")
+
     echo_json(verification)
     return EXIT_OK if verification["valid"] else EXIT_VALIDATION_ERROR
 
 
 def cmd_verify_bundle(args: argparse.Namespace) -> int:
-    """Verify bundle integrity (checksums) (#36/#38)."""
-    report = verify_bundle(Path(args.bundle))
+    """Verify bundle integrity (checksums), and its signature when asked."""
+    bundle_path = Path(args.bundle)
+    report = verify_bundle(bundle_path)
+
+    if args.signature or args.verify_signature:
+        signature_path = Path(args.signature) if args.signature else None
+        if signature_path is None:
+            candidate = bundle_path.with_suffix(bundle_path.suffix + ".sig")
+            signature_path = candidate if candidate.is_file() else None
+        report["signature"] = verify_bundle_cosign(bundle_path, signature_path)
+        if not report["signature"]["verified"]:
+            # An unverified signature is a failure of the whole check: a
+            # bundle whose checksums pass but whose signature does not is
+            # exactly the case this exists to catch.
+            report["valid"] = False
+
     echo_json(report)
     return EXIT_OK if report["valid"] else EXIT_VALIDATION_ERROR
 
@@ -91,10 +126,34 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     bun.add_argument("result")
     bun.add_argument("--environment", default=None, help="Optional environment.json")
     bun.add_argument("--output", default=None, help="Output bundle path")
+    bun.add_argument(
+        "--sign",
+        action="store_true",
+        help=(
+            "sign the bundle with cosign (keyless by default). Checksums show "
+            "a bundle is internally consistent; a signature is what carries "
+            "authorship."
+        ),
+    )
+    bun.add_argument(
+        "--key",
+        default=None,
+        help="cosign key reference; omit for keyless signing",
+    )
     bun.set_defaults(func=cmd_bundle)
 
     vbun = sub.add_parser("verify-bundle", help="Verify .aihwbench bundle integrity")
     vbun.add_argument("bundle")
+    vbun.add_argument(
+        "--signature",
+        default=None,
+        help="Signature file; defaults to <bundle>.sig when it exists",
+    )
+    vbun.add_argument(
+        "--verify-signature",
+        action="store_true",
+        help="Require a valid signature, not just matching checksums",
+    )
     vbun.set_defaults(func=cmd_verify_bundle)
 
     ediff = sub.add_parser("env-diff", help="Diff two result environments")

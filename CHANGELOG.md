@@ -604,6 +604,23 @@ contract.
   existing when someone stops paying for it; a set of files in a public
   repository does not.
 
+### Added — bundle signing is reachable
+
+- `aihwbench bundle --sign` signs a bundle with cosign and writes the
+  signature beside it; `aihwbench verify-bundle --verify-signature` requires a
+  valid one rather than accepting matching checksums alone.
+- `sign_bundle_cosign` and `verify_bundle_cosign` had shipped with no callers
+  outside tests, so a bundle could carry checksums and never a signature.
+  Checksums only show a bundle is internally consistent — anyone who edits the
+  contents can recompute them. The signature is the part that carries
+  authorship.
+- Signing without cosign installed exits `EXIT_CONFIGURATION_ERROR` and says
+  the bundle was still written and is still valid. The artifact is fine; the
+  environment is not, and conflating the two would be wrong.
+- A bundle whose checksums pass but whose signature fails verification is
+  reported as **invalid**. That combination is precisely what signature
+  checking exists to catch.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

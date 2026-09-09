@@ -5,6 +5,7 @@ import Home from './pages/Home'
 import Leaderboard from './pages/Leaderboard'
 import WillItRun from './pages/WillItRun'
 import Tco from './pages/Tco'
+import Pareto from './pages/Pareto'
 import ModelOnHardware from './pages/ModelOnHardware'
 import HardwareExplorer from './pages/HardwareExplorer'
 import HardwareDetail from './pages/HardwareDetail'
@@ -32,6 +33,7 @@ export function AppRoutes() {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/will-it-run" element={<WillItRun />} />
           <Route path="/local-vs-cloud" element={<Tco />} />
+          <Route path="/frontiers" element={<Pareto />} />
           <Route path="/hardware" element={<HardwareExplorer />} />
           <Route path="/hardware/:fingerprint" element={<HardwareDetail />} />
           <Route path="/runtimes" element={<RuntimeExplorer />} />

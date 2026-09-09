@@ -547,6 +547,28 @@ long-prompt workflow.
   ranked against one another, with a pointer to the comparison-safety
   classifier explaining why.
 
+### Added — efficiency frontiers
+
+- `/frontiers` plots throughput against power draw, peak VRAM and time to
+  first token, marking the Pareto-optimal points. A leaderboard says which
+  result is fastest; a frontier says which are **not beaten on both axes at
+  once** — a card that is 10% slower for half the power has not lost, and no
+  single ranked column can express that.
+- Optimal points are drawn as diamonds as well as in a different colour, so
+  the distinction survives for a reader who cannot separate the two hues.
+- Results that measured only one axis are excluded and counted, not plotted
+  at zero — which would place them at a corner of the chart they did not earn.
+- The frontier is computed by the same `pareto_frontier` the CLI uses and
+  shipped as data, so the site and the CLI agree on what is optimal.
+
+### Fixed — the prerenderer was missing two data files
+
+`comparability.json` was never added to the prerenderer's list when the
+compare view started needing it. That does not crash: `seedDataset` bypasses
+the runtime validator, so the page renders its *empty state* into the static
+HTML and the deployed site ships wrong content. A test now checks the
+prerenderer loads every file the browser loads.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

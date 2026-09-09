@@ -253,3 +253,108 @@ export function CliffChart({
     </figure>
   )
 }
+
+export interface ScatterPoint {
+  run_id: string
+  x: number
+  y: number
+  label?: string | null
+  optimal?: boolean
+}
+
+/**
+ * Scatter plot with the Pareto-optimal points marked.
+ *
+ * A ranked column can only answer "which is fastest". A frontier answers
+ * "which configurations are not beaten on both axes at once", which is the
+ * question behind an actual purchase — a card that is slightly slower but
+ * draws half the power has not lost, and a single ranking cannot say so.
+ *
+ * Optimal points are given a distinct shape as well as a colour, so the
+ * distinction survives for a reader who cannot separate the two hues.
+ */
+export function ScatterChart({
+  points,
+  xLabel,
+  yLabel,
+  yHigherIsBetter = false,
+  height = 260,
+}: {
+  points: ScatterPoint[]
+  xLabel: string
+  yLabel: string
+  yHigherIsBetter?: boolean
+  height?: number
+}) {
+  if (points.length === 0) return null
+
+  const padLeft = 10
+  const padBottom = 26
+  const plotW = 100 - padLeft - 2
+  const plotH = height - padBottom
+
+  const xs = points.map((p) => p.x)
+  const ys = points.map((p) => p.y)
+  const xMin = Math.min(...xs)
+  const xMax = Math.max(...xs)
+  const yMin = Math.min(...ys)
+  const yMax = Math.max(...ys)
+  // A single point, or several sharing a value, would divide by zero.
+  const xSpan = xMax - xMin || 1
+  const ySpan = yMax - yMin || 1
+
+  const px = (x: number) => padLeft + ((x - xMin) / xSpan) * plotW
+  const py = (y: number) => plotH - ((y - yMin) / ySpan) * (plotH - 12) - 6
+
+  const optimal = points.filter((p) => p.optimal)
+
+  return (
+    <figure className="chart">
+      <svg
+        viewBox={`0 0 100 ${height}`}
+        role="img"
+        aria-label={
+          `Scatter of ${yLabel} against ${xLabel}. ` +
+          `${optimal.length} of ${points.length} points are Pareto-optimal.`
+        }
+        preserveAspectRatio="none"
+        style={{ width: '100%', height }}
+      >
+        {points.map((point) =>
+          point.optimal ? (
+            // A diamond, not just a different colour: the distinction has to
+            // survive for a reader who cannot separate the hues.
+            <polygon
+              key={point.run_id}
+              points={`${px(point.x)},${py(point.y) - 3} ${px(point.x) + 2.2},${py(point.y)} ${px(point.x)},${py(point.y) + 3} ${px(point.x) - 2.2},${py(point.y)}`}
+              className="scatter-optimal"
+            >
+              <title>{`${point.label ?? point.run_id} — optimal`}</title>
+            </polygon>
+          ) : (
+            <circle
+              key={point.run_id}
+              cx={px(point.x)}
+              cy={py(point.y)}
+              r={1.8}
+              className="scatter-point"
+            >
+              <title>{point.label ?? point.run_id}</title>
+            </circle>
+          ),
+        )}
+        <text x={padLeft} y={height - 6} className="chart-label">
+          {xLabel} →
+        </text>
+        <text x={98} y={height - 6} textAnchor="end" className="chart-label">
+          {yHigherIsBetter ? '↑' : '↓'} {yLabel}
+        </text>
+      </svg>
+      <figcaption className="muted">
+        {optimal.length} of {points.length} measured point
+        {points.length === 1 ? '' : 's'} sit on the frontier — not beaten on
+        both axes at once. Diamonds are optimal.
+      </figcaption>
+    </figure>
+  )
+}

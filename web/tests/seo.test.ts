@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { allRoutes, metaForPath } from '../src/lib/seo'
 import type { Dataset } from '../src/lib/types'
+// Read as text at build time, so no Node type definitions are needed.
+import prerenderSource from '../scripts/prerender.mjs?raw'
+import dataSource from '../src/lib/data.ts?raw'
 
 // A page that shares another page's title and description cannot rank for its
 // own subject, and the site previously served one title for every route.
@@ -132,5 +135,30 @@ describe('metaForPath', () => {
   it('never emits a duplicate route', () => {
     const routes = allRoutes(dataset)
     expect(new Set(routes).size).toBe(routes.length)
+  })
+})
+
+describe('prerender data list', () => {
+  it('loads every file the browser loads', () => {
+    // The prerenderer seeds the dataset directly and bypasses the runtime
+    // validator, so a file missing from its list does not fail loudly -- it
+    // renders that page's empty state into the deployed HTML, and the site
+    // ships wrong content. This keeps the two lists in step.
+    const names = (text: string) =>
+      new Set(
+        Array.from(
+          text.matchAll(
+            /'(index|results|hardware|runtimes|models|leaderboard|trends|constants|comparability|pareto)'/g,
+          ),
+          (m) => m[1] as string,
+        ),
+      )
+
+    const wanted = names(dataSource)
+    const got = names(prerenderSource)
+    expect(wanted.size).toBeGreaterThan(5)
+    for (const name of wanted) {
+      expect(got, `prerender.mjs is missing '${name}'`).toContain(name)
+    }
   })
 })

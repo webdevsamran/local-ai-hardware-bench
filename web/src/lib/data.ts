@@ -24,6 +24,7 @@ async function fetchDataset(): Promise<Dataset> {
     trends,
     constants,
     comparability,
+    pareto,
   ] =
     await Promise.all(
       [
@@ -36,6 +37,7 @@ async function fetchDataset(): Promise<Dataset> {
         'trends',
         'constants',
         'comparability',
+        'pareto',
       ].map(
         async (name) => {
           // Absolute (base-anchored), not relative. Under BrowserRouter the
@@ -59,6 +61,7 @@ async function fetchDataset(): Promise<Dataset> {
     trends,
     constants,
     comparability,
+    pareto,
   }
   // Fail closed: corruption or schema drift must surface here, not as
   // silently undefined fields in the UI.

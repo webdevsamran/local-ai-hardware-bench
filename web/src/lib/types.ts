@@ -193,6 +193,25 @@ export interface ComparabilityRules {
   empty_case: { classification: string; machine_reasons: string[] }
 }
 
+export interface ParetoPoint {
+  run_id: string
+  runtime?: string | null
+  model?: string | null
+  gpu?: string | null
+  x: number
+  y: number
+  optimal: boolean
+}
+
+export interface ParetoView {
+  x_metric: string
+  y_metric: string
+  x_higher_is_better: boolean
+  y_higher_is_better: boolean
+  points: ParetoPoint[]
+  excluded_missing_metrics: number
+}
+
 export interface Dataset {
   index: DatasetIndex
   results: BenchmarkResultDoc[]
@@ -203,4 +222,5 @@ export interface Dataset {
   trends: Record<string, TrendPoint[]>
   constants: FitConstants
   comparability: ComparabilityRules
+  pareto: Record<string, ParetoView>
 }

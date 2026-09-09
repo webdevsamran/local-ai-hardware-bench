@@ -43,6 +43,7 @@ from aihwbench.comparability import (  # noqa: E402
 )
 from aihwbench.export import comparison_groups, group_label  # noqa: E402
 from aihwbench.metrics import performance_per_watt_unit  # noqa: E402
+from aihwbench.sweep import pareto_frontier  # noqa: E402
 from aihwbench.trust import effective_trust  # noqa: E402
 
 # Cases the browser-side estimator must reproduce exactly. They are computed
@@ -93,6 +94,65 @@ _TCO_REFERENCE_CASES = [
     (1_000_000, 2.0, None, None, None, None, 1),
     (5_000_000, 3.0, 900.0, 0.25, 220.0, 60.0, 5),
 ]
+
+
+#: Efficiency frontiers the dashboard plots. Each is a pair of objectives with
+#: the direction that counts as better, so a chart cannot silently invert one.
+_FRONTIERS = (
+    ("throughput_vs_power", "generation_tokens_per_second", True, "average_power_watts", False),
+    ("throughput_vs_vram", "generation_tokens_per_second", True, "peak_vram_mb", False),
+    ("throughput_vs_latency", "generation_tokens_per_second", True, "ttft_ms", False),
+)
+
+
+def _pareto_views(results: list[dict]) -> dict:
+    """Pareto-optimal points for each frontier, computed by the canonical code.
+
+    A frontier answers "which configurations are not beaten on both axes at
+    once" -- the question behind every hardware purchase, and one a single
+    ranked column cannot express. Computed here rather than in the browser so
+    the site and the CLI agree on what is optimal.
+    """
+    views: dict[str, dict] = {}
+    for name, x_metric, x_max, y_metric, y_max in _FRONTIERS:
+        objectives = {x_metric: x_max, y_metric: y_max}
+        points = []
+        for r in results:
+            metrics = r.get("metrics") or {}
+            if any(metrics.get(m) is None for m in objectives):
+                continue
+            points.append(
+                {
+                    "run_id": r.get("run_id"),
+                    "runtime": (r.get("runtime") or {}).get("name"),
+                    "model": (r.get("model") or {}).get("name"),
+                    "gpu": (r.get("system") or {}).get("gpu"),
+                    "x": metrics[x_metric],
+                    "y": metrics[y_metric],
+                }
+            )
+        optimal = {
+            row["run_id"]
+            for row in pareto_frontier(
+                [
+                    r
+                    for r in results
+                    if all((r.get("metrics") or {}).get(m) is not None for m in objectives)
+                ],
+                objectives,
+            )
+        }
+        for point in points:
+            point["optimal"] = point["run_id"] in optimal
+        views[name] = {
+            "x_metric": x_metric,
+            "y_metric": y_metric,
+            "x_higher_is_better": x_max,
+            "y_higher_is_better": y_max,
+            "points": points,
+            "excluded_missing_metrics": len(results) - len(points),
+        }
+    return views
 
 
 def _tco_constants() -> dict:
@@ -415,6 +475,7 @@ def build(results: list[dict]) -> dict[str, object]:
         "constants": _fit_constants(),
         "comparability": _comparability_rules(results),
         "tco": _tco_constants(),
+        "pareto": _pareto_views(results),
     }
 
 

@@ -1,0 +1,83 @@
+{
+  "throughput_vs_latency": {
+    "excluded_missing_metrics": 4,
+    "points": [
+      {
+        "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "optimal": true,
+        "run_id": "llamacpp-1787391945",
+        "runtime": "llama.cpp",
+        "x": 360.87,
+        "y": 14.52
+      },
+      {
+        "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "model": "qwen2.5:0.5b-instruct-q4_K_M",
+        "optimal": false,
+        "run_id": "ollama-1787388930",
+        "runtime": "ollama",
+        "x": 110.93,
+        "y": 2069.71
+      }
+    ],
+    "x_higher_is_better": true,
+    "x_metric": "generation_tokens_per_second",
+    "y_higher_is_better": false,
+    "y_metric": "ttft_ms"
+  },
+  "throughput_vs_power": {
+    "excluded_missing_metrics": 4,
+    "points": [
+      {
+        "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "optimal": true,
+        "run_id": "llamacpp-1787391945",
+        "runtime": "llama.cpp",
+        "x": 360.87,
+        "y": 26.76
+      },
+      {
+        "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "model": "qwen2.5:0.5b-instruct-q4_K_M",
+        "optimal": true,
+        "run_id": "ollama-1787388930",
+        "runtime": "ollama",
+        "x": 110.93,
+        "y": 26.16
+      }
+    ],
+    "x_higher_is_better": true,
+    "x_metric": "generation_tokens_per_second",
+    "y_higher_is_better": false,
+    "y_metric": "average_power_watts"
+  },
+  "throughput_vs_vram": {
+    "excluded_missing_metrics": 4,
+    "points": [
+      {
+        "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "optimal": true,
+        "run_id": "llamacpp-1787391945",
+        "runtime": "llama.cpp",
+        "x": 360.87,
+        "y": 1061.0
+      },
+      {
+        "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "model": "qwen2.5:0.5b-instruct-q4_K_M",
+        "optimal": false,
+        "run_id": "ollama-1787388930",
+        "runtime": "ollama",
+        "x": 110.93,
+        "y": 1192.0
+      }
+    ],
+    "x_higher_is_better": true,
+    "x_metric": "generation_tokens_per_second",
+    "y_higher_is_better": false,
+    "y_metric": "peak_vram_mb"
+  }
+}

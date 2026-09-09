@@ -509,3 +509,65 @@ def test_short_traces_are_published_whole():
     trace = sampler.trace_for_result(max_samples=10)
     assert trace["downsampled"] is False
     assert trace["samples_kept"] == 5
+
+
+# ---------------------------------------------------------------------------
+# The recommender must agree with the fit estimator
+#
+# It sized weights against the whole memory budget while the fit check applied
+# a 1.15x overhead factor, so the two disagreed: for a 24 GB card it proposed
+# 36.5B parameters and then reported that this needed 25.4 GB and fitted only
+# against system RAM. A recommendation that fails the project's own fit check
+# is worse than no recommendation.
+
+
+@pytest.mark.parametrize(
+    ("vram_mb", "ram_gb"),
+    [
+        (24576, 64.0),
+        (16384, 32.0),
+        (12288, 32.0),
+        (8192, 16.0),
+        (6144, 16.0),
+    ],
+)
+def test_recommended_model_always_passes_its_own_fit_check(vram_mb, ram_gb):
+    from aihwbench.analysis.recommend import recommend_configuration
+
+    report = recommend_configuration({"gpu_vram_mb": vram_mb, "ram_gb": ram_gb})
+    fit = report["fit_check"]
+    assert fit["fits"] is True
+    assert fit["fit_target"] == "vram", (
+        "a GPU machine's recommendation must fit in VRAM, not spill to RAM"
+    )
+
+
+def test_recommendation_states_the_quantization_it_assumed():
+    """The parameter ceiling is meaningless without the density behind it."""
+    from aihwbench.analysis.recommend import recommend_configuration
+
+    report = recommend_configuration({"gpu_vram_mb": 8192, "ram_gb": 16.0})
+    assert report["assumed_quantization"] == "q4_k_m"
+    assert any("bits/weight" in reason for reason in report["reasons"])
+
+
+def test_recommendation_without_memory_data_proposes_no_size():
+    """No budget means no ceiling; inventing one would be a guess."""
+    from aihwbench.analysis.recommend import recommend_configuration
+
+    report = recommend_configuration({})
+    assert report["recommended_model_parameters_b"] is None
+
+
+def test_measured_results_upgrade_the_evidence_tier():
+    from aihwbench.analysis.recommend import recommend_configuration
+
+    measured = [
+        {
+            "runtime": {"name": "llama.cpp", "device": "cuda"},
+            "metrics": {"generation_tokens_per_second": 120.0},
+        }
+    ]
+    report = recommend_configuration({"gpu_vram_mb": 8192, "ram_gb": 16.0}, measured)
+    assert report["evidence_tier"] == "measured"
+    assert report["recommended_runtime"] == "llama.cpp"

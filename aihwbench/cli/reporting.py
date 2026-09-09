@@ -162,10 +162,28 @@ def cmd_fit(args: argparse.Namespace) -> int:
 
 
 def cmd_recommend(args: argparse.Namespace) -> int:
-    """Recommend a configuration for this hardware (#21)."""
+    """Recommend a configuration for a machine (#21).
+
+    Defaults to the machine this is running on, but accepts an explicit
+    hardware description. "What should I run on the card I am about to buy" is
+    a question people ask far more often than "what should I run on this", and
+    it was unanswerable while the system was always detected.
+    """
     system = detect_system()
+    if args.vram_mb is not None:
+        system = {**system, "gpu_vram_mb": args.vram_mb, "gpu": args.gpu or system.get("gpu")}
+    if args.ram_gb is not None:
+        system = {**system, "ram_gb": args.ram_gb}
+
     measured = load_results_dir(Path(args.results_dir)) if args.results_dir else []
-    echo_json(recommend_configuration(system, measured))
+    report = recommend_configuration(system, measured)
+    report["for_hardware"] = {
+        "gpu": system.get("gpu"),
+        "gpu_vram_mb": system.get("gpu_vram_mb"),
+        "ram_gb": system.get("ram_gb"),
+        "described": args.vram_mb is not None or args.ram_gb is not None,
+    }
+    echo_json(report)
     return EXIT_OK
 
 
@@ -292,8 +310,16 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     fit_p.add_argument("--context-tokens", type=int, default=4096)
     fit_p.set_defaults(func=cmd_fit)
 
-    rec = sub.add_parser("recommend", help="Recommend a configuration for this hardware")
+    rec = sub.add_parser("recommend", help="Recommend a configuration for a machine")
     rec.add_argument("--results-dir", default=None, help="Prior results to anchor on")
+    rec.add_argument(
+        "--vram-mb",
+        type=float,
+        default=None,
+        help="Describe a machine other than this one (e.g. hardware you are considering)",
+    )
+    rec.add_argument("--ram-gb", type=float, default=None)
+    rec.add_argument("--gpu", default=None, help="Label for the described GPU")
     rec.set_defaults(func=cmd_recommend)
 
     cost_p = sub.add_parser("cost", help="Cost per token, and local ownership vs a cloud API")

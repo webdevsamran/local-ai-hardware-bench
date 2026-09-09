@@ -10,7 +10,18 @@ from __future__ import annotations
 
 from typing import Any
 
-from .fit import estimate_model_fit
+from .fit import BITS_PER_WEIGHT, estimate_model_fit
+
+#: The quantization the recommendation assumes, and the density it implies.
+#: Q4_K_M is the common local default; the assumption is stated in the output
+#: rather than buried here.
+_ASSUMED_QUANTIZATION = "q4_k_m"
+
+#: Same allowance the fit estimator applies for KV cache, activations and
+#: runtime overhead. Sizing weights against the raw memory budget while the
+#: fit check applies this factor made the two disagree: the recommender
+#: proposed a model its own fit example then reported would not fit in VRAM.
+_OVERHEAD_FACTOR = 1.15
 
 __all__ = ["recommend_configuration"]
 
@@ -59,14 +70,19 @@ def recommend_configuration(
         evidence_tier = "measured"
         reasons.append(f"best measured throughput {best_tps:.1f} tok/s on runtime={best_runtime}")
 
-    # Parameter ceiling from bits/weight range: q4 (~4.85 b/w incl overhead)
-    # is the common local default; state the assumption.
+    # Parameter ceiling. The memory budget has to cover weights *and* the
+    # runtime overhead the fit estimator accounts for, so the weights get
+    # budget/overhead rather than the whole budget -- otherwise the size
+    # recommended here fails the fit check performed below.
     max_params_b: float | None = None
+    bits = BITS_PER_WEIGHT[_ASSUMED_QUANTIZATION]
     if budget_gb is not None:
-        max_params_b = round(budget_gb * 8.0 / 4.85, 1)
+        weights_budget_gb = budget_gb / _OVERHEAD_FACTOR
+        max_params_b = round(weights_budget_gb * 8.0 / bits, 1)
         reasons.append(
-            f"~{max_params_b}B parameters at Q4_K_M-class density "
-            "(4.85 bits/weight incl. overhead) — an estimate"
+            f"~{max_params_b}B parameters at {_ASSUMED_QUANTIZATION} density "
+            f"({bits} bits/weight), leaving {_OVERHEAD_FACTOR}x for KV cache "
+            "and runtime overhead — an estimate"
         )
 
     context_length = 4096
@@ -88,9 +104,13 @@ def recommend_configuration(
             if evidence_tier == "estimated"
             else "runtime/device anchored on this machine's own measurements"
         ),
-        "_fit_example": estimate_model_fit(
+        "assumed_quantization": _ASSUMED_QUANTIZATION,
+        # The recommendation checked against the same estimator the rest of
+        # the project uses. If this ever reports fits=False, the sizing above
+        # and the fit model have drifted apart.
+        "fit_check": estimate_model_fit(
             f"{max_params_b or 0}B",
-            "q4_k_m",
+            _ASSUMED_QUANTIZATION,
             available_vram_mb=vram_mb,
             available_ram_mb=ram_gb * 1000.0 if ram_gb else None,
         ),

@@ -397,6 +397,25 @@ a workload validation set. The claim is now backed by an implementation.
 - It also states what it ignores — time, cooling, failure rates, and the fact
   that an API needs no capital up front.
 
+### Fixed — the recommender contradicted its own fit check
+
+- `recommend_configuration` sized weights against the whole memory budget
+  while the fit estimator applies a 1.15x allowance for KV cache, activations
+  and runtime overhead. The two disagreed: for a 24 GB card it proposed 36.5B
+  parameters and then reported, in the same response, that this needed 25.4 GB
+  and fitted only against system RAM. It now sizes against the same overhead,
+  and a test asserts that a GPU machine's recommendation always fits in VRAM.
+- The assumed quantization is named in the output rather than implied by a
+  magic constant, and `_fit_example` is now `fit_check` — it is a check, and
+  a private-looking key made it easy to ignore.
+
+### Added — recommendations for hardware you do not own
+
+- `aihwbench recommend --vram-mb 24576 --ram-gb 64` describes a machine other
+  than the current one. "What could I run on the card I am about to buy" is a
+  far more common question than "what can I run on this", and it was
+  unanswerable while the system was always detected.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

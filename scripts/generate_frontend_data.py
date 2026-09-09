@@ -32,8 +32,8 @@ if str(REPO) not in sys.path:
 RESULTS_DIR = REPO / "results" / "published"
 OUT_DIR = REPO / "web" / "public" / "data"
 
-from aihwbench.analysis.fit import BITS_PER_WEIGHT, estimate_model_fit  # noqa: E402
 from aihwbench.analysis.cost import compare_local_vs_cloud  # noqa: E402
+from aihwbench.analysis.fit import BITS_PER_WEIGHT, estimate_model_fit  # noqa: E402
 from aihwbench.comparability import (  # noqa: E402
     _CONDITIONAL,
     _REQUIRED_PRESENT,

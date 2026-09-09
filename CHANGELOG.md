@@ -305,6 +305,21 @@ a workload validation set. The claim is now backed by an implementation.
   TypeScript implementation. A divergence fails the build rather than showing
   a reader the wrong badge.
 
+### Added — model licences, with their sources
+
+- Every tier in `configs/models.json` now records its licence, **the URL the
+  licence was read from, and the date it was read**. An uncited licence is an
+  assertion; a cited one is something a reader can check. Verified 2026-09-09
+  against each upstream model card.
+- The default comparison tier is under the Llama 3.2 Community License — a
+  custom commercial agreement requiring acceptance before download — and now
+  says so instead of sitting unlabelled beside Apache-2.0 tiers.
+- Tests require a licence, a source URL, an ISO check date and a statement of
+  commercial terms for every tier, and assert that no model weights are
+  committed to the repository. This project distributes no weights, but it
+  does tell people to download them, which carries the same obligation to
+  state the terms.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

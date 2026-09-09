@@ -95,3 +95,96 @@ def test_kv_cache_axes_are_declared_as_tunable():
 
     axes = backend_tunable_axes("llama.cpp")
     assert "cache_type_k" in axes and "cache_type_v" in axes
+
+
+# ------------------------------------------------------- context scaling
+#
+# A run at one context length is a single point on a curve, and usually the
+# flattering one. Prefill cost and KV cache both grow with input length, and
+# where a machine falls off is what someone needs before committing to a
+# long-prompt workflow.
+
+
+def _ctx(tokens, ttft=None, tps=None, vram=None):
+    return {
+        "params": {"context_length": tokens},
+        "metrics": {
+            "ttft_ms": ttft,
+            "generation_tokens_per_second": tps,
+            "peak_vram_mb": vram,
+        },
+    }
+
+
+def test_superlinear_prefill_is_flagged():
+    """Attention is quadratic; the flag marks where that stops being a detail."""
+    from aihwbench.analysis.context import analyze_context_scaling
+
+    # 16x the context for 60x the TTFT.
+    report = analyze_context_scaling([_ctx(4096, ttft=120), _ctx(65536, ttft=7200)])
+    prefill = report["prefill_scaling"]
+    assert prefill["superlinear"] is True
+    assert prefill["superlinearity"] == pytest.approx(3.75, abs=0.01)
+
+
+def test_linear_prefill_is_not_flagged():
+    """Doubling context for double the prefill is the expected case."""
+    from aihwbench.analysis.context import analyze_context_scaling
+
+    report = analyze_context_scaling([_ctx(4096, ttft=100), _ctx(8192, ttft=200)])
+    assert report["prefill_scaling"]["superlinear"] is False
+
+
+def test_memory_saturation_is_found_and_explained():
+    """VRAM that stops growing usually means spilling, not sufficiency."""
+    from aihwbench.analysis.context import analyze_context_scaling
+
+    report = analyze_context_scaling(
+        [_ctx(4096, vram=4000), _ctx(8192, vram=8000), _ctx(16384, vram=8010)]
+    )
+    assert report["memory_saturation_tokens"] == 16384
+    assert "spilling" in report["memory_saturation_note"]
+
+
+def test_last_usable_depth_respects_the_caller_s_floor():
+    from aihwbench.analysis.context import analyze_context_scaling
+
+    report = analyze_context_scaling(
+        [_ctx(4096, tps=45.0), _ctx(16384, tps=38.0), _ctx(65536, tps=6.0)],
+        min_acceptable_tps=20.0,
+    )
+    assert report["last_usable_context_tokens"] == 16384
+
+
+def test_no_depth_meets_an_impossible_floor():
+    from aihwbench.analysis.context import analyze_context_scaling
+
+    report = analyze_context_scaling([_ctx(4096, tps=45.0)], min_acceptable_tps=1000.0)
+    assert report["last_usable_context_tokens"] is None
+
+
+def test_a_single_depth_is_not_a_curve():
+    from aihwbench.analysis.context import analyze_context_scaling
+
+    report = analyze_context_scaling([_ctx(4096, ttft=100)])
+    assert report["prefill_scaling"] is None
+    assert "cannot be drawn through one point" in report["reason"]
+
+
+def test_context_rows_without_the_axis_are_excluded():
+    from aihwbench.analysis.context import analyze_context_scaling
+
+    report = analyze_context_scaling(
+        [_ctx(4096, ttft=100), {"params": {}, "metrics": {"ttft_ms": 200}}, _ctx(8192, ttft=200)]
+    )
+    assert report["points"] == 2
+    assert report["excluded_missing_axis"] == 1
+
+
+def test_nothing_is_extrapolated_to_unmeasured_depths():
+    """The curve exists because it cannot be predicted from one point."""
+    from aihwbench.analysis.context import analyze_context_scaling
+
+    report = analyze_context_scaling([_ctx(4096, tps=40.0), _ctx(8192, tps=35.0)])
+    measured = {p["context_tokens"] for p in report["curve"]}
+    assert measured == {4096, 8192}

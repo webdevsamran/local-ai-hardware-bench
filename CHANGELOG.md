@@ -516,6 +516,24 @@ does, so an under-measured result was indistinguishable from a careful one.
   identifier, and that every already-published result would pass the gate it
   holds submissions to.
 
+### Added — context-depth scaling curves
+
+A benchmark at one context length is a single point on a curve, and usually
+the flattering one. Prefill cost and the KV cache both grow with input length,
+and where a machine falls off is what someone needs before committing to a
+long-prompt workflow.
+
+- **`aihwbench context-scaling <sweep.json>`** reports prefill superlinearity
+  (attention is quadratic, so the flag marks where that stops being a detail),
+  the depth at which VRAM stops growing, and the deepest context still above a
+  throughput floor the caller sets.
+- Memory saturation is explained rather than just reported: VRAM that stops
+  climbing on a constrained machine usually means the run began spilling, not
+  that it stopped needing memory.
+- Nothing is extrapolated. A context depth that was not benchmarked has no
+  entry, because the entire reason the curve exists is that it cannot be
+  predicted from one point.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

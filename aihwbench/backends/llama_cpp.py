@@ -88,7 +88,38 @@ def _free_port() -> int:
 #: Sweepable parameters this backend actually applies to the run. The tuner
 #: refuses any axis absent from here rather than sweeping it inertly and
 #: reporting the resulting run-to-run noise as a recommendation.
-TUNABLE_AXES: tuple[str, ...] = ("gpu_layers", "context_length")
+TUNABLE_AXES: tuple[str, ...] = (
+    "gpu_layers",
+    "context_length",
+    "cache_type_k",
+    "cache_type_v",
+)
+
+#: KV-cache dtypes llama.cpp accepts. Quantizing the cache is a *memory*
+#: feature, not a speed one: it buys context length or headroom when f16 does
+#: not fit, and the usual reason to reach for it is that the alternative is a
+#: shorter context or a VRAM spill. Asymmetric K/V settings are permitted
+#: because the K and V caches tolerate quantization differently.
+KV_CACHE_TYPES: tuple[str, ...] = ("f16", "bf16", "q8_0", "q5_1", "q5_0", "q4_1", "q4_0")
+
+
+def _cache_type(config: BenchmarkConfig, which: str) -> str | None:
+    """KV-cache dtype for ``k`` or ``v``, validated against what llama.cpp takes.
+
+    An unknown value is refused rather than passed through: llama-server would
+    fail to start, and a benchmark that dies partway is harder to diagnose than
+    one that never begins.
+    """
+    requested = config.extra.get(f"cache_type_{which}")
+    if requested is None:
+        return None
+    value = str(requested).lower()
+    if value not in KV_CACHE_TYPES:
+        raise BackendError(
+            f"unknown KV cache type {requested!r} for {which.upper()}; "
+            f"llama.cpp accepts: {', '.join(KV_CACHE_TYPES)}"
+        )
+    return value
 
 
 def _gpu_layers(config: BenchmarkConfig) -> int:
@@ -132,6 +163,10 @@ class LlamaServerHandle:
             str(_gpu_layers(self.config)),
             "--no-webui",
         ]
+        for cache in ("k", "v"):
+            cache_type = _cache_type(self.config, cache)
+            if cache_type is not None:
+                cmd.extend([f"--cache-type-{cache}", cache_type])
         self.proc = subprocess.Popen(
             cmd,
             stdout=subprocess.DEVNULL,
@@ -316,6 +351,8 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "warmup_runs": config.warmup_runs,
             "iterations": config.iterations,
             "gpu_layers": _gpu_layers(config),
+            "cache_type_k": _cache_type(config, "k"),
+            "cache_type_v": _cache_type(config, "v"),
             "command": (f"aihwbench benchmark --runtime llama.cpp --model-path {model_path}"),
         },
         "iterations": iterations,

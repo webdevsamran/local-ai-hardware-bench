@@ -1,0 +1,111 @@
+{
+  "fetched_utc": "2026-09-09T10:17:15+00:00",
+  "tool": "gh api (authenticated)",
+  "repos": {
+    "ggml-org/llama.cpp": {
+      "repo": "ggml-org/llama.cpp",
+      "license_spdx": "MIT",
+      "stars": 127598,
+      "pushed_at": "2026-09-09T09:54:59Z",
+      "archived": false,
+      "description": "LLM inference in C/C++",
+      "latest_release": {
+        "tag": "v0.4.0",
+        "published_at": "2026-09-04T19:56:47Z"
+      }
+    },
+    "ollama/ollama": {
+      "repo": "ollama/ollama",
+      "license_spdx": "MIT",
+      "stars": 180502,
+      "pushed_at": "2026-09-09T00:30:49Z",
+      "archived": false,
+      "description": "Get up and running with Kimi-K2.6, GLM-5.2, MiniMax, DeepSeek, gpt-oss, Qwen, Gemma and other models.",
+      "latest_release": {
+        "tag": "v0.33.3",
+        "published_at": "2026-09-02T00:11:33Z"
+      }
+    },
+    "mlcommons/inference": {
+      "repo": "mlcommons/inference",
+      "license_spdx": "Apache-2.0",
+      "stars": 1624,
+      "pushed_at": "2026-09-02T17:04:15Z",
+      "archived": false,
+      "description": "Reference implementations of MLPerf\u00ae inference benchmarks",
+      "latest_release": {
+        "tag": "v5.1.1",
+        "published_at": "2025-10-28T14:21:04Z"
+      }
+    },
+    "huggingface/optimum-benchmark": {
+      "repo": "huggingface/optimum-benchmark",
+      "license_spdx": "Apache-2.0",
+      "stars": 341,
+      "pushed_at": "2026-05-26T10:32:29Z",
+      "archived": false,
+      "description": "\ud83c\udfcb\ufe0f A unified multi-backend utility for benchmarking Transformers, Timm, PEFT, Diffusers and Sentence-Transformers with full support of Optimum's hardware optimizations & quantization schemes.",
+      "latest_release": {
+        "tag": "v0.6.0",
+        "published_at": "2025-08-19T22:44:49Z"
+      }
+    },
+    "microsoft/onnxruntime": {
+      "repo": "microsoft/onnxruntime",
+      "license_spdx": "MIT",
+      "stars": 21803,
+      "pushed_at": "2026-09-09T10:13:07Z",
+      "archived": false,
+      "description": "ONNX Runtime: cross-platform, high performance ML inferencing and training accelerator",
+      "latest_release": {
+        "tag": "v1.29.0",
+        "published_at": "2026-08-12T06:15:37Z"
+      }
+    },
+    "openvinotoolkit/openvino": {
+      "repo": "openvinotoolkit/openvino",
+      "license_spdx": "Apache-2.0",
+      "stars": 10820,
+      "pushed_at": "2026-09-09T10:11:24Z",
+      "archived": false,
+      "description": "OpenVINO\u2122 is an open source toolkit for optimizing and deploying AI inference",
+      "latest_release": {
+        "tag": "2026.3.1",
+        "published_at": "2026-08-26T11:27:49Z"
+      }
+    },
+    "vllm-project/vllm": {
+      "repo": "vllm-project/vllm",
+      "license_spdx": "Apache-2.0",
+      "stars": 91328,
+      "pushed_at": "2026-09-09T09:55:05Z",
+      "archived": false,
+      "description": "A high-throughput and memory-efficient inference and serving engine for LLMs",
+      "latest_release": {
+        "tag": "v0.29.0",
+        "published_at": "2026-09-09T08:54:49Z"
+      }
+    },
+    "ggml-org/whisper.cpp": {
+      "repo": "ggml-org/whisper.cpp",
+      "license_spdx": "MIT",
+      "stars": 53544,
+      "pushed_at": "2026-09-08T11:35:34Z",
+      "archived": false,
+      "description": "Port of OpenAI's Whisper model in C/C++",
+      "latest_release": {
+        "tag": "b4938",
+        "published_at": "2026-08-20T11:33:19Z"
+      }
+    },
+    "lmstudio-ai/lms": {
+      "repo": "lmstudio-ai/lms",
+      "license_spdx": "MIT",
+      "stars": 5278,
+      "pushed_at": "2026-09-01T19:13:26Z",
+      "archived": false,
+      "description": "LM Studio CLI",
+      "latest_release": null
+    }
+  }
+}

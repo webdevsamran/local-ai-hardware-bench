@@ -403,6 +403,24 @@ These are independent projects: no shared library, no coupled releases, and each
 
 <!-- /related-projects -->
 
+## How this compares
+
+9 projects are tracked in [`docs/competitive-analysis.md`](docs/competitive-analysis.md),
+fetched from the GitHub API on 2026-09-09 and committed to
+[`data/competitor-meta.json`](data/competitor-meta.json).
+
+Most of them are *runtimes* — llama.cpp, Ollama, vLLM, ONNX Runtime, OpenVINO — each of
+which reports its own numbers, measured its own way. That is exactly the problem this
+project exists for: numbers from two runtimes are not comparable unless the same load
+generator produced them under recorded conditions. **MLCommons Inference** is the closest
+in intent and is the reference for rigorous, auditable benchmarking; it targets datacentre
+submissions rather than the laptop or mini-PC in front of you.
+
+## Citation
+
+If this benchmark contributed to published work, cite it via
+[`CITATION.cff`](CITATION.cff) — GitHub renders a "Cite this repository" control from it.
+
 ## License & attribution
 
 Apache-2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).

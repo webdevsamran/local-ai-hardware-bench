@@ -245,9 +245,7 @@ def export_dataset(results_dir: Path, output_dir: Path, *, strict: bool = False)
         lines.append(f"## {group_label(group)}")
         lines.append("")
         if len(group) == 1:
-            lines.append(
-                "*Single result — nothing to compare it against yet.*"
-            )
+            lines.append("*Single result — nothing to compare it against yet.*")
             lines.append("")
         # Rank within the group by generation throughput where it was measured;
         # unmeasured rows keep their order rather than sorting as zero.
@@ -258,9 +256,7 @@ def export_dataset(results_dir: Path, output_dir: Path, *, strict: bool = False)
                 -((d.get("metrics") or {}).get("generation_tokens_per_second") or 0.0),
             ),
         )
-        lines.append(
-            "| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |"
-        )
+        lines.append("| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |")
         lines.append("| --- | --- | --- | --- | --- | --- | --- |")
         for result in ordered:
             row = by_run[result.get("run_id")]

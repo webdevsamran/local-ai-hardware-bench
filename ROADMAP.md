@@ -22,11 +22,12 @@ shipped-but-unreachable is not done.
 - [x] Model load-time measurement for Ollama (from the API's
       `load_duration` counter, not server log parsing as originally
       planned — `backends/ollama.py` emits `metrics.load_time_ms`)
-- [~] Sustained-load thermal analysis tooling (peak vs steady-state,
-      time-to-throttle, degradation). The analysis exists
-      (`analysis/thermal.py`) and is tested, but has no producer: nothing in
-      `runner.py` or the CLI captures the telemetry trace it consumes, so it
-      cannot yet run against a real benchmark.
+- [~] Sustained-load thermal analysis tooling. The telemetry trace is now
+      published in every result and `runner.py` attaches a `thermal` block
+      from it, so time-to-throttle, the temperature trend and peak/final
+      temperature are measured on real runs. Peak-vs-steady-state throughput
+      degradation still needs per-sample throughput, which requires the
+      sustained-load protocol; those fields stay null with a stated reason.
 - [x] Optional signing/attestation interface (cosign sign/verify wrappers
       that report unavailability honestly)
 - [x] Typed workload engine + registry and aihwbench.workloads plugin API
@@ -141,8 +142,9 @@ shipped-but-unreachable is not done.
 - [x] Performance-quality Pareto frontier analysis
 - [x] Quantization comparison, model-fit estimator, recommendation engine,
       bottleneck analyzer, auto-tuner
-- [x] Energy metrics with telemetry tiering; idle-baseline power;
-      user-supplied cost/TCO
+- [x] Energy metrics with telemetry tiering; idle-baseline power (measured
+      before load by `runner.py`, so joules-per-token is net of the machine's
+      idle draw); user-supplied cost/TCO
 - [x] Normalized hardware database; PCIe/NUMA/instruction-set topology;
       multi-GPU representation
 - [x] env-diff, reproduce, reproducibility completeness score

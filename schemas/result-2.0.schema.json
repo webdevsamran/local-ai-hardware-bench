@@ -15,8 +15,13 @@
     "metrics"
   ],
   "properties": {
-    "schema_version": { "const": "2.0" },
-    "protocol_version": { "type": "string", "minLength": 1 },
+    "schema_version": {
+      "const": "2.0"
+    },
+    "protocol_version": {
+      "type": "string",
+      "minLength": 1
+    },
     "run_id": {
       "type": "string",
       "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
@@ -25,7 +30,12 @@
       "type": "string",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
     },
-    "git_commit": { "type": ["string", "null"] },
+    "git_commit": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "trust_state": {
       "enum": [
         "unreviewed",
@@ -39,75 +49,446 @@
     "system": {
       "type": "object",
       "properties": {
-        "os": { "type": ["string", "null"] },
-        "os_version": { "type": ["string", "null"] },
-        "cpu": { "type": ["string", "null"] },
-        "cpu_cores_physical": { "type": ["integer", "null"], "minimum": 1 },
-        "cpu_cores_logical": { "type": ["integer", "null"], "minimum": 1 },
-        "gpu": { "type": ["string", "null"] },
-        "gpu_vram_mb": { "type": ["integer", "null"], "minimum": 1 },
-        "gpu_driver_version": { "type": ["string", "null"] },
-        "npu": { "type": ["string", "null"] },
-        "ram_gb": { "type": ["number", "null"], "exclusiveMinimum": 0 },
-        "platform_name": { "type": ["string", "null"] }
+        "os": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "os_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cpu": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cpu_cores_physical": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "cpu_cores_logical": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "gpu": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gpu_vram_mb": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "gpu_driver_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "npu": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ram_gb": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "platform_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       },
       "additionalProperties": true
     },
     "runtime": {
       "type": "object",
       "properties": {
-        "name": { "type": "string", "minLength": 1 },
-        "version": { "type": ["string", "null"] },
-        "backend": { "type": ["string", "null"] },
-        "device": { "type": ["string", "null"] }
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "backend": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "device": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       },
-      "required": ["name"],
+      "required": [
+        "name"
+      ],
       "additionalProperties": true
     },
     "model": {
       "type": "object",
       "properties": {
-        "name": { "type": ["string", "null"] },
-        "format": { "type": ["string", "null"] },
-        "quantization": { "type": ["string", "null"] },
-        "parameters": { "type": ["string", "null"] },
-        "checksum": { "type": ["string", "null"] },
-        "revision": { "type": ["string", "null"] },
-        "tokenizer": { "type": ["string", "null"] }
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "format": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "quantization": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "parameters": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "checksum": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tokenizer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       },
       "additionalProperties": true
     },
     "metrics": {
       "type": "object",
       "properties": {
-        "load_time_ms": { "type": ["number", "null"], "minimum": 0 },
-        "ttft_ms": { "type": ["number", "null"], "minimum": 0 },
-        "prompt_tokens_per_second": { "type": ["number", "null"], "minimum": 0 },
-        "generation_tokens_per_second": { "type": ["number", "null"], "minimum": 0 },
-        "total_latency_ms": { "type": ["number", "null"], "minimum": 0 },
-        "p50_latency_ms": { "type": ["number", "null"], "minimum": 0 },
-        "p90_latency_ms": { "type": ["number", "null"], "minimum": 0 },
-        "p95_latency_ms": { "type": ["number", "null"], "minimum": 0 },
-        "p99_latency_ms": { "type": ["number", "null"], "minimum": 0 },
-        "latency_stddev_ms": { "type": ["number", "null"], "minimum": 0 },
-        "peak_ram_mb": { "type": ["number", "null"], "minimum": 0 },
-        "peak_vram_mb": { "type": ["number", "null"], "minimum": 0 },
-        "avg_cpu_util_percent": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
-        "avg_gpu_util_percent": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
-        "max_temperature_c": { "type": ["number", "null"], "minimum": 0 },
-        "average_power_watts": { "type": ["number", "null"], "minimum": 0 },
-        "performance_per_watt": { "type": ["number", "null"], "minimum": 0 },
-        "throughput_inferences_per_second": { "type": ["number", "null"], "minimum": 0 },
-        "energy_joules_per_token": { "type": ["number", "null"], "minimum": 0 }
+        "load_time_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "ttft_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "prompt_tokens_per_second": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "generation_tokens_per_second": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "total_latency_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "p50_latency_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "p90_latency_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "p95_latency_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "p99_latency_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "latency_stddev_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "peak_ram_mb": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "peak_vram_mb": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "avg_cpu_util_percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "avg_gpu_util_percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_temperature_c": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "average_power_watts": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "performance_per_watt": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "throughput_inferences_per_second": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "energy_joules_per_token": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        }
       },
       "additionalProperties": true
     },
-    "reproducibility": { "type": ["object", "null"], "additionalProperties": true },
-    "iterations": {
-      "type": ["array", "null"],
-      "items": { "type": "object", "additionalProperties": true }
+    "reproducibility": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
     },
-    "telemetry": { "type": ["object", "null"], "additionalProperties": true }
+    "iterations": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "telemetry": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "energy": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Derived energy analysis from measured power and an idle baseline. Absent inputs yield null fields; nothing is estimated.",
+      "additionalProperties": true,
+      "properties": {
+        "gross_average_power_watts": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "idle_baseline_power_watts": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "incremental_power_watts": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "energy_joules_per_token": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "energy_joules_per_request": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "energy_joules_per_1k_tokens": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "telemetry_source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "thermal": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Derived thermal behaviour from the telemetry trace: time to throttle, temperature trend, peak and final temperature.",
+      "additionalProperties": true,
+      "properties": {
+        "samples": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "duration_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "max_temperature_c": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "final_temperature_c": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "temperature_slope_c_per_min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "time_to_throttle_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "throttle_threshold_c": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "throttled": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
   },
   "additionalProperties": true
 }

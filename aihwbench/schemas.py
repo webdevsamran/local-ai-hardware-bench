@@ -120,6 +120,30 @@ _TELEMETRY_FIELDS = {
     "samples": int,
 }
 
+# Derived energy analysis, attached by the runner from measured power.
+_ENERGY_FIELDS = {
+    "gross_average_power_watts": (int, float),
+    "idle_baseline_power_watts": (int, float),
+    "incremental_power_watts": (int, float),
+    "energy_joules_per_token": (int, float),
+    "energy_joules_per_request": (int, float),
+    "energy_joules_per_1k_tokens": (int, float),
+    "telemetry_source": str,
+}
+
+# Derived thermal analysis, computed from the telemetry trace.
+_THERMAL_FIELDS = {
+    "samples": int,
+    "duration_s": (int, float),
+    "max_temperature_c": (int, float),
+    "final_temperature_c": (int, float),
+    "temperature_slope_c_per_min": (int, float),
+    "time_to_throttle_s": (int, float),
+    "throttle_threshold_c": (int, float),
+    "throttled": bool,
+    "reason": str,
+}
+
 _QUALITY_FIELDS = {
     "reproducibility_completeness": (int, float),
     "variance_flag": str,
@@ -367,6 +391,32 @@ def validate_result(data: Any) -> list[str]:
             errors.append("telemetry: must be an object")
         else:
             _check_fields(telemetry, _TELEMETRY_FIELDS, "telemetry", errors)
+
+    energy = data.get("energy")
+    if energy is not None:
+        if not isinstance(energy, dict):
+            errors.append("energy: must be an object")
+        else:
+            _check_fields(energy, _ENERGY_FIELDS, "energy", errors)
+            for key in (
+                "energy_joules_per_token",
+                "energy_joules_per_request",
+                "energy_joules_per_1k_tokens",
+                "incremental_power_watts",
+            ):
+                if energy.get(key) is not None:
+                    _check_metric(energy[key], f"energy.{key}", errors, minimum=0)
+
+    thermal = data.get("thermal")
+    if thermal is not None:
+        if not isinstance(thermal, dict):
+            errors.append("thermal: must be an object")
+        else:
+            _check_fields(thermal, _THERMAL_FIELDS, "thermal", errors)
+            if thermal.get("time_to_throttle_s") is not None:
+                _check_metric(
+                    thermal["time_to_throttle_s"], "thermal.time_to_throttle_s", errors, minimum=0
+                )
 
     quality = data.get("quality")
     if quality is not None:

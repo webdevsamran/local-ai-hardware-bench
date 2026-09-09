@@ -21,7 +21,18 @@ import time
 from collections.abc import Callable
 from typing import Any
 
-__all__ = ["TelemetrySampler", "measure"]
+__all__ = [
+    "TelemetrySampler",
+    "measure",
+    "sample_idle_power",
+    "trace_series",
+    "MAX_TRACE_SAMPLES",
+]
+
+# Cap on samples published in a result document. At the default 0.5 s interval
+# this is roughly 40 minutes of full-resolution sampling; longer soaks are
+# downsampled uniformly rather than truncated, and the fact is recorded.
+MAX_TRACE_SAMPLES = 5000
 
 
 def _nvidia_smi_sample() -> dict[str, Any] | None:
@@ -219,6 +230,10 @@ class TelemetrySampler:
             "scope": dict(self._SCOPE),
             "sources": dict(self._sources),
             "samples": len(samples),
+            # The measured time series. Aggregates alone cannot show a
+            # throttling curve or a power spike, so the analyzers that read
+            # those had no producer until this was published.
+            "trace": self.trace_for_result(),
         }
         if device is not None:
             block["device"] = device
@@ -226,6 +241,37 @@ class TelemetrySampler:
         if npu_block is not None:
             block["npu"] = npu_block
         return block
+
+    def trace_for_result(self, max_samples: int = MAX_TRACE_SAMPLES) -> dict[str, Any]:
+        """The time series, shaped for inclusion in a result document.
+
+        The summary aggregates in ``metrics`` cannot answer "did it throttle?"
+        or "when did power spike?" -- those need the series. Without one, the
+        thermal and energy analyzers in :mod:`aihwbench.analysis` have no
+        producer and can only ever run in tests.
+
+        Long soak runs are downsampled uniformly to ``max_samples`` so a result
+        document stays a reasonable size. Downsampling is recorded rather than
+        hidden: ``downsampled`` says whether it happened, and ``samples_total``
+        keeps the true count.
+        """
+        samples = self.raw_trace()
+        total = len(samples)
+        if total > max_samples > 0:
+            # Uniform stride keeps the shape of the curve, including its
+            # endpoints, rather than truncating the tail where throttling shows.
+            step = total / max_samples
+            kept = [samples[min(int(i * step), total - 1)] for i in range(max_samples)]
+            if kept[-1] is not samples[-1]:
+                kept[-1] = samples[-1]
+            samples = kept
+        return {
+            "samples_total": total,
+            "samples_kept": len(samples),
+            "downsampled": len(samples) < total,
+            "interval_seconds": self.interval,
+            "series": samples,
+        }
 
     def raw_trace(self) -> list[dict[str, Any]]:
         """Timestamped raw samples (epoch seconds), oldest first.
@@ -266,6 +312,56 @@ class TelemetrySampler:
             with self._lock:
                 self._samples.append(sample)
             time.sleep(self.interval)
+
+
+def sample_idle_power(seconds: float = 2.0, interval: float = 0.5) -> dict[str, Any]:
+    """Measure GPU power while the benchmark's own load is not running.
+
+    Energy per token is only meaningful against a baseline: a 200 W reading on
+    a card that idles at 150 W is a very different result from the same reading
+    on one that idles at 20 W. Without this, ``incremental_power_watts`` is
+    always None and every joules-per-token figure silently includes the idle
+    draw of the whole card.
+
+    This is the machine's idle draw immediately before load, not a
+    manufacturer figure. Returns ``watts: None`` when no power sensor is
+    readable, which is honest -- it never substitutes a nominal TDP.
+    """
+    readings: list[float] = []
+    deadline = time.time() + max(0.0, seconds)
+    source: str | None = None
+    while time.time() < deadline:
+        sample = _nvidia_smi_sample()
+        if sample is not None and sample.get("power_watts") is not None:
+            readings.append(float(sample["power_watts"]))
+            source = "nvidia-smi"
+        time.sleep(interval)
+    if not readings:
+        return {"watts": None, "samples": 0, "source": None}
+    return {
+        "watts": round(sum(readings) / len(readings), 3),
+        "samples": len(readings),
+        "source": source,
+    }
+
+
+def trace_series(result: dict[str, Any]) -> list[dict[str, Any]]:
+    """The telemetry time series from a result document, or an empty list.
+
+    Tolerates results written before traces were published, and results whose
+    telemetry block is absent or malformed: an analyzer that cannot find a
+    series must report having nothing to analyze, never invent one.
+    """
+    telemetry = result.get("telemetry")
+    if not isinstance(telemetry, dict):
+        return []
+    trace = telemetry.get("trace")
+    if not isinstance(trace, dict):
+        return []
+    series = trace.get("series")
+    if not isinstance(series, list):
+        return []
+    return [s for s in series if isinstance(s, dict)]
 
 
 def measure(fn: Callable[[], Any]) -> tuple[Any, float]:

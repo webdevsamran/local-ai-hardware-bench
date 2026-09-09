@@ -404,3 +404,108 @@ def test_llama_cpp_gpu_layers_default_is_unchanged():
 
     assert _gpu_layers(BenchmarkConfig(model="m", device="cuda")) == 99
     assert _gpu_layers(BenchmarkConfig(model="m", device="cpu")) == 0
+
+
+# ---------------------------------------------------------------------------
+# Telemetry trace, and the analyzers it finally gives a producer
+#
+# analyze_thermal_stability and compute_energy_metrics were called only from
+# tests: nothing published the time series they consume, so neither could run
+# against a real benchmark. The trace is now part of the telemetry block and
+# the runner attaches both analyses.
+
+
+def test_trace_series_reads_a_published_trace():
+    from aihwbench.telemetry import trace_series
+
+    result = {
+        "telemetry": {
+            "trace": {"series": [{"timestamp": 1.0, "temperature_c": 60.0}]},
+        }
+    }
+    assert len(trace_series(result)) == 1
+
+
+@pytest.mark.parametrize(
+    "result",
+    [
+        {},
+        {"telemetry": None},
+        {"telemetry": "not-an-object"},
+        {"telemetry": {}},
+        {"telemetry": {"trace": None}},
+        {"telemetry": {"trace": {"series": "not-a-list"}}},
+    ],
+)
+def test_trace_series_reports_nothing_rather_than_inventing(result):
+    """Results written before traces existed must not crash an analyzer."""
+    from aihwbench.telemetry import trace_series
+
+    assert trace_series(result) == []
+
+
+def test_thermal_from_trace_measures_the_throttle_point():
+    from aihwbench.analysis.thermal import thermal_from_trace
+
+    # Rising 1.5 C per sample, one sample per second, from 60 C.
+    series = [{"timestamp": 1000.0 + i, "temperature_c": 60.0 + i * 1.5} for i in range(20)]
+    report = thermal_from_trace(series, throttle_temp_c=85.0)
+    assert report["throttled"] is True
+    assert report["time_to_throttle_s"] == 17.0
+    assert report["max_temperature_c"] == 88.5
+    assert report["temperature_slope_c_per_min"] == 90.0
+
+
+def test_thermal_from_trace_reports_no_throttle_when_cool():
+    from aihwbench.analysis.thermal import thermal_from_trace
+
+    series = [{"timestamp": 1000.0 + i, "temperature_c": 55.0} for i in range(10)]
+    report = thermal_from_trace(series)
+    assert report["throttled"] is False
+    assert report["time_to_throttle_s"] is None
+
+
+def test_thermal_from_trace_declines_without_enough_samples():
+    from aihwbench.analysis.thermal import thermal_from_trace
+
+    report = thermal_from_trace([{"timestamp": 1.0, "temperature_c": 60.0}])
+    assert report["temperature_slope_c_per_min"] is None
+    assert "fewer than two" in report["reason"]
+
+
+def test_thermal_from_trace_never_invents_throughput():
+    """A trace has no per-sample throughput; the fields must stay null."""
+    from aihwbench.analysis.thermal import thermal_from_trace
+
+    series = [{"timestamp": float(i), "temperature_c": 60.0 + i} for i in range(10)]
+    report = thermal_from_trace(series)
+    assert report["peak_throughput_tps"] is None
+    assert report["steady_state_throughput_tps"] is None
+    assert report["degradation_percent"] is None
+    assert "sustained-load protocol" in report["reason"]
+
+
+def test_trace_is_downsampled_rather_than_truncated():
+    """The tail is where throttling shows, so it must survive downsampling."""
+    from aihwbench.telemetry import TelemetrySampler
+
+    sampler = TelemetrySampler(interval_seconds=0.01)
+    sampler._samples = [  # noqa: SLF001 - constructing a known series
+        {"timestamp": float(i), "temperature_c": float(i)} for i in range(100)
+    ]
+    trace = sampler.trace_for_result(max_samples=10)
+    assert trace["samples_total"] == 100
+    assert trace["samples_kept"] == 10
+    assert trace["downsampled"] is True
+    assert trace["series"][0]["timestamp"] == 0.0
+    assert trace["series"][-1]["timestamp"] == 99.0
+
+
+def test_short_traces_are_published_whole():
+    from aihwbench.telemetry import TelemetrySampler
+
+    sampler = TelemetrySampler(interval_seconds=0.01)
+    sampler._samples = [{"timestamp": float(i)} for i in range(5)]  # noqa: SLF001
+    trace = sampler.trace_for_result(max_samples=10)
+    assert trace["downsampled"] is False
+    assert trace["samples_kept"] == 5

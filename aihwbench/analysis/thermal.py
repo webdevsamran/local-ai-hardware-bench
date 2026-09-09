@@ -11,7 +11,11 @@ from __future__ import annotations
 
 from typing import Any
 
-__all__ = ["analyze_thermal_stability", "temperature_slope_c_per_min"]
+__all__ = [
+    "analyze_thermal_stability",
+    "temperature_slope_c_per_min",
+    "thermal_from_trace",
+]
 
 # A sample window is "steady state" once it is at least this long.
 MIN_STEADY_SAMPLES = 5
@@ -93,4 +97,68 @@ def analyze_thermal_stability(
             for t, temp, tp in zip(timestamps_s, temperature_c, throughput_tps, strict=True)
         ],
         "samples": n,
+    }
+
+
+def thermal_from_trace(
+    series: list[dict[str, Any]],
+    throttle_temp_c: float = 85.0,
+) -> dict[str, Any]:
+    """Thermal behaviour from a telemetry trace.
+
+    :func:`analyze_thermal_stability` needs per-sample throughput and is the
+    full sustained-load analysis. A telemetry trace records temperature and
+    power over time but not throughput, so this reports exactly the subset the
+    trace supports -- time to throttle, the temperature trend, peak and final
+    temperature -- and returns the throughput fields as None with a reason
+    rather than deriving them from data that was never collected.
+
+    A laptop's 30-second burst number and its 30-minute sustained number can
+    differ enormously, and this is the signal that distinguishes them.
+    """
+    points = [
+        (float(s["timestamp"]), float(s["temperature_c"]))
+        for s in series
+        if s.get("timestamp") is not None and s.get("temperature_c") is not None
+    ]
+    if len(points) < 2:
+        return {
+            "samples": len(points),
+            "max_temperature_c": points[0][1] if points else None,
+            "final_temperature_c": points[0][1] if points else None,
+            "temperature_slope_c_per_min": None,
+            "time_to_throttle_s": None,
+            "throttle_threshold_c": throttle_temp_c,
+            "throttled": None,
+            "reason": "fewer than two temperature samples; no trend can be measured",
+        }
+
+    points.sort(key=lambda p: p[0])
+    start = points[0][0]
+    elapsed = [t - start for t, _ in points]
+    temps = [c for _, c in points]
+
+    throttle_at: float | None = None
+    for t, temp in zip(elapsed, temps, strict=True):
+        if temp >= throttle_temp_c:
+            throttle_at = round(t, 3)
+            break
+
+    return {
+        "samples": len(points),
+        "duration_s": round(elapsed[-1], 3),
+        "max_temperature_c": max(temps),
+        "final_temperature_c": temps[-1],
+        "temperature_slope_c_per_min": temperature_slope_c_per_min(elapsed, temps),
+        "time_to_throttle_s": throttle_at,
+        "throttle_threshold_c": throttle_temp_c,
+        "throttled": throttle_at is not None,
+        "peak_throughput_tps": None,
+        "steady_state_throughput_tps": None,
+        "degradation_percent": None,
+        "reason": (
+            "temperature-only: a telemetry trace records no per-sample "
+            "throughput, so peak-vs-steady-state degradation needs the "
+            "sustained-load protocol (aihwbench suite --profile sustained)"
+        ),
     }

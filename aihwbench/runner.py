@@ -52,12 +52,31 @@ def power_profile() -> str | None:
 
 
 def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
-    """Run one benchmark end-to-end and return a validated result document."""
+    """Run one benchmark end-to-end and return a validated result document.
+
+    Derived analyses (energy, thermal) are attached here rather than in each
+    backend: they read the measured metrics and telemetry trace that every
+    backend already produces, so computing them centrally keeps one
+    implementation instead of five, and means a new backend gets them free.
+    """
+    from .analysis.energy import compute_energy_metrics
+    from .analysis.thermal import thermal_from_trace
     from .backends import resolve
     from .system_info import detect_system
+    from .telemetry import sample_idle_power, trace_series
 
     backend = resolve(runtime)
     system = detect_system()
+
+    # Measured before the benchmark's own load, so joules-per-token can be
+    # reported net of the machine's idle draw. Skippable for quick runs;
+    # when skipped the incremental figures are None rather than guessed.
+    idle_seconds = float(getattr(config, "extra", {}).get("idle_baseline_seconds", 2.0))
+    idle = (
+        sample_idle_power(idle_seconds)
+        if idle_seconds > 0
+        else {"watts": None, "samples": 0, "source": None}
+    )
 
     result: dict[str, Any] = backend.run(config, system)
 
@@ -68,6 +87,24 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     repro = result.setdefault("reproducibility", {})
     repro.setdefault("python_version", platform.python_version())
     repro.setdefault("power_profile", power_profile())
+
+    metrics = result.setdefault("metrics", {})
+    if idle["watts"] is not None:
+        metrics.setdefault("idle_power_watts", idle["watts"])
+
+    telemetry = result.get("telemetry") or {}
+    sources = telemetry.get("sources") or {}
+    power_source = sources.get("power_watts") or idle.get("source")
+    result["energy"] = compute_energy_metrics(
+        average_power_watts=metrics.get("average_power_watts"),
+        idle_power_watts=idle["watts"],
+        generation_tokens_per_second=metrics.get("generation_tokens_per_second"),
+        requests_per_second=None,
+        telemetry_source=power_source if isinstance(power_source, str) else None,
+    )
+    result["energy"]["idle_baseline"] = idle
+
+    result["thermal"] = thermal_from_trace(trace_series(result))
 
     validate_or_raise(result)
     return result

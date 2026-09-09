@@ -183,6 +183,29 @@ value proposition is honesty about what was measured cannot carry that.
   third of its layers offloaded, and that cliff is the single most consequential
   thing a buyer needs to know.
 
+### Added — the energy and thermal analyzers finally have a producer
+
+- **Every result now publishes its telemetry time series.** The summary
+  aggregates in `metrics` cannot show a throttling curve or a power spike, so
+  `analysis/thermal.py` and `analysis/energy.py` — both shipped, both tested,
+  both marked done — could only ever run in tests. The trace is attached to the
+  `telemetry` block, downsampled uniformly above 5000 samples with the fact
+  recorded, and keeping the final sample because the tail is where throttling
+  shows.
+- **`runner.run_benchmark` attaches `energy` and `thermal` blocks**, computed
+  centrally so all five backends get them and a sixth would too.
+- **Idle power is measured before the load starts**, so
+  `energy_joules_per_token` is net of the machine's own idle draw — a 200 W
+  reading on a card idling at 150 W is a very different result from the same
+  reading on one idling at 20 W. Set `idle_baseline_seconds: 0` to skip it; a
+  skipped measurement yields null figures rather than an assumed baseline.
+- Both blocks are declared in `schemas/result-2.0.schema.json` and validated
+  semantically. A metric absent from the schema is one nobody can query.
+- `thermal_from_trace` reports only what a trace supports — time to throttle,
+  temperature slope, peak and final temperature — and returns the throughput
+  degradation fields as null with a reason, because a telemetry trace records
+  no per-sample throughput.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

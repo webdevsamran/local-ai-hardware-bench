@@ -569,6 +569,20 @@ the runtime validator, so the page renders its *empty state* into the static
 HTML and the deployed site ships wrong content. A test now checks the
 prerenderer loads every file the browser loads.
 
+### Added — cold-start vs warm load time
+
+- Results now carry `cold_start_ms`, `warm_load_ms` and
+  `cold_start_penalty_ms`. The first request after a model is not resident
+  pays to load it; every request after does not, and "how long until this is
+  usable" is a real part of using a local model that throughput benchmarks
+  ignore entirely.
+- The measurement came free: warm-up runs were being discarded outright, and
+  the first warm-up is the *only* run that can have loaded the model. It is
+  still excluded from the published throughput metrics — it is now simply read
+  before being dropped.
+- A model that was already resident reports the cold figure as **absent, not
+  zero**: the run did not measure a fast load, it measured no load at all.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

@@ -40,6 +40,11 @@ Every benchmark run records and fixes:
 - **Generation tok/s** — completion token count ÷ evaluation duration as
   reported by the runtime (`eval_count`/`eval_duration`).
 - **Total latency** — wall-clock request-to-final-token time.
+- **Cold start** — model load time on the first warm-up request, when
+  the model was not already resident. `warm_load_ms` is the mean load
+  time across measured runs, and `cold_start_penalty_ms` is the
+  difference: what a user waits when the model is not already in memory.
+  Absent rather than zero when the model was already loaded.
 - **p50/p95** — linear-interpolated percentiles across measured iterations.
 - **Peak RAM/VRAM, utilization, temperature, power** — sampled every 0.5 s
   by a background telemetry thread (`psutil`, `nvidia-smi`).

@@ -401,6 +401,33 @@
             "null"
           ],
           "minimum": 0
+        },
+        "cold_start_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "warm_load_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "cold_start_penalty_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "cold_start_measured": {
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       },
       "additionalProperties": true

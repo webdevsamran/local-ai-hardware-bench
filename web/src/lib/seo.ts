@@ -37,6 +37,11 @@ const STATIC_META: Record<string, Omit<PageMeta, 'path'>> = {
     description:
       'Check whether a local LLM fits your GPU before downloading it. Enter your VRAM, RAM, model size and quantization to see estimated memory use, how much would spill to system RAM, and any measured benchmark results for that configuration.',
   },
+  '/local-vs-cloud': {
+    title: 'Local LLM hardware vs cloud API cost — AIHWBench',
+    description:
+      'Work out whether buying a GPU costs less than paying per token, using measured power draw and throughput from published benchmarks. Enter your volume, your cloud price and your electricity rate to see the break-even point in months.',
+  },
   '/hardware': {
     title: 'Hardware — AIHWBench',
     description:

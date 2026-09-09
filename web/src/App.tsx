@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import Home from './pages/Home'
 import Leaderboard from './pages/Leaderboard'
 import WillItRun from './pages/WillItRun'
+import Tco from './pages/Tco'
 import HardwareExplorer from './pages/HardwareExplorer'
 import HardwareDetail from './pages/HardwareDetail'
 import RuntimeExplorer from './pages/RuntimeExplorer'
@@ -29,6 +30,7 @@ export function AppRoutes() {
           <Route path="/" element={<Home />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/will-it-run" element={<WillItRun />} />
+          <Route path="/local-vs-cloud" element={<Tco />} />
           <Route path="/hardware" element={<HardwareExplorer />} />
           <Route path="/hardware/:fingerprint" element={<HardwareDetail />} />
           <Route path="/runtimes" element={<RuntimeExplorer />} />

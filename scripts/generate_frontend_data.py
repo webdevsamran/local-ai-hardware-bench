@@ -33,6 +33,7 @@ RESULTS_DIR = REPO / "results" / "published"
 OUT_DIR = REPO / "web" / "public" / "data"
 
 from aihwbench.analysis.fit import BITS_PER_WEIGHT, estimate_model_fit  # noqa: E402
+from aihwbench.analysis.cost import compare_local_vs_cloud  # noqa: E402
 from aihwbench.comparability import (  # noqa: E402
     _CONDITIONAL,
     _REQUIRED_PRESENT,
@@ -80,6 +81,51 @@ def _vram_tier(vram_mb: object) -> str | None:
         if gb <= threshold + 0.5:
             return label
     return "> 48 GB"
+
+
+# Cases the browser-side TCO calculator must reproduce. Same arrangement as
+# the fit estimator: computed by the canonical Python implementation, replayed
+# by web/tests through the TypeScript one.
+_TCO_REFERENCE_CASES = [
+    (20_000_000, 0.60, 1800.0, 0.30, 180.0, 45.0, 3),
+    (10_000_000, 10.0, 1200.0, 0.0, 0.0, 100.0, 3),
+    (1000, 0.01, 2000.0, 0.40, 300.0, 40.0, 3),
+    (1_000_000, 2.0, None, None, None, None, 1),
+    (5_000_000, 3.0, 900.0, 0.25, 220.0, 60.0, 5),
+]
+
+
+def _tco_constants() -> dict:
+    cases = []
+    for tokens, price, hw, kwh, watts, tps, years in _TCO_REFERENCE_CASES:
+        cases.append(
+            {
+                "tokens_per_month": tokens,
+                "cloud_usd_per_million_tokens": price,
+                "hardware_cost_usd": hw,
+                "electricity_usd_per_kwh": kwh,
+                "average_power_watts": watts,
+                "generation_tokens_per_second": tps,
+                "years": years,
+                "expected": compare_local_vs_cloud(
+                    tokens_per_month=tokens,
+                    cloud_usd_per_million_tokens=price,
+                    hardware_cost_usd=hw,
+                    electricity_usd_per_kwh=kwh,
+                    average_power_watts=watts,
+                    generation_tokens_per_second=tps,
+                    years=years,
+                ),
+            }
+        )
+    return {
+        "note": (
+            "cloud pricing is supplied by the reader, never bundled: provider "
+            "prices change and a stale table would produce confident wrong "
+            "answers"
+        ),
+        "reference_cases": cases,
+    }
 
 
 def _comparability_rules(results: list[dict]) -> dict:
@@ -368,6 +414,7 @@ def build(results: list[dict]) -> dict[str, object]:
         "trends": dict(sorted(trends.items())),
         "constants": _fit_constants(),
         "comparability": _comparability_rules(results),
+        "tco": _tco_constants(),
     }
 
 

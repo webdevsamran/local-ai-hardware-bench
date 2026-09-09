@@ -61,7 +61,12 @@ shipped-but-unreachable is not done.
 ## Track 3 — Hardware Coverage
 
 - [x] First genuinely tested platform (i9-12900H + RTX 3080 Ti Laptop)
-- [ ] Intel Core Ultra NPU telemetry hooks (needs Core Ultra hardware)
+- [~] Vendor telemetry beyond NVIDIA. AMD (rocm-smi), Intel (RAPL) and
+      Apple (powermetrics) collectors exist with tested parsers and are
+      wired into the sampler; none has been run against real hardware, so
+      `vendors.VENDOR_STATUS` records that per vendor. Battery telemetry
+      is tested on the reference laptop.
+- [ ] Intel Core Ultra NPU counters (needs Core Ultra hardware)
 - [ ] AMD platform results (hardware needed)
 - [ ] Snapdragon X Elite results (hardware needed)
 - [ ] Mini-PC / edge device class results (hardware needed)

@@ -416,6 +416,32 @@ a workload validation set. The claim is now backed by an implementation.
   far more common question than "what can I run on this", and it was
   unanswerable while the system was always detected.
 
+### Added — telemetry beyond NVIDIA, and battery drain
+
+Only NVIDIA GPUs supplied power and thermal context; every AMD, Intel and
+Apple result carried nulls. Energy and thermals on consumer hardware is one of
+the few things no competing local-AI benchmark measures at all, so a
+vendor-shaped hole in it was the wrong hole to have.
+
+- **AMD** via `rocm-smi --json`, **Intel** via RAPL energy counters, **Apple**
+  via `powermetrics`. The sampler tries vendors in order and the first that
+  answers wins.
+- **Battery telemetry** is sampled per point, so a sustained run yields the
+  drain rate that laptop owners want and nobody publishes. Tested on the
+  reference laptop.
+- **Parsing is separated from probing.** Each vendor has a pure parser tested
+  against captured output, plus a probe that needs the hardware. That is also
+  the honesty boundary: the parsers are verified, the formats are from vendor
+  documentation and have **not** been confirmed against a real driver, and
+  `vendors.VENDOR_STATUS` records exactly that per vendor — the same treatment
+  the compatibility matrix gives untested backends. A parser that meets output
+  it does not recognise returns nothing rather than a guess.
+- Two traps handled explicitly: ROCm reports both `memory use (MB)` and
+  `Memory Allocated (VRAM%)`, so the parser matches on the unit rather than
+  reporting 41 MB for a card holding 9.8 GB; and RAPL counts joules rather
+  than watts, so a wrapped counter is corrected where the wrap point is known
+  and reported as unmeasurable where it is not, never as negative power.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

@@ -34,6 +34,10 @@ _SAMPLE_KEYS = {
     "gpu_device_name",
 }
 
+# Present only on a machine with a battery, which most desktops are not. The
+# sample shape is therefore the base keys plus these, never these alone.
+_BATTERY_KEYS = {"battery_percent", "on_ac_power", "battery_seconds_left"}
+
 
 def _synthetic_gpu() -> dict:
     return {
@@ -107,7 +111,7 @@ def test_raw_trace_timestamped_and_complete(monkeypatch):
     timestamps = [s["timestamp"] for s in trace]
     assert timestamps == sorted(timestamps)
     for sample in trace:
-        assert set(sample) == _SAMPLE_KEYS
+        assert set(sample) - _BATTERY_KEYS == _SAMPLE_KEYS
         assert sample["timestamp"] > 0
 
 

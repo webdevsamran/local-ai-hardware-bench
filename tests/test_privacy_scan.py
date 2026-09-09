@@ -22,6 +22,8 @@ from aihwbench.quality import data_quality_report
 from aihwbench.sanitize import (
     PATTERN_IDS,
     redact_match,
+    redact_object,
+    redact_text,
     scan_file,
     scan_object,
     scan_object_detailed,
@@ -165,3 +167,64 @@ def test_quality_report_clean_result_has_no_hits():
     )
     assert report["checks"]["privacy_clean"] is True
     assert report["checks"]["privacy_hits"] == []
+
+
+# --------------------------------------------------------------- redaction
+#
+# Detection alone cannot protect a public dataset. A contributor needs to be
+# able to *remove* a leak before submitting, because one leak in published
+# data is unrecoverable.
+
+
+def test_redaction_removes_every_finding():
+    dirty = {
+        "system": {"platform_name": "box of dev@example.com"},
+        "note": r"C:\Users\alice\bench",
+        "hosts": ["10.0.0.7", "aa:bb:cc:dd:ee:ff"],
+    }
+    assert not scan_object(dirty)[0], "fixture must start dirty"
+    assert scan_object(redact_object(dirty))[0]
+
+
+def test_redaction_is_idempotent():
+    """The placeholder must not itself look like an identifier."""
+    once = redact_object({"note": "mail dev@example.com from 10.0.0.7"})
+    assert redact_object(once) == once
+
+
+def test_redaction_keeps_no_prefix_of_the_secret():
+    """Unlike a CI finding, published output must retain nothing of the value.
+
+    `redact_match` deliberately keeps a short prefix so a reviewer can
+    recognise a finding. That is exactly wrong for data being published.
+    """
+    cleaned = redact_text("contact alice.smith@example.com now")
+    assert "alice" not in cleaned
+    assert "example" not in cleaned
+    assert "[redacted:email]" in cleaned
+
+
+def test_redaction_replaces_every_occurrence_not_just_the_first():
+    """The scanner reports one finding per pattern; scrubbing must remove all."""
+    cleaned = redact_text("a@x.com and b@y.com and c@z.com")
+    assert "@" not in cleaned
+    assert cleaned.count("[redacted:email]") == 3
+
+
+def test_redaction_preserves_non_string_scalars():
+    """Numbers and booleans are measurements, not identifiers."""
+    cleaned = redact_object({"latency_ms": 12.5, "ok": True, "missing": None})
+    assert cleaned == {"latency_ms": 12.5, "ok": True, "missing": None}
+
+
+def test_redaction_scrubs_dictionary_keys_too():
+    """The scanner inspects keys, so redaction must as well."""
+    cleaned = redact_object({r"C:\Users\bob\run": 1})
+    assert not any("bob" in k for k in cleaned)
+
+
+def test_colliding_keys_are_kept_rather_than_dropped():
+    """Silently losing a field would be worse than an ugly key."""
+    cleaned = redact_object({r"C:\Users\bob": 1, r"C:\Users\eve": 2})
+    assert len(cleaned) == 2, "no field may be lost to a key collision"
+    assert sorted(cleaned.values()) == [1, 2]

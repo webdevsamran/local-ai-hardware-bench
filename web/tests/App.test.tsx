@@ -164,6 +164,16 @@ describe('App routes (smoke)', () => {
     ).toBeTruthy()
   })
 
+  it('tells the local-vs-cloud page it has no power data to work from', async () => {
+    // The fixture result has no average_power_watts, so the local running
+    // cost is not computable. The page must say so rather than quietly
+    // assuming a power figure.
+    renderAt('/local-vs-cloud')
+    expect(
+      await screen.findByText(/No published result measured both power draw/),
+    ).toBeTruthy()
+  })
+
   it('renders result detail for a known run', async () => {
     renderAt('/results/test-run-1')
     expect(await screen.findByText('Reproducibility')).toBeTruthy()

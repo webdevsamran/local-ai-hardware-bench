@@ -34,7 +34,7 @@ body:
     id: version
     attributes:
       label: aihwbench version
-      placeholder: "0.1.0"
+      placeholder: "output of: aihwbench --version"
     validations:
       required: true
   - type: dropdown

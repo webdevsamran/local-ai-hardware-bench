@@ -99,6 +99,13 @@ ENDPOINTS: dict[str, tuple[str, str, str]] = {
         "unstable",
         "A convenience view for the dashboard.",
     ),
+    "recommend": (
+        "Reference recommendations from the configuration engine.",
+        "unstable",
+        "A convenience view for the dashboard's recommender, carrying "
+        "reference cases that pin the browser implementation to the Python "
+        "one. Recommendations themselves are computed per request, not served.",
+    ),
     "tco": (
         "Reference vectors for the local-vs-cloud calculator.",
         "unstable",

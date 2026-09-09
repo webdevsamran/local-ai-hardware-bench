@@ -450,6 +450,39 @@
         ]
       }
     },
+    "/data/recommend.json": {
+      "get": {
+        "description": "Reference recommendations from the configuration engine.\n\nA convenience view for the dashboard's recommender, carrying reference cases that pin the browser implementation to the Python one. Recommendations themselves are computed per request, not served.\n\n**Stability: unstable.**",
+        "operationId": "getRecommend",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "note": {
+                      "type": "string"
+                    },
+                    "reference_cases": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Reference recommendations from the configuration engine."
+          }
+        },
+        "summary": "Reference recommendations from the configuration engine.",
+        "tags": [
+          "convenience views"
+        ]
+      }
+    },
     "/data/results.json": {
       "get": {
         "description": "Every published benchmark result, in full.\n\nEach element follows the versioned result schema in `schemas/`. Breaking changes go through a schema version bump and a migration, never a silent reshape.\n\n**Stability: stable.**",

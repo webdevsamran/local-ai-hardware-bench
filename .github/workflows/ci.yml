@@ -23,6 +23,11 @@ jobs:
       # 0.11.13, so `ruff format` locally and `ruff format --check` here
       # disagreed about the same file.
       - run: pip install ruff==0.16.4
+      - name: Landscape table matches the fetched competitor data
+        # The table states its own method ("fetched via the GitHub API")
+        # but was typed by hand. In a sibling repo that drifted into
+        # publishing that a live competitor's repo was gone.
+        run: python scripts/generate_landscape.py --check
       - name: Secret scan
         # This repo had npm audit and security-extended CodeQL but no secret
         # scanning at all, while tooltrace-bench had the reverse. Each of the

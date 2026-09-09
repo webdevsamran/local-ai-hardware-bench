@@ -115,3 +115,8 @@ disable_error_code = ["attr-defined"]
 [[tool.mypy.overrides]]
 module = ["aihwbench.versions", "aihwbench.fingerprint", "aihwbench.capacity"]
 strict = true
+
+[tool.ruff.lint.per-file-ignores]
+# Same shared-script situation: the gh endpoint is built from the hardcoded
+# REPOS list above it, not from user input.
+"scripts/fetch_competitor_meta.py" = ["S603", "S607", "RUF100"]

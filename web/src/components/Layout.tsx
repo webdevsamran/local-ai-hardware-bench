@@ -7,6 +7,7 @@ const NAV = [
   { to: '/', label: 'Home', end: true },
   { to: '/leaderboard', label: 'Leaderboard' },
   { to: '/will-it-run', label: 'Will it run?' },
+  { to: '/recommend', label: 'Recommend' },
   { to: '/local-vs-cloud', label: 'Local vs cloud' },
   { to: '/frontiers', label: 'Frontiers' },
   { to: '/hardware', label: 'Hardware' },

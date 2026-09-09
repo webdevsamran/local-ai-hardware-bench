@@ -33,6 +33,7 @@ function loadDataset() {
     'constants',
     'comparability',
     'pareto',
+    'recommend',
   ]
   // Kept in step with the browser's list in src/lib/data.ts. A file missing
   // here does not crash the prerender -- seedDataset bypasses the runtime

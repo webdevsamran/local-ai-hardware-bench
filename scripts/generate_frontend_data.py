@@ -34,6 +34,7 @@ OUT_DIR = REPO / "web" / "public" / "data"
 
 from aihwbench.analysis.cost import compare_local_vs_cloud  # noqa: E402
 from aihwbench.analysis.fit import BITS_PER_WEIGHT, estimate_model_fit  # noqa: E402
+from aihwbench.analysis.recommend import recommend_configuration  # noqa: E402
 from aihwbench.comparability import (  # noqa: E402
     _CONDITIONAL,
     _REQUIRED_PRESENT,
@@ -183,6 +184,42 @@ def _tco_constants() -> dict:
             "cloud pricing is supplied by the reader, never bundled: provider "
             "prices change and a stale table would produce confident wrong "
             "answers"
+        ),
+        "reference_cases": cases,
+    }
+
+
+_RECOMMEND_CASES = [
+    (24576, 64.0),
+    (16384, 32.0),
+    (12288, 32.0),
+    (8192, 16.0),
+    (6144, 16.0),
+    (0, 32.0),
+]
+
+
+def _recommendation_constants(results: list[dict]) -> dict:
+    """Reference recommendations from the canonical Python engine.
+
+    The browser must reach the same conclusion as `aihwbench recommend` for a
+    given machine, so the reference cases are computed here and replayed
+    through the TypeScript implementation in web/tests.
+    """
+    cases = []
+    for vram_mb, ram_gb in _RECOMMEND_CASES:
+        system = {"gpu_vram_mb": vram_mb or None, "ram_gb": ram_gb}
+        cases.append(
+            {
+                "gpu_vram_mb": vram_mb or None,
+                "ram_gb": ram_gb,
+                "expected": recommend_configuration(system, results),
+            }
+        )
+    return {
+        "note": (
+            "recommendations are estimates from a memory budget and an assumed "
+            "quantization density; measured results upgrade the evidence tier"
         ),
         "reference_cases": cases,
     }
@@ -476,6 +513,7 @@ def build(results: list[dict]) -> dict[str, object]:
         "comparability": _comparability_rules(results),
         "tco": _tco_constants(),
         "pareto": _pareto_views(results),
+        "recommend": _recommendation_constants(results),
     }
 
 

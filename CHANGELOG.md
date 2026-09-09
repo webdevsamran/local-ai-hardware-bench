@@ -635,6 +635,22 @@ contract.
 - winget's uppercase digest requirement is handled, because a lowercase one is
   rejected at submission rather than at build time.
 
+### Added — a configuration recommender on the dashboard
+
+- `/recommend` answers "what should I actually run on this machine": a model
+  size, runtime, device and context length for the hardware you describe.
+- It separates the two kinds of claim it makes. The size ceiling is an
+  **estimate** from a memory budget and an assumed quantization density; the
+  runtime and device are **anchored on measured results**, and the page labels
+  which is which. Presenting them identically would be the same error the
+  comparison-safety classifier exists to prevent.
+- The recommendation is checked against the fit estimator on the page itself,
+  because advice that fails the project's own fit check is advice
+  contradicting itself.
+- Pinned to the Python engine by reference recommendations for six common
+  machine shapes, so the site and `aihwbench recommend` cannot advise
+  differently.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

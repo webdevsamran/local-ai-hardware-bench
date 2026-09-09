@@ -77,6 +77,37 @@ Format based on Keep a Changelog; versioning is SemVer.
   `telemetry`) and is included in `dev`. The CI data-quality job installs it
   and validates every published result formally as well as semantically.
 
+### Fixed — documentation that outran the code
+
+`ROADMAP.md` marked as done several capabilities that exist as library
+functions no code path calls, and understated one that works. A project whose
+value proposition is honesty about what was measured cannot carry that.
+
+- Sustained-load thermal analysis and the advanced streaming metrics are now
+  `[~]` with the specific gap named: `analyze_thermal_stability` has no
+  producer because nothing persists the telemetry trace it consumes, and of
+  the streaming metrics only `itl_ms` is computed (as a scalar mean, not a
+  distribution) while `tpot_ms`, `time_to_second_token_ms`,
+  `inter_chunk_latency_ms`, `prefill_latency_ms` and `decode_duration_ms` are
+  registered vocabulary that nothing writes. A marker legend now records that
+  shipped-but-unreachable is not done.
+- Ollama model load time was listed as *not* done in `ROADMAP.md` and as
+  unmeasurable in `docs/methodology.md`; it has been measured from the API's
+  `load_duration` counter for some time. A null now honestly means "the model
+  was already resident".
+- `docs/methodology.md` linked issue #21 as an open invitation for external
+  review; `ROADMAP.md` records that it was closed because a reviewer cannot be
+  summoned by leaving an issue open.
+- `docs/results/schema-2.0-proposal.md` declared "not implemented, schema 1.0
+  remains authoritative" while `versions.py` sets 2.0 as the current writer
+  version. It is now marked as a design note, distinguishing the parts that
+  shipped from the parts that did not.
+- `reproducibility_score()` now returns `score_percent` alongside `score`.
+  `quality.reproducibility_completeness` is validated within [0, 100] while
+  the function returned a [0, 1] fraction and nothing bridged them, so a
+  producer writing the fraction would record 0.8 for an 80%-complete result
+  and pass validation.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

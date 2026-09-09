@@ -58,10 +58,22 @@ def env_diff(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
 
 
 def reproducibility_score(result: dict[str, Any]) -> dict[str, Any]:
-    """Metadata-completeness score in [0, 1] with per-item detail.
+    """Metadata-completeness score with per-item detail.
 
     Each checked item contributes equally. Missing optional metadata
     lowers the score; nothing is inferred or fabricated to fill gaps.
+
+    Two scales are returned deliberately, because the project uses both and
+    confusing them is silent and plausible:
+
+    - ``score``: a fraction in [0, 1].
+    - ``score_percent``: the same value in [0, 100], which is the scale the
+      result schema's ``quality.reproducibility_completeness`` field is
+      validated on.
+
+    Writing ``score`` into that field would record 0.8 for a result that is
+    80% complete, pass validation (0.8 is within [0, 100]), and understate
+    completeness by two orders of magnitude. Write ``score_percent`` there.
     """
     items = {
         "model_checksum": bool((result.get("model") or {}).get("checksum")),
@@ -79,6 +91,7 @@ def reproducibility_score(result: dict[str, Any]) -> dict[str, Any]:
     present = sum(1 for ok in items.values() if ok)
     return {
         "score": round(present / total, 3),
+        "score_percent": round(present / total * 100, 1),
         "present": present,
         "total": total,
         "items": items,

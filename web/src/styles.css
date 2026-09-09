@@ -851,3 +851,33 @@ button:focus-visible,
     stroke-dashoffset: 0;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Scatter / Pareto frontier
+   --------------------------------------------------------------------------- */
+
+.scatter-point {
+  fill: var(--text-muted);
+  opacity: 0.75;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.scatter-point:hover {
+  opacity: 1;
+}
+
+/* Optimal points are a diamond as well as a colour, so the distinction does
+   not depend on separating two hues. */
+.scatter-optimal {
+  fill: var(--accent);
+  stroke: var(--accent-strong);
+  stroke-width: 0.4;
+  vector-effect: non-scaling-stroke;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .scatter-point,
+  .scatter-optimal {
+    animation: rise-in var(--dur-slow) var(--ease) both;
+  }
+}

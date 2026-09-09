@@ -31,7 +31,13 @@ function loadDataset() {
     'leaderboard',
     'trends',
     'constants',
+    'comparability',
+    'pareto',
   ]
+  // Kept in step with the browser's list in src/lib/data.ts. A file missing
+  // here does not crash the prerender -- seedDataset bypasses the runtime
+  // validator -- it silently renders the page's empty state into the static
+  // HTML, which is worse: the deployed page then ships wrong content.
   const dataset = {}
   for (const name of names) {
     dataset[name] = JSON.parse(

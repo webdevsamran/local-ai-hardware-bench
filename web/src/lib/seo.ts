@@ -42,6 +42,11 @@ const STATIC_META: Record<string, Omit<PageMeta, 'path'>> = {
     description:
       'Work out whether buying a GPU costs less than paying per token, using measured power draw and throughput from published benchmarks. Enter your volume, your cloud price and your electricity rate to see the break-even point in months.',
   },
+  '/frontiers': {
+    title: 'Efficiency frontiers — speed vs power and VRAM — AIHWBench',
+    description:
+      'Which local AI configurations are not beaten on both axes at once: throughput against power draw, peak VRAM and time to first token. A card that is slower but far more efficient is still on the frontier, which a single ranked leaderboard cannot show.',
+  },
   '/hardware': {
     title: 'Hardware — AIHWBench',
     description:

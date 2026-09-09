@@ -59,6 +59,7 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     backend already produces, so computing them centrally keeps one
     implementation instead of five, and means a new backend gets them free.
     """
+    from .analysis.battery import battery_profile
     from .analysis.energy import compute_energy_metrics
     from .analysis.thermal import thermal_from_trace
     from .backends import resolve
@@ -125,7 +126,11 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     )
     result["energy"]["idle_baseline"] = idle
 
-    result["thermal"] = thermal_from_trace(trace_series(result))
+    trace = trace_series(result)
+    result["thermal"] = thermal_from_trace(trace)
+    # Only meaningful unplugged; on mains power it says so rather than
+    # reporting a drain rate of zero.
+    result["battery"] = battery_profile(trace)
 
     validate_or_raise(result)
     return result

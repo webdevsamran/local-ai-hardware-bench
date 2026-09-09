@@ -7,8 +7,10 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 from ..analysis import analyze_bottlenecks, estimate_model_fit, recommend_configuration
+from ..analysis.cost import compare_local_vs_cloud, compute_cost_metrics
 from ..comparability import NOT_COMPARABLE
 from ..compare import compare_results, render_comparison
 from ..exit_codes import (
@@ -167,6 +169,54 @@ def cmd_recommend(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def cmd_cost(args: argparse.Namespace) -> int:
+    """Cost per token, and local ownership against a cloud API.
+
+    Cloud pricing is supplied by the caller rather than bundled: provider
+    prices change frequently, and a stale table inside a benchmark would keep
+    producing confident wrong answers.
+    """
+    metrics: dict[str, Any] = {}
+    if args.result:
+        try:
+            result = load_result(Path(args.result))
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            fail(str(exc))
+            return EXIT_VALIDATION_ERROR
+        metrics = result.get("metrics") or {}
+
+    power = args.power_watts
+    if power is None:
+        power = metrics.get("average_power_watts")
+    throughput = args.tokens_per_second
+    if throughput is None:
+        throughput = metrics.get("generation_tokens_per_second")
+
+    report: dict[str, Any] = {
+        "measured_from": args.result,
+        "cost": compute_cost_metrics(
+            hardware_cost_usd=args.hardware_cost,
+            electricity_usd_per_kwh=args.electricity_price,
+            average_power_watts=power,
+            generation_tokens_per_second=throughput,
+            utilization_hours_per_day=args.hours_per_day,
+            years=args.years,
+        ),
+    }
+    if args.tokens_per_month is not None and args.cloud_price is not None:
+        report["local_vs_cloud"] = compare_local_vs_cloud(
+            tokens_per_month=args.tokens_per_month,
+            cloud_usd_per_million_tokens=args.cloud_price,
+            hardware_cost_usd=args.hardware_cost,
+            electricity_usd_per_kwh=args.electricity_price,
+            average_power_watts=power,
+            generation_tokens_per_second=throughput,
+            years=args.years or 3,
+        )
+    echo_json(report)
+    return EXIT_OK
+
+
 def cmd_score(args: argparse.Namespace) -> int:
     """Composite AIHWBench Score with full component breakdown."""
     try:
@@ -245,6 +295,27 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     rec = sub.add_parser("recommend", help="Recommend a configuration for this hardware")
     rec.add_argument("--results-dir", default=None, help="Prior results to anchor on")
     rec.set_defaults(func=cmd_recommend)
+
+    cost_p = sub.add_parser("cost", help="Cost per token, and local ownership vs a cloud API")
+    cost_p.add_argument(
+        "--result", default=None, help="Take measured power and throughput from this result"
+    )
+    cost_p.add_argument("--hardware-cost", type=float, default=None, help="USD")
+    cost_p.add_argument("--electricity-price", type=float, default=None, help="USD per kWh")
+    cost_p.add_argument("--power-watts", type=float, default=None, help="Overrides the result")
+    cost_p.add_argument(
+        "--tokens-per-second", type=float, default=None, help="Overrides the result"
+    )
+    cost_p.add_argument("--hours-per-day", type=float, default=None)
+    cost_p.add_argument("--years", type=int, default=None)
+    cost_p.add_argument("--tokens-per-month", type=float, default=None)
+    cost_p.add_argument(
+        "--cloud-price",
+        type=float,
+        default=None,
+        help="USD per million tokens, read from your provider today",
+    )
+    cost_p.set_defaults(func=cmd_cost)
 
     score_p = sub.add_parser("score", help="Composite AIHWBench Score (heuristic)")
     score_p.add_argument("result")

@@ -32,6 +32,9 @@ if str(REPO) not in sys.path:
 RESULTS_DIR = REPO / "results" / "published"
 OUT_DIR = REPO / "web" / "public" / "data"
 
+from aihwbench.export import comparison_groups, group_label  # noqa: E402
+from aihwbench.metrics import performance_per_watt_unit  # noqa: E402
+
 
 def _load_results(strict: bool = True) -> list[dict]:
     """Load published results.
@@ -170,19 +173,46 @@ def build(results: list[dict]) -> dict[str, object]:
         key=lambda r: (-_metric(r, "performance_per_watt"),),
     )
 
+    # Rank within comparison groups, never across them. A global rank column
+    # asserts that row 1 beat row 2, which the comparison-safety classifier
+    # rejects for most pairs -- the dashboard must not claim what
+    # results/dataset/LEADERBOARD.md refuses to claim.
+    groups = comparison_groups(results)
+    group_of: dict[str, int] = {}
+    labels: dict[int, str] = {}
+    for gi, group in enumerate(groups):
+        labels[gi] = group_label(group)
+        for member in group:
+            group_of[member["run_id"]] = gi
+
     def view(rows: list[dict], metric_key: str) -> list[dict]:
-        return [
-            {
-                "rank": i + 1,
-                "run_id": r["run_id"],
-                "runtime": (r.get("runtime") or {}).get("name"),
-                "model": (r.get("model") or {}).get("name"),
-                "cpu": (r.get("system") or {}).get("cpu"),
-                "gpu": (r.get("system") or {}).get("gpu"),
-                "value": _metric(r, metric_key),
-            }
-            for i, r in enumerate(rows)
-        ]
+        out: list[dict] = []
+        seen_in_group: dict[int, int] = defaultdict(int)
+        for r in rows:
+            gi = group_of[r["run_id"]]
+            seen_in_group[gi] += 1
+            out.append(
+                {
+                    # Rank is per group and restarts at 1 in each; `group_size`
+                    # lets the UI say "1 of 1", which is not a ranking.
+                    "rank": seen_in_group[gi],
+                    "group": gi,
+                    "group_label": labels[gi],
+                    "group_size": len(groups[gi]),
+                    "run_id": r["run_id"],
+                    "runtime": (r.get("runtime") or {}).get("name"),
+                    "model": (r.get("model") or {}).get("name"),
+                    "cpu": (r.get("system") or {}).get("cpu"),
+                    "gpu": (r.get("system") or {}).get("gpu"),
+                    "value": _metric(r, metric_key),
+                    # tok/s/W and inf/s/W are different quantities; publishing
+                    # the unit stops the view ranking them against each other.
+                    "unit": performance_per_watt_unit(r.get("metrics") or {})
+                    if metric_key == "performance_per_watt"
+                    else None,
+                }
+            )
+        return out
 
     trends: dict[str, list[dict]] = defaultdict(list)
     for r in sorted(results, key=lambda x: x.get("timestamp") or ""):

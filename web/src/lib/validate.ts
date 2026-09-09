@@ -165,6 +165,15 @@ export function validateLeaderboardRow(d: unknown): Issue[] {
   if (!isRecord(d)) return [`leaderboard rows: expected object, got ${String(d)}`]
   if (typeof d.rank !== 'number') issues.push('leaderboard[].rank: expected number')
   if (!isNonEmptyString(d.run_id)) issues.push('leaderboard[].run_id: expected non-empty string')
+  // The grouping is what stops the UI ranking incomparable results against
+  // each other, so its absence must fail loudly rather than silently render a
+  // global ranking again.
+  if (typeof d.group !== 'number') issues.push('leaderboard[].group: expected number')
+  if (typeof d.group_size !== 'number')
+    issues.push('leaderboard[].group_size: expected number')
+  if (!isNonEmptyString(d.group_label))
+    issues.push('leaderboard[].group_label: expected non-empty string')
+  optionalString('leaderboard[].unit', d.unit, issues)
   optionalString('leaderboard[].model', d.model, issues)
   optionalString('leaderboard[].runtime', d.runtime, issues)
   optionalString('leaderboard[].cpu', d.cpu, issues)

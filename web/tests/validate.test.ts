@@ -37,7 +37,20 @@ function makeDataset(): Dataset {
     hardware: [{ fingerprint: 'abc123', ram_gb: 16, result_ids: ['r1'] }],
     runtimes: [{ name: 'test', versions: ['1.0'], device_options: ['cpu'], result_ids: ['r1'] }],
     models: [{ name: 'm', format: 'gguf', quantizations: [], checksums: [], result_ids: ['r1'] }],
-    leaderboard: { throughput: [{ rank: 1, run_id: 'r1', value: 10.0 }], ttft: [], perf_watt: [] },
+    leaderboard: {
+      throughput: [
+        {
+          rank: 1,
+          group: 0,
+          group_label: 'm on test',
+          group_size: 1,
+          run_id: 'r1',
+          value: 10.0,
+        },
+      ],
+      ttft: [],
+      perf_watt: [],
+    },
     trends: { test: [{ timestamp: '2026-01-01T00:00:00Z', version: '1.0', throughput: 10.0, ttft_ms: null }] },
   }
 }
@@ -102,7 +115,16 @@ describe('validateLeaderboardRow', () => {
   })
 
   it('accepts a valid row with null value', () => {
-    expect(validateLeaderboardRow({ rank: 1, run_id: 'r1', value: null })).toEqual([])
+    expect(
+      validateLeaderboardRow({
+        rank: 1,
+        group: 0,
+        group_label: 'm on test',
+        group_size: 1,
+        run_id: 'r1',
+        value: null,
+      }),
+    ).toEqual([])
   })
 })
 

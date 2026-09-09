@@ -147,7 +147,7 @@ def comparison_groups(results: Sequence[dict[str, Any]]) -> list[list[dict[str, 
     return groups
 
 
-def _group_label(group: Sequence[dict[str, Any]]) -> str:
+def group_label(group: Sequence[dict[str, Any]]) -> str:
     """Describe what the members of a comparable group share."""
     first = group[0]
     model = (first.get("model") or {}).get("name") or "unknown model"
@@ -242,7 +242,7 @@ def export_dataset(results_dir: Path, output_dir: Path, *, strict: bool = False)
     lines.append("")
 
     for group in groups:
-        lines.append(f"## {_group_label(group)}")
+        lines.append(f"## {group_label(group)}")
         lines.append("")
         if len(group) == 1:
             lines.append(

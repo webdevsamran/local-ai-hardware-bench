@@ -627,3 +627,127 @@ button:focus-visible,
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   "Will it run?" wizard
+   --------------------------------------------------------------------------- */
+
+.wizard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 20px 0 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.field select,
+.field input {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  /* 44px minimum touch target. */
+  padding: 11px 12px;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+
+.field select:hover,
+.field input:hover {
+  border-color: var(--accent);
+}
+
+.field select:focus-visible,
+.field input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.verdict {
+  border: 1px solid var(--border);
+  border-left-width: 5px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+  animation: rise-in var(--dur-slow) var(--ease) both;
+}
+
+.verdict-ok {
+  border-left-color: var(--ok);
+}
+.verdict-warn {
+  border-left-color: var(--warn);
+}
+.verdict-bad {
+  border-left-color: var(--bad);
+}
+.verdict-unknown {
+  border-left-color: var(--border);
+}
+
+.verdict-headline {
+  margin: 0 0 6px;
+  font-size: clamp(1.05rem, 0.95rem + 0.5vw, 1.35rem);
+}
+
+.verdict-detail {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.verdict-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin: 16px 0 0;
+}
+
+.verdict-figures div {
+  display: flex;
+  flex-direction: column;
+}
+
+.verdict-figures dt {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.verdict-figures dd {
+  margin: 2px 0 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.measured-list {
+  padding-left: 18px;
+  line-height: 1.7;
+}
+
+.section-title {
+  font-size: clamp(1.05rem, 0.95rem + 0.4vw, 1.25rem);
+  margin: 28px 0 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verdict {
+    animation: none;
+  }
+}

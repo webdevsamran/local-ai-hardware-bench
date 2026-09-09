@@ -52,6 +52,12 @@ function makeDataset(): Dataset {
       perf_watt: [],
     },
     trends: { test: [{ timestamp: '2026-01-01T00:00:00Z', version: '1.0', throughput: 10.0, ttft_ms: null }] },
+    constants: {
+      bits_per_weight: { q4_k_m: 4.85, fp16: 16.0 },
+      overhead_factor: 1.15,
+      note: 'test constants',
+      reference_cases: [],
+    },
   }
 }
 

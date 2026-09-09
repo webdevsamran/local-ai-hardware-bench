@@ -32,6 +32,11 @@ const STATIC_META: Record<string, Omit<PageMeta, 'path'>> = {
     description:
       'Local AI inference results grouped by comparison safety. Throughput, time to first token and performance per watt, ranked only within groups that are genuinely comparable.',
   },
+  '/will-it-run': {
+    title: 'Will this LLM run on my PC? — AIHWBench',
+    description:
+      'Check whether a local LLM fits your GPU before downloading it. Enter your VRAM, RAM, model size and quantization to see estimated memory use, how much would spill to system RAM, and any measured benchmark results for that configuration.',
+  },
   '/hardware': {
     title: 'Hardware — AIHWBench',
     description:

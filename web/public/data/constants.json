@@ -1,0 +1,183 @@
+{
+  "bits_per_weight": {
+    "bf16": 16.0,
+    "f16": 16.0,
+    "fp16": 16.0,
+    "fp32": 32.0,
+    "int8": 8.0,
+    "iq2_xxs": 2.06,
+    "iq3_xxs": 3.06,
+    "iq4_xs": 4.25,
+    "q2_k": 3.35,
+    "q3_k_m": 3.91,
+    "q3_k_s": 3.5,
+    "q4_0": 4.55,
+    "q4_1": 5.0,
+    "q4_k_m": 4.85,
+    "q4_k_s": 4.58,
+    "q5_0": 5.54,
+    "q5_1": 6.7,
+    "q5_k_m": 5.67,
+    "q5_k_s": 5.54,
+    "q6_k": 6.5625,
+    "q8": 8.5,
+    "q8_0": 8.5
+  },
+  "note": "bits-per-weight are format conventions, not measurements; an unknown quantization is refused rather than guessed",
+  "overhead_factor": 1.15,
+  "reference_cases": [
+    {
+      "available_ram_mb": 32000.0,
+      "available_vram_mb": 8192.0,
+      "context_tokens": 4096,
+      "expected": {
+        "assumptions": {
+          "bits_per_weight": 4.85,
+          "context_tokens": 4096,
+          "note": "estimate from parameter count x bits/weight x overhead factor; KV cache scales with context and is approximated by the factor",
+          "overhead_factor": 1.15
+        },
+        "estimated_total_gb": 4.88,
+        "estimated_weights_gb": 4.244,
+        "fit_target": "vram",
+        "fits": true,
+        "reason": "estimated 4.88 GB needed vs vram 8.2 GB, ram 32.0 GB"
+      },
+      "parameters": "7B",
+      "quantization": "q4_k_m"
+    },
+    {
+      "available_ram_mb": 32000.0,
+      "available_vram_mb": 8192.0,
+      "context_tokens": 4096,
+      "expected": {
+        "assumptions": {
+          "bits_per_weight": 16.0,
+          "context_tokens": 4096,
+          "note": "estimate from parameter count x bits/weight x overhead factor; KV cache scales with context and is approximated by the factor",
+          "overhead_factor": 1.15
+        },
+        "estimated_total_gb": 16.1,
+        "estimated_weights_gb": 14.0,
+        "fit_target": "ram",
+        "fits": true,
+        "reason": "estimated 16.10 GB needed vs vram 8.2 GB, ram 32.0 GB"
+      },
+      "parameters": "7B",
+      "quantization": "fp16"
+    },
+    {
+      "available_ram_mb": 32000.0,
+      "available_vram_mb": 16384.0,
+      "context_tokens": 2048,
+      "expected": {
+        "assumptions": {
+          "bits_per_weight": 4.85,
+          "context_tokens": 2048,
+          "note": "estimate from parameter count x bits/weight x overhead factor; KV cache scales with context and is approximated by the factor",
+          "overhead_factor": 1.15
+        },
+        "estimated_total_gb": 0.349,
+        "estimated_weights_gb": 0.303,
+        "fit_target": "vram",
+        "fits": true,
+        "reason": "estimated 0.35 GB needed vs vram 16.4 GB, ram 32.0 GB"
+      },
+      "parameters": "0.5B",
+      "quantization": "q4_k_m"
+    },
+    {
+      "available_ram_mb": 64000.0,
+      "available_vram_mb": 24000.0,
+      "context_tokens": 8192,
+      "expected": {
+        "assumptions": {
+          "bits_per_weight": 4.85,
+          "context_tokens": 8192,
+          "note": "estimate from parameter count x bits/weight x overhead factor; KV cache scales with context and is approximated by the factor",
+          "overhead_factor": 1.15
+        },
+        "estimated_total_gb": 48.803,
+        "estimated_weights_gb": 42.438,
+        "fit_target": "ram",
+        "fits": true,
+        "reason": "estimated 48.80 GB needed vs vram 24.0 GB, ram 64.0 GB"
+      },
+      "parameters": "70B",
+      "quantization": "q4_k_m"
+    },
+    {
+      "available_ram_mb": 16000.0,
+      "available_vram_mb": 6000.0,
+      "context_tokens": 4096,
+      "expected": {
+        "assumptions": {
+          "bits_per_weight": 8.5,
+          "context_tokens": 4096,
+          "note": "estimate from parameter count x bits/weight x overhead factor; KV cache scales with context and is approximated by the factor",
+          "overhead_factor": 1.15
+        },
+        "estimated_total_gb": 3.666,
+        "estimated_weights_gb": 3.188,
+        "fit_target": "vram",
+        "fits": true,
+        "reason": "estimated 3.67 GB needed vs vram 6.0 GB, ram 16.0 GB"
+      },
+      "parameters": "3B",
+      "quantization": "q8_0"
+    },
+    {
+      "available_ram_mb": 32000.0,
+      "available_vram_mb": 12000.0,
+      "context_tokens": 4096,
+      "expected": {
+        "assumptions": {
+          "known_quantizations": [
+            "bf16",
+            "f16",
+            "fp16",
+            "fp32",
+            "int8",
+            "iq2_xxs",
+            "iq3_xxs",
+            "iq4_xs",
+            "q2_k",
+            "q3_k_m",
+            "q3_k_s",
+            "q4_0",
+            "q4_1",
+            "q4_k_m",
+            "q4_k_s",
+            "q5_0",
+            "q5_1",
+            "q5_k_m",
+            "q5_k_s",
+            "q6_k",
+            "q8",
+            "q8_0"
+          ]
+        },
+        "estimated_total_gb": null,
+        "estimated_weights_gb": null,
+        "fits": null,
+        "reason": "unknown quantization 'unknown-quant'; refusing to guess bits-per-weight"
+      },
+      "parameters": "13B",
+      "quantization": "unknown-quant"
+    },
+    {
+      "available_ram_mb": 32000.0,
+      "available_vram_mb": 12000.0,
+      "context_tokens": 4096,
+      "expected": {
+        "assumptions": {},
+        "estimated_total_gb": null,
+        "estimated_weights_gb": null,
+        "fits": null,
+        "reason": "parameter count unavailable; cannot estimate"
+      },
+      "parameters": null,
+      "quantization": "q4_k_m"
+    }
+  ]
+}

@@ -282,3 +282,74 @@ def test_exit_code_values_are_stable():
     assert EXIT_VALIDATION_ERROR == 1
     assert EXIT_USAGE_ERROR == 2
     assert EXIT_NOT_COMPARABLE == 3
+
+
+# ------------------------------------------------- leaderboard comparability
+#
+# The leaderboard listed every result in one table under a shared "Gen tok/s"
+# column and guarded it with a prose footnote. None of the published results
+# are comparable with each other, so the table's own shape made a claim the
+# comparison-safety classifier rejects. Grouping is the fix a footnote cannot be.
+
+
+def test_comparison_groups_are_cliques_not_chains():
+    """Comparability is not transitive, so a group must be mutually comparable."""
+    from aihwbench.comparability import NOT_COMPARABLE, compare_classification
+    from aihwbench.export import comparison_groups
+
+    a = _result("a", 100.0)
+    b = _result("b", 100.0)
+    c = _result("c", 100.0)
+    b["runtime"]["version"] = "9.9.9"  # conditional only
+    c["runtime"]["name"] = "llama.cpp"  # strictly incomparable with a and b
+
+    for group in comparison_groups([a, b, c]):
+        for left in group:
+            for right in group:
+                verdict = compare_classification(left, right)["classification"]
+                assert verdict != NOT_COMPARABLE, "a group must be a clique"
+
+
+def test_incomparable_results_are_not_listed_in_one_table(tmp_path: Path):
+    """Two incomparable runs must not share a ranked table."""
+    published = tmp_path / "published"
+    published.mkdir()
+    fast = _result("fast", 360.0)
+    slow = _result("slow", 110.0)
+    slow["runtime"]["name"] = "llama.cpp"  # NOT_COMPARABLE with `fast`
+    (published / "a.json").write_text(json.dumps(fast), encoding="utf-8")
+    (published / "b.json").write_text(json.dumps(slow), encoding="utf-8")
+
+    export_dataset(published, tmp_path / "dataset")
+    text = (tmp_path / "dataset" / "LEADERBOARD.md").read_text(encoding="utf-8")
+
+    assert "fast" in text and "slow" in text, "both results must still be published"
+    # Each lands under its own group heading rather than in one ranking.
+    assert text.count("## ") == 2
+    assert "Single result" in text
+
+
+def test_comparable_results_share_a_group_and_are_ranked(tmp_path: Path):
+    """Same model and runtime on different hardware is exactly what ranks."""
+    published = tmp_path / "published"
+    published.mkdir()
+    slower = _result("slower", 100.0)
+    faster = _result("faster", 250.0)
+    faster["system"]["gpu"] = "NVIDIA RTX 4090"  # different hardware only
+    (published / "a.json").write_text(json.dumps(slower), encoding="utf-8")
+    (published / "b.json").write_text(json.dumps(faster), encoding="utf-8")
+
+    export_dataset(published, tmp_path / "dataset")
+    text = (tmp_path / "dataset" / "LEADERBOARD.md").read_text(encoding="utf-8")
+
+    assert text.count("## ") == 1, "comparable results belong in one group"
+    assert text.index("faster") < text.index("slower"), "ranked fastest first"
+
+
+def test_leaderboard_states_plainly_when_nothing_is_comparable(tmp_path: Path):
+    published = tmp_path / "published"
+    published.mkdir()
+    (published / "a.json").write_text(json.dumps(_result("only", 100.0)), encoding="utf-8")
+    export_dataset(published, tmp_path / "dataset")
+    text = (tmp_path / "dataset" / "LEADERBOARD.md").read_text(encoding="utf-8")
+    assert "No two published results are comparable yet" in text

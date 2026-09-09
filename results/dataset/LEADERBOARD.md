@@ -2,14 +2,57 @@
 
 Generated from 6 validated result(s) in `results/published`.
 
-| Run | Runtime | Model | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| llamacpp-1787391945 | llama.cpp | qwen2.5-0.5b-instruct-q4_k_m.gguf | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 360.87 | 14.52 | 13.485 | tok/s/W |
-| ollama-1787388930 | ollama | qwen2.5:0.5b-instruct-q4_K_M | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 110.93 | 2,069.71 | 4.24 | tok/s/W |
-| onnxruntime-1787391388 | onnxruntime | mobilenetv2-12.onnx | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 13.468 | inf/s/W |
-| onnxruntime-1787391455 | onnxruntime | mobilenetv2-12.onnx | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 11.354 | inf/s/W |
-| openvino-1787391625 | openvino | mobilenetv2-12.onnx | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 5.878 | inf/s/W |
-| openvino-1787391710 | openvino | mobilenetv2-12.onnx | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 4.462 | inf/s/W |
+Results are grouped by the comparison-safety classifier (`aihwbench/comparability.py`), and **ranking is meaningful only within a group**. Putting every result in one table under a shared throughput column invites a comparison the classifier rejects for most pairs, and a footnote does not undo the claim the column makes.
 
-> Only schema-validated results are listed. Cross-runtime comparisons require identical workloads; see docs/methodology.md.
+**No two published results are comparable yet**: 6 result(s) form 6 group(s) of one. Each is a single measurement, not a ranking. Comparable results arrive when the same model and runtime are benchmarked on other hardware — see [docs/hardware-needed.md](../../docs/hardware-needed.md).
+
+## qwen2.5-0.5b-instruct-q4_k_m.gguf on llama.cpp (llama-server/cuda)
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |
+| --- | --- | --- | --- | --- | --- | --- |
+| llamacpp-1787391945 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 360.87 | 14.52 | 13.485 | tok/s/W | verified |
+
+## qwen2.5:0.5b-instruct-q4_K_M on ollama (ollama-http-api/auto)
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |
+| --- | --- | --- | --- | --- | --- | --- |
+| ollama-1787388930 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 110.93 | 2,069.71 | 4.24 | tok/s/W | verified |
+
+## mobilenetv2-12.onnx on onnxruntime (execution-providers:CPUExecutionProvider/cpu)
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |
+| --- | --- | --- | --- | --- | --- | --- |
+| onnxruntime-1787391388 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 13.468 | inf/s/W | verified |
+
+## mobilenetv2-12.onnx on onnxruntime (execution-providers:DmlExecutionProvider,CPUExecutionProvider/dml)
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |
+| --- | --- | --- | --- | --- | --- | --- |
+| onnxruntime-1787391455 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 11.354 | inf/s/W | verified |
+
+## mobilenetv2-12.onnx on openvino (device:CPU/cpu)
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |
+| --- | --- | --- | --- | --- | --- | --- |
+| openvino-1787391625 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 5.878 | inf/s/W | verified |
+
+## mobilenetv2-12.onnx on openvino (device:GPU.0/gpu)
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |
+| --- | --- | --- | --- | --- | --- | --- |
+| openvino-1787391710 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 4.462 | inf/s/W | verified |
+
+> Only schema-validated results are listed. Groups are cliques under the comparison-safety classifier: every member is comparable with every other member, not merely with the first.
 > **Perf/W is not one quantity.** `tok/s/W` rows are generative throughput per watt; `inf/s/W` rows are inferences per watt. They are not comparable to each other.

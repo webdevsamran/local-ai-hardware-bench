@@ -13,7 +13,7 @@ from ..exit_codes import EXIT_OK, EXIT_USAGE_ERROR, EXIT_VALIDATION_ERROR
 from ..export import DatasetLoadError, export_dataset, export_parquet
 from ..exporters import get_exporter, list_exporters
 from ..quality import data_quality_report, flag_anomalies, invalidate_result
-from ..quantization import compare_quantizations
+from ..quantization import compare_quantizations, has_quality_signal
 from ..sanitize import redact_object, scan_object_detailed
 from ..validate import load_result
 from .common import echo_json, fail, load_results_dir
@@ -92,12 +92,31 @@ def cmd_evaluators(_args: argparse.Namespace) -> int:
 
 
 def cmd_quantization(args: argparse.Namespace) -> int:
-    """Compare quantization variants from published results (#19)."""
+    """Compare quantization variants from published results (#19).
+
+    Refuses to emit a speed-only table. Lower precision is faster *and*
+    changes what the model says, so tokens-per-second across quantization
+    levels with nothing said about output quality leads a reader straight to
+    a worse configuration.
+    """
     results = load_results_dir(Path(args.results_dir))
     if not results:
         fail(f"no result JSON files found in {args.results_dir}")
         return EXIT_USAGE_ERROR
-    echo_json(compare_quantizations(results))
+    comparison = compare_quantizations(results)
+    if not has_quality_signal(comparison) and not args.allow_missing_quality:
+        signal = comparison.get("quality_signal") or {}
+        fail(
+            f"none of the {signal.get('rows', 0)} compared result(s) carry a "
+            "quality signal, so this would be a speed-only quantization "
+            "table. Lower precision is faster and also changes the output; "
+            "publishing the first without the second misleads. Re-run the "
+            "benchmarks with a current version (which records an output "
+            "fingerprint on every generative run), or pass "
+            "--allow-missing-quality to print it anyway."
+        )
+        return EXIT_VALIDATION_ERROR
+    echo_json(comparison)
     return EXIT_OK
 
 
@@ -241,6 +260,14 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
 
     quant = sub.add_parser("quantization", help="Compare quantization variants")
     quant.add_argument("--results-dir", default="results/published")
+    quant.add_argument(
+        "--allow-missing-quality",
+        action="store_true",
+        help=(
+            "emit the comparison even when no result carries a quality "
+            "signal (a speed-only table; see the refusal message)"
+        ),
+    )
     quant.set_defaults(func=cmd_quantization)
 
     qual = sub.add_parser("quality", help="Data-quality checks (file or directory)")

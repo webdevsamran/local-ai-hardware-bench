@@ -62,6 +62,8 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     from .analysis.energy import compute_energy_metrics
     from .analysis.thermal import thermal_from_trace
     from .backends import resolve
+    from .fidelity import output_fidelity
+    from .metrics import streaming_latency_metrics
     from .system_info import detect_system
     from .telemetry import sample_idle_power, trace_series
 
@@ -91,6 +93,25 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     metrics = result.setdefault("metrics", {})
     if idle["watts"] is not None:
         metrics.setdefault("idle_power_watts", idle["watts"])
+
+    iterations = result.get("iterations") or []
+
+    # Inter-token latency as a distribution. A mean cannot show a stall, and a
+    # stall is what makes a stream feel slow.
+    metrics.update(streaming_latency_metrics(iterations))
+
+    # A speed number from a quantized run must not travel without a quality
+    # signal: lowering precision makes a model faster AND changes what it
+    # says. Determinism and an output fingerprint are measurable on every run
+    # without a reference dataset.
+    result["quality"] = output_fidelity([it.get("text") for it in iterations])
+
+    # The raw text and per-token timing arrays did their job above. Neither
+    # belongs in a published result: unbounded size, unbounded content, and a
+    # hash answers every question the dataset needs to ask of the text.
+    for iteration in iterations:
+        iteration.pop("text", None)
+        iteration.pop("chunk_times_ms", None)
 
     telemetry = result.get("telemetry") or {}
     sources = telemetry.get("sources") or {}

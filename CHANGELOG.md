@@ -206,6 +206,40 @@ value proposition is honesty about what was measured cannot carry that.
   degradation fields as null with a reason, because a telemetry trace records
   no per-sample throughput.
 
+### Added — a quality signal on every generative run
+
+Publishing tokens-per-second across quantization levels with nothing said
+about output quality walks a reader into a worse configuration while looking
+like measured data. Lower precision is faster *and* changes what the model
+says; the speed half was measured and the other half was not.
+
+- **Every generative run now records an output-fidelity probe**: whether
+  repeated iterations of an identical request produced identical text
+  (determinism — at temperature 0 with a fixed seed, anything else means the
+  run is not reproducible), and a SHA-256 fingerprint of what was generated.
+  Neither needs a reference dataset, so both are measured for free on every
+  run. Evaluator scores stay null until a dataset is actually supplied,
+  because a fabricated accuracy number is worse than an absent one.
+- The generated text is **not** published — unbounded in size and content, and
+  a hash answers everything the dataset needs to ask of it.
+- **`aihwbench quantization` refuses to emit a speed-only table.** When no
+  compared result carries a quality signal it exits non-zero and explains why;
+  `--allow-missing-quality` overrides it explicitly.
+- The comparison now marks each variant against the **highest-precision
+  variant in its family**: `same_output_as_reference` is true, false, or null
+  when unknown — never assumed. A q4_K_M run that is fastest but changed the
+  output is now visibly different from a q8_0 run that is slower and identical.
+
+### Added — inter-token latency as a distribution
+
+- The Ollama backend records per-chunk arrival times, and `metrics` now carries
+  `itl_p50_ms`, `itl_p90_ms`, `itl_p99_ms` and `itl_max_ms` alongside
+  `tpot_ms`, `time_to_second_token_ms` and `decode_duration_ms` — schema slots
+  and registry entries that previously had no producer at all.
+- `itl_ms` was a single mean derived from total eval seconds over token count.
+  A mean cannot show a stall, and one long pause partway through a response
+  reads far worse than a uniformly slower stream at the same average rate.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

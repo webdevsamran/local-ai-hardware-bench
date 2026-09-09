@@ -60,6 +60,11 @@ METRIC_REGISTRY: dict[str, dict[str, Any]] = {
     },
     "tpot_ms": {"unit": "ms", "aliases": (), "family": "latency"},
     "itl_ms": {"unit": "ms", "aliases": ("itl_mean_ms",), "family": "latency"},
+    "itl_p50_ms": {"unit": "ms", "aliases": (), "family": "latency"},
+    "itl_p90_ms": {"unit": "ms", "aliases": (), "family": "latency"},
+    "itl_p99_ms": {"unit": "ms", "aliases": (), "family": "latency"},
+    "itl_max_ms": {"unit": "ms", "aliases": (), "family": "latency"},
+    "inter_token_samples": {"unit": "count", "aliases": (), "family": "coverage"},
     "time_to_second_token_ms": {"unit": "ms", "aliases": (), "family": "latency"},
     "inter_chunk_latency_ms": {"unit": "ms", "aliases": (), "family": "latency"},
     "prefill_latency_ms": {"unit": "ms", "aliases": (), "family": "latency"},
@@ -212,6 +217,57 @@ def performance_per_watt_unit(metrics: dict[str, Any] | None) -> str:
     """Display unit for a result's ``performance_per_watt``."""
     basis = performance_per_watt_basis(metrics)
     return PERF_PER_WATT_UNITS.get(basis or "", "per W")
+
+
+def streaming_latency_metrics(iterations: list[dict[str, Any]]) -> dict[str, Any]:
+    """Inter-token latency as a distribution, from per-chunk arrival times.
+
+    ``itl_ms`` was previously derived as total-eval-seconds divided by
+    token-count: a single mean that cannot show a stall. The metric registry
+    declared ``tpot_ms``, ``time_to_second_token_ms``, ``inter_chunk_latency_ms``,
+    ``prefill_latency_ms`` and ``decode_duration_ms`` as vocabulary with no
+    producer at all.
+
+    A mean hides exactly the behaviour that makes local inference feel slow: a
+    long pause partway through a response reads far worse than a uniformly
+    slower stream at the same average rate. So the percentiles are what get
+    published. Backends that stream nothing return nulls, never zeros.
+    """
+    gaps: list[float] = []
+    second_token: list[float] = []
+    decode_durations: list[float] = []
+    for iteration in iterations:
+        times = iteration.get("chunk_times_ms")
+        if not isinstance(times, list) or len(times) < 2:
+            continue
+        ordered = [float(t) for t in times]
+        gaps.extend(b - a for a, b in zip(ordered, ordered[1:], strict=False))
+        second_token.append(ordered[1])
+        decode_durations.append(ordered[-1] - ordered[0])
+
+    if not gaps:
+        return {
+            "itl_p50_ms": None,
+            "itl_p90_ms": None,
+            "itl_p99_ms": None,
+            "itl_max_ms": None,
+            "tpot_ms": None,
+            "time_to_second_token_ms": None,
+            "decode_duration_ms": None,
+            "inter_token_samples": 0,
+        }
+
+    return {
+        "itl_p50_ms": percentile(gaps, 50),
+        "itl_p90_ms": percentile(gaps, 90),
+        "itl_p99_ms": percentile(gaps, 99),
+        "itl_max_ms": round(max(gaps), 3),
+        # Time per output token, excluding the prefill that TTFT captures.
+        "tpot_ms": round(sum(gaps) / len(gaps), 3),
+        "time_to_second_token_ms": round(sum(second_token) / len(second_token), 3),
+        "decode_duration_ms": round(sum(decode_durations) / len(decode_durations), 3),
+        "inter_token_samples": len(gaps),
+    }
 
 
 def aggregate_iteration_metrics(iterations: list[dict[str, Any]]) -> dict[str, Any]:

@@ -74,6 +74,11 @@ _METRIC_FIELDS: dict[str, tuple[tuple[type, ...], float | None, float | None]] =
     "cv_latency": ((int, float), 0.0, None),
     "tpot_ms": ((int, float), 0.0, None),
     "itl_ms": ((int, float), 0.0, None),
+    "itl_p50_ms": ((int, float), 0.0, None),
+    "itl_p90_ms": ((int, float), 0.0, None),
+    "itl_p99_ms": ((int, float), 0.0, None),
+    "itl_max_ms": ((int, float), 0.0, None),
+    "inter_token_samples": ((int,), 0.0, None),
     "time_to_second_token_ms": ((int, float), 0.0, None),
     "inter_chunk_latency_ms": ((int, float), 0.0, None),
     "prefill_latency_ms": ((int, float), 0.0, None),
@@ -145,6 +150,14 @@ _THERMAL_FIELDS = {
 }
 
 _QUALITY_FIELDS = {
+    # Output-fidelity probe, measured on every generative run.
+    "output_hash": str,
+    "deterministic": bool,
+    "distinct_outputs": int,
+    "iterations_captured": int,
+    "output_chars": int,
+    "mean_score": (int, float),
+    "reason": str,
     "reproducibility_completeness": (int, float),
     "variance_flag": str,
     "outlier_flag": str,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from aihwbench.comparability import NOT_COMPARABLE
 from aihwbench.regression import (
     RegressionThresholds,
     evaluate_regression,
@@ -68,3 +69,40 @@ def test_machine_readable_output_shape():
     assert d["status"] in ("PASS", "FAIL", "INCOMPARABLE")
     assert isinstance(d["checks"], list)
     assert all("metric" in c and "status" in c for c in d["checks"])
+
+
+# --------------------------------------------------------------- fail-closed
+#
+# A regression gate that reports success when it ran zero checks is worse than
+# no gate: it fails open exactly when the environment drifted, which is when it
+# is most needed. These tests hold the gate closed.
+
+
+def test_incomparable_runs_no_checks():
+    """INCOMPARABLE must mean 'nothing was measured', not 'nothing was wrong'."""
+    base = _result("base", 100.0)
+    cand = _result("cand", 1.0)  # 100x slower
+    cand["runtime"]["name"] = "llama.cpp"
+    report = evaluate_regression(base, cand)
+    assert report.status == "INCOMPARABLE"
+    assert report.checks == []
+
+
+def test_force_runs_the_checks_and_catches_the_regression():
+    """--force is an override of comparability, not of the thresholds."""
+    base = _result("base", 100.0)
+    cand = _result("cand", 1.0)
+    cand["runtime"]["name"] = "llama.cpp"
+    report = evaluate_regression(base, cand, force=True)
+    assert report.status == "FAIL"
+    assert report.checks, "forcing must actually evaluate the metrics"
+    assert any("generation_tokens_per_second" in f for f in report.failures)
+
+
+def test_force_still_reports_the_true_classification():
+    """A forced run must never be mistakable for a comparable one."""
+    base = _result("base", 100.0)
+    cand = _result("cand", 100.0)
+    cand["runtime"]["name"] = "llama.cpp"
+    report = evaluate_regression(base, cand, force=True)
+    assert report.classification == NOT_COMPARABLE

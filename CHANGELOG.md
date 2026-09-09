@@ -3,6 +3,32 @@
 All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
+## [Unreleased]
+
+### Fixed — the trust layer now fails closed
+
+- **`aihwbench regression` no longer passes a gate that ran no checks.** When
+  the baseline and candidate were `NOT_COMPARABLE`, `evaluate_regression`
+  returned `INCOMPARABLE` with zero checks executed and the CLI exited `0`. A
+  candidate 110x slower than its baseline passed CI, because the runtime name
+  had changed — the gate failed open exactly when the environment had drifted,
+  which is when it exists to fire. It now exits `EXIT_NOT_COMPARABLE` (3), the
+  code `aihwbench compare` already used for the same condition. `--force`
+  evaluates the thresholds anyway and still reports the true classification, so
+  a forced run cannot be mistaken for a comparable one.
+- **The comparison-safety classifier no longer reads absent metadata as
+  agreement.** `compare_classification({}, {})` returned `STRICTLY_COMPARABLE`
+  — the strongest verdict, on no evidence. `_same(None, None)` is `True` by
+  design (two results that both legitimately lack an optional field do agree
+  about it), so the fix is a separate presence gate rather than a change to
+  that rule: `model.name`, `runtime.name`, `runtime.backend`, `runtime.device`,
+  `reproducibility.iterations` and `reproducibility.warmup_runs` must be
+  present on both sides, or the verdict is `NOT_COMPARABLE` with a new
+  `insufficient_metadata` machine reason. Fields that legitimately do not apply
+  to a result — an image-classification run has no prompt, seed or temperature
+  — are deliberately excluded, so honest sparse results still compare. No
+  published result changes classification.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

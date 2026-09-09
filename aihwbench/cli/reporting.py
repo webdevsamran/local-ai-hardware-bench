@@ -103,7 +103,7 @@ def cmd_regression(args: argparse.Namespace) -> int:
         power_max_increase_watts=args.power_w,
         power_max_increase_pct=args.power_pct,
     )
-    report = evaluate_regression(baseline, candidate, thresholds)
+    report = evaluate_regression(baseline, candidate, thresholds, force=args.force)
     if args.json:
         echo_json(report.to_dict())
     else:
@@ -117,6 +117,15 @@ def cmd_regression(args: argparse.Namespace) -> int:
             )
             if c.reason:
                 print(f"           {c.reason}")
+    if report.status == "INCOMPARABLE":
+        # Zero checks ran. Reporting success here would make the gate fail open
+        # exactly when the environment drifted -- when it is needed most.
+        fail(
+            "baseline and candidate are NOT_COMPARABLE, so no regression checks "
+            "ran. Re-baseline against a matching environment, or pass --force to "
+            "gate on the metrics regardless."
+        )
+        return EXIT_NOT_COMPARABLE
     if report.status == "FAIL":
         return EXIT_REGRESSION_DETECTED
     return EXIT_OK
@@ -204,6 +213,14 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     reg.add_argument("--power-w", type=float, default=15.0)
     reg.add_argument("--power-pct", type=float, default=50.0)
     reg.add_argument("--json", action="store_true")
+    reg.add_argument(
+        "--force",
+        action="store_true",
+        help=(
+            "run threshold checks even when baseline and candidate are "
+            "NOT_COMPARABLE (the classification is still reported)"
+        ),
+    )
     reg.set_defaults(func=cmd_regression)
 
     ana = sub.add_parser("analyze", help="Bottleneck analysis from measured telemetry")

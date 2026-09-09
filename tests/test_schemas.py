@@ -38,6 +38,18 @@ def make_valid_result() -> dict:
             "average_power_watts": None,
             "performance_per_watt": None,
         },
+        # A result that records no measurement protocol is schema-valid but
+        # not comparable to anything: aihwbench.comparability requires the
+        # iteration policy to be present before it will compare two runs.
+        "reproducibility": {
+            "prompt": "test prompt",
+            "max_tokens": 128,
+            "temperature": 0.0,
+            "seed": 42,
+            "context_length": 2048,
+            "warmup_runs": 2,
+            "iterations": 5,
+        },
     }
 
 

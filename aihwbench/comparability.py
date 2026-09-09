@@ -4,7 +4,9 @@ Classifies whether two benchmark results are safe to compare:
 
 - STRICTLY_COMPARABLE: all materially relevant dimensions match.
 - CONDITIONALLY_COMPARABLE: model/workload match but caveats exist.
-- NOT_COMPARABLE: direct metric comparison would be misleading.
+- NOT_COMPARABLE: direct metric comparison would be misleading, either
+  because a materially relevant dimension differs or because the required
+  provenance was never recorded.
 
 Never decides winners; only decides whether a comparison is safe.
 Machine-readable reasons are included for automation/CI.
@@ -48,6 +50,31 @@ _CONDITIONAL = (
     "runtime.version",
 )
 
+# Absent on either side => NOT_COMPARABLE, regardless of what else matches.
+#
+# `_same(None, None)` is True by design (see tests/test_comparability_safety.py:
+# it kills an `and -> or` mutant, and two results that both legitimately lack
+# an optional field do agree about it). But agreement about a field neither
+# side recorded is not evidence of a comparable experiment: without these,
+# two empty documents would classify as STRICTLY_COMPARABLE.
+#
+# This set is deliberately the minimum that makes a comparison mean anything --
+# what was run, on what, and under what measurement protocol. It is not the
+# whole of `_STRICT`: results legitimately omit fields that do not apply to
+# them (an image-classification run has no prompt, seed or temperature), and
+# requiring those would mark honest results incomparable.
+_REQUIRED_PRESENT = (
+    "model.name",
+    "runtime.name",
+    "runtime.backend",
+    "runtime.device",
+    "reproducibility.iterations",
+    "reproducibility.warmup_runs",
+)
+
+# Machine reason emitted when the required provenance is absent.
+INSUFFICIENT_METADATA = "insufficient_metadata"
+
 
 def _get(a: dict[str, Any], path: str) -> Any:
     value: Any = a
@@ -83,6 +110,8 @@ def compare_classification(a: dict[str, Any], b: dict[str, Any]) -> dict[str, An
     reasons: list[str] = []
     machine: list[str] = []
 
+    missing = [path for path in _REQUIRED_PRESENT if _get(a, path) is None or _get(b, path) is None]
+
     strict_diffs = [p for p in _STRICT if not _same(_get(a, p), _get(b, p))]
     conditional_diffs = [p for p in _CONDITIONAL if not _same(_get(a, p), _get(b, p))]
 
@@ -110,7 +139,14 @@ def compare_classification(a: dict[str, Any], b: dict[str, Any]) -> dict[str, An
         reasons.append("hardware differs between results - treat as cross-platform reference only")
         machine.append("system.hardware")
 
-    if strict_diffs:
+    if missing:
+        reasons.append(
+            "required provenance is missing, so these results cannot be compared: "
+            + ", ".join(missing)
+        )
+        machine.append(INSUFFICIENT_METADATA)
+
+    if missing or strict_diffs:
         classification = NOT_COMPARABLE
     elif machine:
         classification = CONDITIONALLY_COMPARABLE

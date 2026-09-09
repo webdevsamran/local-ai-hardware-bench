@@ -208,12 +208,14 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
+      - run: pip install -e ".[schema]"
       - name: Validate schema, scan privacy, detect duplicate fingerprints
         shell: python
         run: |
           import json, pathlib, sys
           sys.path.insert(0, ".")
           from aihwbench.fingerprint import result_fingerprint
+          from aihwbench.formal_schema import validate_formal
           from aihwbench.sanitize import scan_object
           from aihwbench.schemas import validate_result
           failures = []
@@ -224,6 +226,12 @@ jobs:
           for path in files:
               data = json.loads(path.read_text(encoding="utf-8"))
               errors = validate_result(data)
+              # The published JSON Schema is the contract downstream consumers
+              # code against; validating only the hand-written semantic rules
+              # left it unenforced. validate_formal fails closed when
+              # jsonschema is missing, so a broken environment fails the job
+              # rather than silently passing every file.
+              errors = errors + validate_formal(data)
               clean, privacy = scan_object(data)
               fp = result_fingerprint(data)
               dup = fingerprints.get(fp)

@@ -61,6 +61,22 @@ Format based on Keep a Changelog; versioning is SemVer.
   colliding keys are suffixed rather than dropped, and the command fails
   closed rather than writing a file that still scans dirty.
 
+### Fixed — the published JSON Schema is now enforced
+
+- **`aihwbench validate --formal`** applies the versioned JSON Schema in
+  `schemas/`. The machinery existed and correctly failed closed, but nothing
+  could reach it: `validate_file` defaulted to `formal=False`, the CLI
+  registered no flag, and `jsonschema` was declared in neither the
+  dependencies nor the dev extra. The schema downstream consumers code
+  against was never checked against the data.
+- This is not only defence in depth. `schemas.py` asserts `trust_state` is a
+  `str`; the enum of real lifecycle states lives only in the schema file, so a
+  schema-2.0 result claiming `"trust_state": "totally_trusted"` passed
+  validation completely. It is now rejected.
+- `jsonschema` is available as the `schema` extra (matching `parquet` and
+  `telemetry`) and is included in `dev`. The CI data-quality job installs it
+  and validates every published result formally as well as semantically.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

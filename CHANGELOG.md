@@ -621,6 +621,20 @@ contract.
   reported as **invalid**. That combination is precisely what signature
   checking exists to catch.
 
+### Added — package-manager manifests, generated from the artifact
+
+- The release workflow now emits Homebrew, Scoop and winget manifests built
+  from the sdist it just produced. Install friction directly suppresses
+  submission volume, which is this project's real bottleneck — the framework
+  exists, the hardware coverage does not.
+- **Generated, never hand-written.** Each manifest carries a version and the
+  SHA-256 of one specific file; typing those by hand produces a manifest that
+  installs nothing, or silently pins an old release. Tests assert the digest
+  matches the real archive, that all three manifests agree on version and URL,
+  and that two sdists in the directory is an error rather than a guess.
+- winget's uppercase digest requirement is handled, because a lowercase one is
+  rejected at submission rather than at build time.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

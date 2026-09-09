@@ -364,6 +364,23 @@ a workload validation set. The claim is now backed by an implementation.
   so a screen reader gets the number rather than "chart", and its draw-in
   animation is behind `prefers-reduced-motion`.
 
+### Added — local ownership against cloud API spend
+
+- **`aihwbench cost`** exposes the cost analysis, which had no CLI surface at
+  all, and adds the missing half: a comparison between buying hardware and
+  paying a cloud API, with a break-even point in months.
+- Power and throughput are read from a **measured result** by default, so the
+  electricity figure reflects the machine that was actually benchmarked rather
+  than a nameplate rating.
+- **Cloud pricing is supplied by the caller and never bundled.** Provider
+  prices change frequently, and a stale price table inside a benchmark keeps
+  producing confident wrong answers long after anyone thinks to check it — the
+  same reason the competitor landscape is fetched rather than hardcoded. A
+  test asserts no vendor pricing is present in the module.
+- Hardware that never pays for itself at the given volume is reported as
+  such, rather than as a break-even figure in the hundreds of months. The
+  calculator can and does conclude that the cloud is cheaper.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

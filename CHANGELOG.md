@@ -162,6 +162,27 @@ value proposition is honesty about what was measured cannot carry that.
   ungrouped data breaks the build rather than quietly restoring a false
   ranking.
 
+### Added — "Will this run on my PC?"
+
+- A new `/will-it-run` page answers the question every local-AI newcomer asks:
+  enter VRAM, RAM, model size and quantization, and see the estimated memory
+  footprint, how much would spill out of VRAM, and — where the dataset has one
+  — the measured result for that configuration, which always beats the
+  estimate.
+- The estimate is the same arithmetic as `aihwbench fit`, and the two cannot
+  drift: `scripts/generate_frontend_data.py` emits the bits-per-weight table,
+  the overhead factor **and reference vectors computed by the Python function**
+  into `data/constants.json`, and the frontend test suite replays every vector
+  through the TypeScript implementation. A change to either side that alters an
+  answer fails the build.
+- Like the Python original it refuses to guess: an unknown quantization or a
+  missing parameter count returns no verdict and says why, rather than
+  inventing a bits-per-weight figure.
+- The spill percentage is called out deliberately. Measured reports put a model
+  fully resident in VRAM at roughly 5x the throughput of the same model with a
+  third of its layers offloaded, and that cliff is the single most consequential
+  thing a buyer needs to know.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

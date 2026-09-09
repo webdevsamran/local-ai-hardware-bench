@@ -224,6 +224,27 @@ export function validateTrends(d: unknown): Issue[] {
  * Tolerant of absent optional blocks; strict about types and the
  * null-or-measured metric semantics.
  */
+export function validateFitConstants(d: unknown): Issue[] {
+  const issues: Issue[] = []
+  if (!isRecord(d)) return [`constants: expected object, got ${String(d)}`]
+  if (!isRecord(d.bits_per_weight)) {
+    issues.push('constants.bits_per_weight: expected object')
+  } else {
+    for (const [key, value] of Object.entries(d.bits_per_weight)) {
+      if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+        issues.push(`constants.bits_per_weight.${key}: expected positive number`)
+      }
+    }
+  }
+  if (typeof d.overhead_factor !== 'number' || d.overhead_factor <= 0) {
+    issues.push('constants.overhead_factor: expected positive number')
+  }
+  if (!Array.isArray(d.reference_cases)) {
+    issues.push('constants.reference_cases: expected array')
+  }
+  return issues
+}
+
 export function validateDataset(d: unknown): Issue[] {
   if (!isRecord(d)) return [`dataset: expected object, got ${String(d)}`]
   const issues: Issue[] = []
@@ -242,6 +263,10 @@ export function validateDataset(d: unknown): Issue[] {
   for (let i = 0; i < models.length; i++) issues.push(...validateModelEntry(models[i]))
   if (d.leaderboard !== undefined) issues.push(...validateLeaderboardViews(d.leaderboard))
   if (d.trends !== undefined) issues.push(...validateTrends(d.trends))
+  // The estimator's constants are generated from the canonical Python module.
+  // Required, not optional: without them the fit wizard cannot answer anything,
+  // and a clear contract error beats a component crashing on undefined.
+  issues.push(...validateFitConstants(d.constants))
   return issues
 }
 

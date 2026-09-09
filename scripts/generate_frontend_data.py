@@ -32,8 +32,48 @@ if str(REPO) not in sys.path:
 RESULTS_DIR = REPO / "results" / "published"
 OUT_DIR = REPO / "web" / "public" / "data"
 
+from aihwbench.analysis.fit import BITS_PER_WEIGHT, estimate_model_fit  # noqa: E402
 from aihwbench.export import comparison_groups, group_label  # noqa: E402
 from aihwbench.metrics import performance_per_watt_unit  # noqa: E402
+
+# Cases the browser-side estimator must reproduce exactly. They are computed
+# here by the canonical Python implementation and checked by web/tests, so the
+# two cannot drift apart silently: a change to the arithmetic in either place
+# fails the frontend test suite.
+_FIT_REFERENCE_CASES = [
+    ("7B", "q4_k_m", 8192.0, 32000.0, 4096),
+    ("7B", "fp16", 8192.0, 32000.0, 4096),
+    ("0.5B", "q4_k_m", 16384.0, 32000.0, 2048),
+    ("70B", "q4_k_m", 24000.0, 64000.0, 8192),
+    ("3B", "q8_0", 6000.0, 16000.0, 4096),
+    ("13B", "unknown-quant", 12000.0, 32000.0, 4096),
+    (None, "q4_k_m", 12000.0, 32000.0, 4096),
+]
+
+
+def _fit_constants() -> dict:
+    """Constants and reference vectors for the browser-side fit estimator."""
+    cases = []
+    for params, quant, vram, ram, ctx in _FIT_REFERENCE_CASES:
+        cases.append(
+            {
+                "parameters": params,
+                "quantization": quant,
+                "available_vram_mb": vram,
+                "available_ram_mb": ram,
+                "context_tokens": ctx,
+                "expected": estimate_model_fit(params, quant, vram, ram, ctx),
+            }
+        )
+    return {
+        "bits_per_weight": dict(sorted(BITS_PER_WEIGHT.items())),
+        "overhead_factor": 1.15,
+        "note": (
+            "bits-per-weight are format conventions, not measurements; an "
+            "unknown quantization is refused rather than guessed"
+        ),
+        "reference_cases": cases,
+    }
 
 
 def _load_results(strict: bool = True) -> list[dict]:
@@ -249,6 +289,7 @@ def build(results: list[dict]) -> dict[str, object]:
             "perf_watt": view(by_perf_watt, "performance_per_watt"),
         },
         "trends": dict(sorted(trends.items())),
+        "constants": _fit_constants(),
     }
 
 

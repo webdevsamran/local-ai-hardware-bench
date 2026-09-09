@@ -30,6 +30,7 @@ function loadDataset() {
     'models',
     'leaderboard',
     'trends',
+    'constants',
   ]
   const dataset = {}
   for (const name of names) {

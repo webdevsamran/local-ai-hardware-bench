@@ -62,6 +62,12 @@ const dataset = {
     perf_watt: [],
   },
   trends: {},
+  constants: {
+    bits_per_weight: { q4_k_m: 4.85, fp16: 16.0 },
+    overhead_factor: 1.15,
+    note: 'test constants',
+    reference_cases: [],
+  },
 }
 
 beforeEach(() => {
@@ -76,6 +82,7 @@ beforeEach(() => {
         'data/models.json': dataset.models,
         'data/leaderboard.json': dataset.leaderboard,
         'data/trends.json': dataset.trends,
+        'data/constants.json': dataset.constants,
       }
       // The app requests base-anchored URLs (`/data/x.json`, or
       // `/local-ai-hardware-bench/data/x.json` in production) because a
@@ -118,6 +125,12 @@ describe('App routes (smoke)', () => {
   it('renders hardware explorer', async () => {
     renderAt('/hardware')
     expect(await screen.findByText('Test CPU')).toBeTruthy()
+  })
+
+  it('answers the will-it-run wizard from the generated constants', async () => {
+    renderAt('/will-it-run')
+    // 7B at q4_k_m is ~4.9 GB with overhead, which fits the 8 GB default.
+    expect(await screen.findByText(/Fits entirely in VRAM/)).toBeTruthy()
   })
 
   it('renders result detail for a known run', async () => {

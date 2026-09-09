@@ -764,3 +764,50 @@ button:focus-visible,
 .verdict-headline {
   text-transform: capitalize;
 }
+
+/* ---------------------------------------------------------------------------
+   Faceted filters
+   --------------------------------------------------------------------------- */
+
+.facets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  align-items: flex-end;
+  margin: 16px 0 20px;
+  padding: 14px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.facet {
+  min-width: 150px;
+  flex: 0 1 auto;
+}
+
+.facet-reset {
+  align-self: flex-end;
+}
+
+/* A button that reads as a link: used inline in prose where a full button
+   would break the sentence. */
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  color: var(--accent-strong);
+}
+
+@media (max-width: 560px) {
+  .facet {
+    min-width: 100%;
+  }
+}

@@ -320,6 +320,20 @@ a workload validation set. The claim is now backed by an implementation.
   does tell people to download them, which carries the same obligation to
   state the terms.
 
+### Added — leaderboard filtering, shareable by URL
+
+- The leaderboard now filters by runtime, model, GPU, VRAM tier,
+  quantization, device and trust state. Options are derived from the rows
+  actually present, so a filter can never offer a value that matches nothing,
+  and a facet with only one distinct value is hidden — a control that cannot
+  change the result is noise.
+- VRAM is bucketed into the tiers cards are actually sold in (8 GB, 12 GB,
+  16 GB, 24 GB) rather than exposed in megabytes, so the filter answers "does
+  this fit a 12 GB card" instead of asking the reader to do the arithmetic.
+- Filter state lives in the query string, so a filtered leaderboard is a
+  shareable link and survives a reload. When a combination matches nothing the
+  page says so and offers to clear it, rather than showing an empty table.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

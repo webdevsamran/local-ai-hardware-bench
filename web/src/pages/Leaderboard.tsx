@@ -1,10 +1,23 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useDataset } from '../lib/useDataset'
 import { Loading, ErrorState, ContributeEmptyState } from '../components/States'
 import DataTable, { type Column } from '../components/DataTable'
+import FilterBar, { type FilterSpec } from '../components/FilterBar'
 import type { LeaderboardRow } from '../lib/types'
 import { fmtNum } from '../lib/format'
+
+// Facets are declared once and derived from the data, so a filter can never
+// offer a value that matches nothing.
+const FILTERS: FilterSpec<LeaderboardRow>[] = [
+  { key: 'runtime', label: 'Runtime', valueOf: (r) => r.runtime },
+  { key: 'model', label: 'Model', valueOf: (r) => r.model },
+  { key: 'gpu', label: 'GPU', valueOf: (r) => r.gpu },
+  { key: 'vram', label: 'VRAM', valueOf: (r) => r.vram_tier },
+  { key: 'quant', label: 'Quantization', valueOf: (r) => r.quantization },
+  { key: 'device', label: 'Device', valueOf: (r) => r.device },
+  { key: 'trust', label: 'Trust state', valueOf: (r) => r.trust },
+]
 
 type View = 'throughput' | 'ttft' | 'perf_watt'
 
@@ -49,8 +62,45 @@ function groupRows(rows: LeaderboardRow[]): Group[] {
 export default function Leaderboard() {
   const { dataset, loading, error, retry } = useDataset()
   const [view, setView] = useState<View>('throughput')
+  const [params, setParams] = useSearchParams()
 
-  const rows = dataset?.leaderboard[view] ?? []
+  const allRows = dataset?.leaderboard[view] ?? []
+
+  // Filters live in the URL so a filtered view is shareable and survives a
+  // reload -- the same reason the compare page keeps its selection there.
+  const selected = useMemo(() => {
+    const out: Record<string, string> = {}
+    for (const spec of FILTERS) {
+      const value = params.get(spec.key)
+      if (value) out[spec.key] = value
+    }
+    return out
+  }, [params])
+
+  const rows = useMemo(
+    () =>
+      allRows.filter((row) =>
+        FILTERS.every((spec) => {
+          const wanted = selected[spec.key]
+          return !wanted || spec.valueOf(row) === wanted
+        }),
+      ),
+    [allRows, selected],
+  )
+
+  function setFilter(key: string, value: string) {
+    const next = new URLSearchParams(params)
+    if (value) next.set(key, value)
+    else next.delete(key)
+    setParams(next, { replace: true })
+  }
+
+  function clearFilters() {
+    const next = new URLSearchParams(params)
+    for (const spec of FILTERS) next.delete(spec.key)
+    setParams(next, { replace: true })
+  }
+
   const groups = useMemo(() => groupRows(rows), [rows])
   const rankable = groups.filter((g) => g.rows.length > 1)
 
@@ -107,7 +157,23 @@ export default function Leaderboard() {
           </div>
           <p className="muted">{VIEWS[view].note}</p>
 
-          {rows.length === 0 ? (
+          <FilterBar
+            rows={allRows}
+            specs={FILTERS}
+            selected={selected}
+            onChange={setFilter}
+            onReset={clearFilters}
+          />
+
+          {rows.length === 0 && allRows.length > 0 ? (
+            <p className="notice" role="status">
+              No result matches these filters.{' '}
+              <button type="button" className="link-button" onClick={clearFilters}>
+                Clear them
+              </button>{' '}
+              to see all {allRows.length}.
+            </p>
+          ) : rows.length === 0 ? (
             <ContributeEmptyState subject="leaderboard entries" />
           ) : (
             <>

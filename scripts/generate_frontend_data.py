@@ -42,6 +42,7 @@ from aihwbench.comparability import (  # noqa: E402
 )
 from aihwbench.export import comparison_groups, group_label  # noqa: E402
 from aihwbench.metrics import performance_per_watt_unit  # noqa: E402
+from aihwbench.trust import effective_trust  # noqa: E402
 
 # Cases the browser-side estimator must reproduce exactly. They are computed
 # here by the canonical Python implementation and checked by web/tests, so the
@@ -56,6 +57,22 @@ _FIT_REFERENCE_CASES = [
     ("13B", "unknown-quant", 12000.0, 32000.0, 4096),
     (None, "q4_k_m", 12000.0, 32000.0, 4096),
 ]
+
+
+#: VRAM buckets, in the sizes consumer cards are actually sold in.
+_VRAM_TIERS = ((0, "No discrete GPU"), (6, "<= 6 GB"), (8, "8 GB"), (12, "12 GB"),
+               (16, "16 GB"), (24, "24 GB"), (48, "24-48 GB"))
+
+
+def _vram_tier(vram_mb: object) -> str | None:
+    """Bucket VRAM into a shopping tier; None when it was not recorded."""
+    if not isinstance(vram_mb, (int, float)) or vram_mb <= 0:
+        return None
+    gb = float(vram_mb) / 1024.0
+    for threshold, label in _VRAM_TIERS:
+        if gb <= threshold + 0.5:
+            return label
+    return "> 48 GB"
 
 
 def _comparability_rules(results: list[dict]) -> dict:
@@ -288,6 +305,15 @@ def build(results: list[dict]) -> dict[str, object]:
                     "model": (r.get("model") or {}).get("name"),
                     "cpu": (r.get("system") or {}).get("cpu"),
                     "gpu": (r.get("system") or {}).get("gpu"),
+                    # Filterable dimensions. VRAM is bucketed into the tiers
+                    # people actually shop by rather than exposed raw, so the
+                    # filter answers "does this fit a 12 GB card" instead of
+                    # requiring the reader to do the arithmetic.
+                    "vram_mb": (r.get("system") or {}).get("gpu_vram_mb"),
+                    "vram_tier": _vram_tier((r.get("system") or {}).get("gpu_vram_mb")),
+                    "quantization": (r.get("model") or {}).get("quantization"),
+                    "device": (r.get("runtime") or {}).get("device"),
+                    "trust": effective_trust(r),
                     "value": _metric(r, metric_key),
                     # tok/s/W and inf/s/W are different quantities; publishing
                     # the unit stops the view ranking them against each other.

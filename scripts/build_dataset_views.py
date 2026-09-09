@@ -16,7 +16,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from aihwbench.export import DatasetLoadError, export_dataset, load_results  # noqa: E402
-from aihwbench.trust import TRUST_STATES, effective_trust  # noqa: E402
+from aihwbench.metrics import performance_per_watt_unit  # noqa: E402
+from aihwbench.trust import effective_trust  # noqa: E402
 
 NL = chr(10)
 
@@ -38,38 +39,6 @@ def fmt(value: object) -> str:
     return str(value)
 
 
-def build_markdown(results: list[dict]) -> str:
-    rows = [
-        "| Runtime | Model | Device | Gen tok/s | TTFT ms | p95 latency ms | tok/s/W | Trust |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- |",
-    ]
-    for r in results:
-        rows.append(
-            "| {runtime} | {model} | {device} | {tps} | {ttft} | {p95} | {ppw} | {trust} |".format(
-                runtime=fmt(_get(r, "runtime", "name")),
-                model=fmt(_get(r, "model", "name")),
-                device=fmt(_get(r, "runtime", "device")),
-                tps=fmt(_get(r, "metrics", "generation_tokens_per_second")),
-                ttft=fmt(_get(r, "metrics", "ttft_ms")),
-                p95=fmt(_get(r, "metrics", "p95_latency_ms")),
-                ppw=fmt(_get(r, "metrics", "performance_per_watt")),
-                trust=fmt(effective_trust(r)),
-            )
-        )
-    header = (
-        "# AIHWBench Dataset"
-        + NL
-        + NL
-        + "Generated from validated results in `results/published/` - do not edit by hand."
-        + NL
-        + NL
-        + f"Trust states: {' / '.join(TRUST_STATES)}."
-        + NL
-        + NL
-    )
-    return header + NL.join(rows) + NL
-
-
 def build_html(results: list[dict]) -> str:
     body_rows = []
     for r in results:
@@ -81,6 +50,7 @@ def build_html(results: list[dict]) -> str:
             fmt(_get(r, "metrics", "ttft_ms")),
             fmt(_get(r, "metrics", "p95_latency_ms")),
             fmt(_get(r, "metrics", "performance_per_watt")),
+            performance_per_watt_unit(r.get("metrics") or {}),
             fmt(effective_trust(r)),
         ]
         body_rows.append("<tr>" + "".join(f"<td>{html.escape(c)}</td>" for c in cells) + "</tr>")
@@ -91,7 +61,8 @@ def build_html(results: list[dict]) -> str:
         "Gen tok/s",
         "TTFT ms",
         "p95 latency ms",
-        "tok/s/W",
+        "Perf/W",
+        "Perf/W unit",
         "Trust",
     ]
     parts = [
@@ -102,6 +73,7 @@ def build_html(results: list[dict]) -> str:
         "th{background:#f4f4f4}</style></head><body>",
         "<h1>AIHWBench Dataset</h1>",
         "<p>Vendor-neutral local AI hardware benchmark results. ",
+        "Rows are not mutually rankable: see LEADERBOARD.md for the comparison-safety grouping. ",
         "Generated from validated published results; unavailable metrics shown as -.</p>",
         "<table><thead><tr>" + "".join(f"<th>{h}</th>" for h in head),
         "</tr></thead><tbody>" + "".join(body_rows) + "</tbody></table>",
@@ -127,9 +99,12 @@ def main() -> None:
     except DatasetLoadError as exc:
         print(f"error: {exc}", file=sys.stderr)
         sys.exit(3)
-    md_path = output_dir / "LEADERBOARD.md"
-    md_path.write_text(build_markdown(results), encoding="utf-8")
-    print(f"wrote {md_path}")
+    # LEADERBOARD.md is written by export_dataset above and deliberately not
+    # rewritten here. This script used to overwrite it with a second, simpler
+    # renderer, which silently reintroduced two fixed defects: it labelled
+    # every perf/W value "tok/s/W" (mixing generative tok/s/W with graph
+    # inf/s/W in one column) and presented mutually incomparable results as
+    # one ranked table. One generator owns that artifact.
     html_path = output_dir / "index.html"
     html_path.write_text(build_html(results), encoding="utf-8")
     print(f"wrote {html_path}")

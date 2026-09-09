@@ -7,6 +7,12 @@ Reads validated result documents from a directory and produces:
 
 Only schema-valid results are included. Trust states are surfaced but
 never fabricated.
+
+The leaderboard is grouped by comparison safety rather than presented as
+one ranked table. A single table with a throughput column invites the
+reader to rank every row against every other, which the comparison-safety
+classifier says is invalid for most pairs -- a prose footnote does not undo
+the visual claim a shared column makes.
 """
 
 from __future__ import annotations
@@ -17,6 +23,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+from .comparability import NOT_COMPARABLE, compare_classification
 from .metrics import performance_per_watt_unit
 from .schemas import validate_result
 from .trust import effective_trust
@@ -118,6 +125,44 @@ def _row(result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def comparison_groups(results: Sequence[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+    """Partition results into mutually-comparable cliques.
+
+    A result joins a group only when it is comparable with *every* member,
+    not merely with the first: comparability is not transitive, so a
+    representative-only check would build groups containing pairs the
+    classifier rejects. Order is stable, so the grouping is deterministic.
+    """
+    groups: list[list[dict[str, Any]]] = []
+    for result in results:
+        for group in groups:
+            if all(
+                compare_classification(result, member)["classification"] != NOT_COMPARABLE
+                for member in group
+            ):
+                group.append(result)
+                break
+        else:
+            groups.append([result])
+    return groups
+
+
+def _group_label(group: Sequence[dict[str, Any]]) -> str:
+    """Describe what the members of a comparable group share."""
+    first = group[0]
+    model = (first.get("model") or {}).get("name") or "unknown model"
+    quant = (first.get("model") or {}).get("quantization")
+    runtime = (first.get("runtime") or {}).get("name") or "unknown runtime"
+    backend = (first.get("runtime") or {}).get("backend")
+    device = (first.get("runtime") or {}).get("device")
+    parts = [str(model)]
+    if quant:
+        parts.append(str(quant))
+    detail = "/".join(str(p) for p in (backend, device) if p)
+    runtime_text = f"{runtime} ({detail})" if detail else str(runtime)
+    return f"{' '.join(parts)} on {runtime_text}"
+
+
 def _num(value: object, places: int = 3) -> str:
     """Render a metric for the leaderboard.
 
@@ -165,35 +210,82 @@ def export_dataset(results_dir: Path, output_dir: Path, *, strict: bool = False)
         writer.writerows(rows)
 
     md_path = output_dir / "LEADERBOARD.md"
+    by_run = {r["run_id"]: r for r in rows}
+    groups = comparison_groups(results)
+    rankable = [g for g in groups if len(g) > 1]
+
     lines = [
         "# AIHWBench Leaderboard",
         "",
         f"Generated from {len(rows)} validated result(s) in `{results_dir.as_posix()}`.",
         "",
-        "| Run | Runtime | Model | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- |",
+        "Results are grouped by the comparison-safety classifier "
+        "(`aihwbench/comparability.py`), and **ranking is meaningful only "
+        "within a group**. Putting every result in one table under a shared "
+        "throughput column invites a comparison the classifier rejects for "
+        "most pairs, and a footnote does not undo the claim the column makes.",
+        "",
     ]
-    for r, result in zip(rows, results, strict=True):
-        # Perf/W is tok/s/W for generative runtimes and inf/s/W for graph ones.
-        # The unit is published alongside the number: without it the column
-        # silently mixes two different quantities.
-        unit = performance_per_watt_unit(result.get("metrics") or {})
+    if rankable:
         lines.append(
-            f"| {r['run_id']} | {r['runtime']} | {r['model']} | {r['gpu']} "
-            f"| {_num(r['generation_tokens_per_second'])} | {_num(r['ttft_ms'])} "
-            f"| {_num(r['performance_per_watt'])} | {unit} |"
+            f"{len(groups)} comparable group(s); {len(rankable)} contain more "
+            "than one result and can be ranked."
+        )
+    else:
+        lines.append(
+            f"**No two published results are comparable yet**: {len(rows)} "
+            f"result(s) form {len(groups)} group(s) of one. Each is a single "
+            "measurement, not a ranking. Comparable results arrive when the "
+            "same model and runtime are benchmarked on other hardware — see "
+            "[docs/hardware-needed.md](../../docs/hardware-needed.md)."
         )
     lines.append("")
+
+    for group in groups:
+        lines.append(f"## {_group_label(group)}")
+        lines.append("")
+        if len(group) == 1:
+            lines.append(
+                "*Single result — nothing to compare it against yet.*"
+            )
+            lines.append("")
+        # Rank within the group by generation throughput where it was measured;
+        # unmeasured rows keep their order rather than sorting as zero.
+        ordered = sorted(
+            group,
+            key=lambda d: (
+                (d.get("metrics") or {}).get("generation_tokens_per_second") is None,
+                -((d.get("metrics") or {}).get("generation_tokens_per_second") or 0.0),
+            ),
+        )
+        lines.append(
+            "| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |"
+        )
+        lines.append("| --- | --- | --- | --- | --- | --- | --- |")
+        for result in ordered:
+            row = by_run[result.get("run_id")]
+            # Perf/W is tok/s/W for generative runtimes and inf/s/W for graph
+            # ones. The unit is published alongside the number: without it the
+            # column silently mixes two different quantities.
+            unit = performance_per_watt_unit(result.get("metrics") or {})
+            lines.append(
+                f"| {row['run_id']} | {row['gpu']} "
+                f"| {_num(row['generation_tokens_per_second'])} | {_num(row['ttft_ms'])} "
+                f"| {_num(row['performance_per_watt'])} | {unit} | {row['trust']} |"
+            )
+        lines.append("")
+
     lines.append(
-        "> Only schema-validated results are listed. Cross-runtime comparisons "
-        "require identical workloads; see docs/methodology.md."
+        "> Only schema-validated results are listed. Groups are cliques under "
+        "the comparison-safety classifier: every member is comparable with "
+        "every other member, not merely with the first."
     )
     lines.append(
         "> **Perf/W is not one quantity.** `tok/s/W` rows are generative "
         "throughput per watt; `inf/s/W` rows are inferences per watt. They "
         "are not comparable to each other."
     )
-    md_path.write_text(chr(10).join(lines), encoding="utf-8")
+    md_path.write_text(chr(10).join(lines) + chr(10), encoding="utf-8")
 
     return [index_path, csv_path, md_path]
 

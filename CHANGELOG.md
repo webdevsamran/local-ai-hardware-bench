@@ -108,6 +108,25 @@ value proposition is honesty about what was measured cannot carry that.
   producer writing the fraction would record 0.8 for an 80%-complete result
   and pass validation.
 
+### Fixed — the leaderboard now uses the classifier it ships
+
+- **`LEADERBOARD.md` is grouped by comparison safety.** Every result was
+  listed in one table under a shared `Gen tok/s` column, guarded by a prose
+  footnote saying cross-runtime comparisons need identical workloads. None of
+  the six published results is comparable with any other, so the table's own
+  shape asserted a ranking the classifier rejects — the first two rows read as
+  a 3.25x win between two runtimes measuring different things. Results are now
+  grouped into cliques under `comparability.py` (every member comparable with
+  every other member, not merely with the first) and ranked only within a
+  group. With today's dataset the leaderboard says plainly that no two results
+  are comparable yet.
+- **`scripts/build_dataset_views.py` no longer overwrites that file.** It
+  called `export_dataset` and then rewrote `LEADERBOARD.md` with a second,
+  simpler renderer — silently reintroducing two already-fixed defects: one
+  `tok/s/W` column mixing generative tok/s/W with graph inf/s/W, and a single
+  ranked table of incomparable results. The duplicate generator is gone and
+  the HTML view now publishes the perf/W unit too.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .plausibility import check_plausibility
 from .repro import reproducibility_score
 from .sanitize import scan_object_detailed
 from .schemas import validate_result
@@ -132,6 +133,10 @@ def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:
 
     trust = effective_trust(result)
     confidence = statistical_confidence(result)
+    # Impossible and self-contradictory values. Findings are review requests,
+    # never fraud verdicts: the likeliest cause of an impossible number is a
+    # measurement bug, which is worth finding for its own sake.
+    implausible = check_plausibility(result)
 
     checks = {
         "schema_valid": not schema_errors,
@@ -146,13 +151,18 @@ def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:
         "statistical_confidence": confidence["label"],
         "meets_iteration_policy": confidence["meets_policy"],
         "statistical_confidence_detail": confidence["detail"],
+        "values_plausible": not implausible,
+        "implausible_values": implausible,
     }
-    passed = sum(
-        1
-        for key in ("schema_valid", "privacy_clean", "provenance_present", "variance_acceptable")
-        if checks[key]
+    scored = (
+        "schema_valid",
+        "privacy_clean",
+        "provenance_present",
+        "variance_acceptable",
+        "values_plausible",
     )
-    return {"checks": checks, "checks_passed": passed, "checks_total": 4}
+    passed = sum(1 for key in scored if checks[key])
+    return {"checks": checks, "checks_passed": passed, "checks_total": len(scored)}
 
 
 def invalidate_result(

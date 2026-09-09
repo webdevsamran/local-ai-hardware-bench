@@ -65,6 +65,7 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     from .backends import resolve
     from .fidelity import output_fidelity
     from .metrics import streaming_latency_metrics
+    from .provenance import compute_provenance
     from .system_info import detect_system
     from .telemetry import sample_idle_power, trace_series
 
@@ -131,6 +132,21 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     # Only meaningful unplugged; on mains power it says so rather than
     # reporting a drain rate of zero.
     result["battery"] = battery_profile(trace)
+
+    # Last, because the hash covers the whole document: every enrichment
+    # above has to be in place first. compute_provenance excludes the
+    # provenance block itself, so the hash is not self-referential.
+    #
+    # This was previously computed only by `aihwbench bundle`, so every result
+    # produced by a benchmark run carried no hash at all and could not be
+    # checked for tampering -- the data-quality report's provenance check
+    # failed on all six published results for that reason.
+    result["provenance"] = compute_provenance(
+        result,
+        environment=result.get("system"),
+        workload=result.get("reproducibility"),
+        model_identity=result.get("model"),
+    )
 
     validate_or_raise(result)
     return result

@@ -10,49 +10,50 @@ Results are grouped by the comparison-safety classifier (`aihwbench/comparabilit
 
 *Single result — nothing to compare it against yet.*
 
-| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |
-| --- | --- | --- | --- | --- | --- | --- |
-| llamacpp-1787391945 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 360.87 | 14.52 | 13.485 | tok/s/W | verified |
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| llamacpp-1787391945 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 360.87 | 14.52 | 13.485 | tok/s/W | 5 | verified |
 
 ## qwen2.5:0.5b-instruct-q4_K_M on ollama (ollama-http-api/auto)
 
 *Single result — nothing to compare it against yet.*
 
-| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |
-| --- | --- | --- | --- | --- | --- | --- |
-| ollama-1787388930 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 110.93 | 2,069.71 | 4.24 | tok/s/W | verified |
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| ollama-1787388930 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 110.93 | 2,069.71 | 4.24 | tok/s/W | 5 | verified |
 
 ## mobilenetv2-12.onnx on onnxruntime (execution-providers:CPUExecutionProvider/cpu)
 
 *Single result — nothing to compare it against yet.*
 
-| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |
-| --- | --- | --- | --- | --- | --- | --- |
-| onnxruntime-1787391388 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 13.468 | inf/s/W | verified |
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| onnxruntime-1787391388 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 13.468 | inf/s/W | 5 | verified |
 
 ## mobilenetv2-12.onnx on onnxruntime (execution-providers:DmlExecutionProvider,CPUExecutionProvider/dml)
 
 *Single result — nothing to compare it against yet.*
 
-| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |
-| --- | --- | --- | --- | --- | --- | --- |
-| onnxruntime-1787391455 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 11.354 | inf/s/W | verified |
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| onnxruntime-1787391455 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 11.354 | inf/s/W | 5 | verified |
 
 ## mobilenetv2-12.onnx on openvino (device:CPU/cpu)
 
 *Single result — nothing to compare it against yet.*
 
-| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |
-| --- | --- | --- | --- | --- | --- | --- |
-| openvino-1787391625 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 5.878 | inf/s/W | verified |
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| openvino-1787391625 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 5.878 | inf/s/W | 5 | verified |
 
 ## mobilenetv2-12.onnx on openvino (device:GPU.0/gpu)
 
 *Single result — nothing to compare it against yet.*
 
-| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |
-| --- | --- | --- | --- | --- | --- | --- |
-| openvino-1787391710 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 4.462 | inf/s/W | verified |
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| openvino-1787391710 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | not measured | not measured | 4.462 | inf/s/W | 5 | verified |
 
 > Only schema-validated results are listed. Groups are cliques under the comparison-safety classifier: every member is comparable with every other member, not merely with the first.
 > **Perf/W is not one quantity.** `tok/s/W` rows are generative throughput per watt; `inf/s/W` rows are inferences per watt. They are not comparable to each other.
+> **Runs** is the measured iteration count. The published policy is 5 iterations after 2 warm-ups; anything short of it is marked, because a single measurement renders identically to a five-iteration median.

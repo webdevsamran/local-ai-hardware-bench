@@ -24,8 +24,84 @@ __all__ = [
     "data_quality_report",
     "invalidate_result",
     "flag_anomalies",
+    "statistical_confidence",
+    "MIN_PUBLISHED_ITERATIONS",
+    "MIN_WARMUP_RUNS",
     "TRUST_STATES",
 ]
+
+#: The published statistical policy, from docs/methodology.md: "Minimum 5
+#: measured iterations after 2 warm-ups for published results." It was stated
+#: and never enforced, so a single-run number could be published looking
+#: exactly like a five-iteration one.
+MIN_PUBLISHED_ITERATIONS = 5
+MIN_WARMUP_RUNS = 2
+
+
+def statistical_confidence(result: dict[str, Any]) -> dict[str, Any]:
+    """How much statistical weight a result's numbers carry.
+
+    A single measurement and a five-iteration median look identical once
+    rendered as "110.93 tok/s". Labelling the difference is the minimum honest
+    treatment; refusing to publish the first outright would lose real data
+    from contributors whose hardware cannot sit through a long run.
+
+    ``label`` is one of:
+
+    - ``compliant``   — meets the published policy
+    - ``single_run``  — one measured iteration; the number has no spread at all
+    - ``below_policy``— measured more than once, but under the minimum
+    - ``unstated``    — the iteration count was not recorded, which is its own
+      problem: an unstated protocol cannot be reproduced
+    """
+    repro = result.get("reproducibility") or {}
+    iterations = repro.get("iterations")
+    warmups = repro.get("warmup_runs")
+
+    if not isinstance(iterations, (int, float)) or isinstance(iterations, bool):
+        return {
+            "label": "unstated",
+            "iterations": None,
+            "warmup_runs": warmups,
+            "meets_policy": False,
+            "detail": (
+                "the iteration count was not recorded; a measurement protocol "
+                "that is not stated cannot be reproduced or weighed"
+            ),
+        }
+
+    iterations = int(iterations)
+    unwarmed = not isinstance(warmups, (int, float)) or int(warmups) < MIN_WARMUP_RUNS
+    if iterations <= 1:
+        label = "single_run"
+        detail = (
+            "a single measured iteration: this number has no spread, so no "
+            "confidence interval or variance can be derived from it"
+        )
+    elif iterations < MIN_PUBLISHED_ITERATIONS:
+        label = "below_policy"
+        detail = (
+            f"{iterations} iterations, below the published minimum of {MIN_PUBLISHED_ITERATIONS}"
+        )
+    else:
+        label = "compliant"
+        detail = f"{iterations} measured iterations"
+
+    if label == "compliant" and unwarmed:
+        label = "below_policy"
+        detail = (
+            f"{iterations} iterations but {warmups} warm-up run(s), below the "
+            f"minimum of {MIN_WARMUP_RUNS}: cold-start cost is inside the "
+            "measurement"
+        )
+
+    return {
+        "label": label,
+        "iterations": iterations,
+        "warmup_runs": warmups if isinstance(warmups, (int, float)) else None,
+        "meets_policy": label == "compliant",
+        "detail": detail,
+    }
 
 
 def _privacy_scan(result: dict[str, Any]) -> list[str]:
@@ -55,6 +131,7 @@ def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:
     high_variance = bool(variance and variance["cv"] is not None and variance["cv"] > 0.5)
 
     trust = effective_trust(result)
+    confidence = statistical_confidence(result)
 
     checks = {
         "schema_valid": not schema_errors,
@@ -66,6 +143,9 @@ def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:
         "variance_acceptable": not high_variance,
         "cv_latency": variance["cv"] if variance else None,
         "trust_state": trust,
+        "statistical_confidence": confidence["label"],
+        "meets_iteration_policy": confidence["meets_policy"],
+        "statistical_confidence_detail": confidence["detail"],
     }
     passed = sum(
         1

@@ -85,6 +85,25 @@ def _free_port() -> int:
         return int(sock.getsockname()[1])
 
 
+#: Sweepable parameters this backend actually applies to the run. The tuner
+#: refuses any axis absent from here rather than sweeping it inertly and
+#: reporting the resulting run-to-run noise as a recommendation.
+TUNABLE_AXES: tuple[str, ...] = ("gpu_layers", "context_length")
+
+
+def _gpu_layers(config: BenchmarkConfig) -> int:
+    """Layers to offload to the GPU: ``-ngl``.
+
+    ``extra["gpu_layers"]`` wins when supplied (this is what the sweep and
+    tuner vary). Otherwise the historical default applies: everything on the
+    GPU for a GPU device, nothing for CPU.
+    """
+    requested = config.extra.get("gpu_layers")
+    if requested is not None:
+        return int(requested)
+    return 99 if config.device in ("auto", "cuda", "gpu") else 0
+
+
 class LlamaServerHandle:
     """Managed llama-server subprocess."""
 
@@ -110,7 +129,7 @@ class LlamaServerHandle:
             "-c",
             str(self.config.context_length),
             "-ngl",
-            "99" if self.config.device in ("auto", "cuda", "gpu") else "0",
+            str(_gpu_layers(self.config)),
             "--no-webui",
         ]
         self.proc = subprocess.Popen(
@@ -296,6 +315,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "context_length": config.context_length,
             "warmup_runs": config.warmup_runs,
             "iterations": config.iterations,
+            "gpu_layers": _gpu_layers(config),
             "command": (f"aihwbench benchmark --runtime llama.cpp --model-path {model_path}"),
         },
         "iterations": iterations,

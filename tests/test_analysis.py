@@ -12,7 +12,7 @@ from aihwbench.analysis import (
     recommend_configuration,
 )
 from aihwbench.analysis.thermal import analyze_thermal_stability
-from aihwbench.analysis.tune import run_tuner
+from aihwbench.analysis.tune import UnsupportedAxisError, run_tuner
 from aihwbench.evaluators import (
     CosineSimilarityEvaluator,
     ExactMatchEvaluator,
@@ -333,3 +333,74 @@ def test_tuner_default_axes_when_empty():
 
     report = run_tuner({}, run_fn)
     assert report["points_measured"] == len(calls) == 4  # default threads axis
+
+
+# ---------------------------------------------------------------------------
+# Tuner axis support
+#
+# The tuner used to sweep `threads`, `batch_size`, `gpu_layers` and
+# `concurrency` while no backend read any of them: the values reached
+# BenchmarkConfig.extra and were dropped. Every point ran the identical
+# benchmark, so the "fastest" verdict was whichever repeat happened to win on
+# noise -- reported to the user as an optimal configuration, citing measured
+# values. A tuner that cannot vary something must refuse, not measure noise.
+
+
+def test_tuner_refuses_an_axis_the_backend_does_not_apply():
+    def run_fn(_point):
+        raise AssertionError("must refuse before running any benchmark")
+
+    with pytest.raises(UnsupportedAxisError) as excinfo:
+        run_tuner(
+            {"threads": (1, 2, 4)},
+            run_fn,
+            supported_axes=("gpu_layers",),
+            runtime="llama.cpp",
+        )
+    message = str(excinfo.value)
+    assert "threads" in message
+    assert "gpu_layers" in message, "the error must name what IS supported"
+
+
+def test_tuner_runs_when_every_axis_is_supported():
+    def run_fn(point):
+        return {"metrics": {"generation_tokens_per_second": float(point["gpu_layers"])}}
+
+    report = run_tuner(
+        {"gpu_layers": (0, 99)},
+        run_fn,
+        supported_axes=("gpu_layers", "context_length"),
+        runtime="llama.cpp",
+    )
+    assert report["points_measured"] == 2
+    assert report["fastest"]["params"]["gpu_layers"] == 99
+
+
+def test_tuner_without_declared_support_is_unchecked():
+    """Callers that pass no support list keep the old permissive behaviour."""
+
+    def run_fn(_point):
+        return {"metrics": {"generation_tokens_per_second": 1.0}}
+
+    assert run_tuner({"threads": (1, 2)}, run_fn)["points_measured"] == 2
+
+
+def test_llama_cpp_declares_and_applies_gpu_layers():
+    """The axis the tuner offers must reach the spawned server command."""
+    from aihwbench.backends import backend_tunable_axes
+    from aihwbench.backends.base import BenchmarkConfig
+    from aihwbench.backends.llama_cpp import _gpu_layers
+
+    assert "gpu_layers" in backend_tunable_axes("llama.cpp")
+    for requested in (0, 16, 99):
+        config = BenchmarkConfig(model="m", device="cuda", extra={"gpu_layers": requested})
+        assert _gpu_layers(config) == requested
+
+
+def test_llama_cpp_gpu_layers_default_is_unchanged():
+    """Absent an explicit value, the historical default still applies."""
+    from aihwbench.backends.base import BenchmarkConfig
+    from aihwbench.backends.llama_cpp import _gpu_layers
+
+    assert _gpu_layers(BenchmarkConfig(model="m", device="cuda")) == 99
+    assert _gpu_layers(BenchmarkConfig(model="m", device="cpu")) == 0

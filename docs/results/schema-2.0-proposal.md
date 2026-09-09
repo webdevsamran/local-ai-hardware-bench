@@ -1,9 +1,19 @@
 # Result Schema 2.0 (Proposal)
 
-**Status: PROPOSED — not implemented. Schema 1.0 remains authoritative.**
+**Status: PARTLY SHIPPED — read this as a design note, not as status.**
 
-This document collects candidate changes for a future schema 2.0. Nothing
-here is enforced by validators yet; see issue #22 for tracking.
+Schema 2.0 is implemented and is what the writer emits
+(`aihwbench/versions.py` sets `CURRENT_SCHEMA_VERSION = "2.0"`;
+`schemas/result-2.0.schema.json` ships and is enforced by
+`aihwbench validate --formal`). Every result committed to
+`results/published/` so far predates it and carries `schema_version` 1.0,
+which the reader migrates forward.
+
+The candidate changes listed below are a mix: some shipped with 2.0, and
+others — promoting the fingerprint to required, a `gpus[]` array, an ITL
+distribution, suite provenance, backend-plugin identity — have not. Treat
+each as a proposal to check against the schema file, never as a statement
+of what the code does.
 
 ## Motivation
 

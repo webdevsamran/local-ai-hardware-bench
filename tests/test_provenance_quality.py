@@ -219,3 +219,31 @@ def test_snapshot_manifest_hashes_members_and_diffs(tmp_path):
 
     old_new = diff_snapshots(snap1, snap2)
     assert old_new["added"] == ["c.json"]
+
+
+def test_reproducibility_score_publishes_both_scales():
+    """`score` is a fraction; `score_percent` is the schema's scale.
+
+    `quality.reproducibility_completeness` is validated within [0, 100] while
+    `reproducibility_score` returned only a [0, 1] fraction, and nothing
+    bridged them. Writing the fraction into that field records 0.8 for an
+    80%-complete result, passes validation, and understates completeness a
+    hundredfold. Both scales are now explicit.
+    """
+    from aihwbench.repro import reproducibility_score
+
+    report = reproducibility_score({"model": {"checksum": "abc"}})
+    assert 0.0 <= report["score"] <= 1.0
+    assert report["score_percent"] == round(report["score"] * 100, 1)
+
+
+def test_score_percent_is_valid_for_the_schema_field():
+    """The percent scale must satisfy the field it is meant to populate."""
+    from aihwbench.repro import reproducibility_score
+    from aihwbench.schemas import validate_result
+    from tests.test_schemas import make_valid_result
+
+    doc = make_valid_result()
+    percent = reproducibility_score(doc)["score_percent"]
+    doc["quality"] = {"reproducibility_completeness": percent}
+    assert validate_result(doc) == []

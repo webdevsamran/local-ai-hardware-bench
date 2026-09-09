@@ -48,20 +48,26 @@ Every benchmark run records and fixes:
 
 > **This methodology has not yet been externally reviewed.** A review packet
 > with the specific questions that need outside answers is at
-> [methodology-review.md](methodology-review.md); the open invitation is
-> tracked in [#21](https://github.com/webdevsamran/local-ai-hardware-bench/issues/21).
+> [methodology-review.md](methodology-review.md). The invitation is tracked in
+> [`ROADMAP.md`](../ROADMAP.md) under Track 8 — issue #21 was closed because a
+> reviewer cannot be summoned by leaving an issue open, not because the review
+> happened.
 
 ## Known limitations (honesty section)
 
-- Ollama does not expose model load time separately; `load_time_ms` is null
-  for the Ollama backend.
+- Ollama's generate API reports `load_duration`, and `load_time_ms` is
+  measured from it. It is null only when the model was already resident, so
+  a null here means "already loaded", not "not measured".
 - llama.cpp's OpenAI-compatible usage object does not include evaluation
   durations; generation tok/s is therefore null for the llama.cpp backend
   until we parse server timing logs.
 - Power draw via `nvidia-smi` is GPU package power, not whole-system power.
 - WDDM GPU memory reporting can lag actual allocation slightly.
 - Thermal state (laptop cooling, ambient temperature) is recorded only as
-  max temperature; sustained-throttling behavior is out of scope for v0.1.
+  max temperature. Sustained-throttling analysis exists in
+  `aihwbench/analysis/thermal.py` but is not yet wired to a benchmark run:
+  nothing persists the telemetry trace it needs, so no published result
+  carries a throttling verdict.
 
 ## Statistical policy
 

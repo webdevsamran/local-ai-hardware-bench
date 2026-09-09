@@ -6,6 +6,11 @@ when its deliverables are genuinely tested — not before.
 Work is organized into parallel tracks. Nothing is marked complete until
 it is real.
 
+Markers: `[x]` done and reachable · `[~]` partially done, with the specific
+gap named · `[ ]` not started. A capability that exists as a library
+function but that no command or runner path calls is `[~]`, not `[x]`:
+shipped-but-unreachable is not done.
+
 ## Track 1 — Benchmark Core
 
 - [x] Cross-platform hardware detection (CPU, GPU, RAM, NPU, drivers)
@@ -14,17 +19,26 @@ it is real.
 - [x] Comparison safety classifier (STRICTLY/CONDITIONALLY/NOT_COMPARABLE)
 - [x] Deterministic result fingerprints + duplicate detection
 - [x] Versioned suite profiles (smoke/standard/latency/throughput/efficiency/sustained)
-- [ ] Model load-time measurement for Ollama (server log parsing)
-- [x] Sustained-load thermal analysis tooling (peak vs steady-state,
-      time-to-throttle, degradation)
+- [x] Model load-time measurement for Ollama (from the API's
+      `load_duration` counter, not server log parsing as originally
+      planned — `backends/ollama.py` emits `metrics.load_time_ms`)
+- [~] Sustained-load thermal analysis tooling (peak vs steady-state,
+      time-to-throttle, degradation). The analysis exists
+      (`analysis/thermal.py`) and is tested, but has no producer: nothing in
+      `runner.py` or the CLI captures the telemetry trace it consumes, so it
+      cannot yet run against a real benchmark.
 - [x] Optional signing/attestation interface (cosign sign/verify wrappers
       that report unavailability honestly)
 - [x] Typed workload engine + registry and aihwbench.workloads plugin API
 - [x] Load generator (constant/closed-loop/Poisson/Gamma/burst arrivals)
 - [x] Parameter sweep engine and declarative experiment manifests
 - [x] Capacity ladder testing
-- [x] Advanced streaming metrics (TPOT/ITL/TTST/prefill/decode/queue where
-      measurable) and expanded statistics with guarded bootstrap CIs
+- [~] Advanced streaming metrics and expanded statistics with guarded
+      bootstrap CIs. The statistics are done. Of the streaming metrics only
+      `itl_ms` has a producer (`metrics.py`), and it is a scalar mean rather
+      than a distribution; `tpot_ms`, `time_to_second_token_ms`,
+      `inter_chunk_latency_ms`, `prefill_latency_ms` and `decode_duration_ms`
+      exist as registered vocabulary and schema slots that nothing writes.
 - [x] Prefill/decode separation, ISL/OSL profiles, mixed traffic,
       multi-turn and deterministic agentic workloads
 

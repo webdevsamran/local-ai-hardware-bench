@@ -176,3 +176,32 @@ register(
         ),
     )
 )
+
+register(
+    Workload(
+        id="agentic_swe",
+        kind="agentic",
+        description=(
+            "Software-engineering agent: a fixed four-step loop of search and "
+            "file reads, reporting LLM inference time and tool execution time "
+            "separately. Tools are local and deterministic, and the sequence "
+            "is scripted rather than model-chosen, so the loop is identical "
+            "on every machine."
+        ),
+        osl_tokens=64,
+        requires=("tool_calls",),
+    )
+)
+
+register(
+    Workload(
+        id="agentic_data_analyst",
+        kind="agentic",
+        description=(
+            "Data-analyst agent: reads a bundled table and summarizes it, "
+            "reporting LLM inference time and tool execution time separately."
+        ),
+        osl_tokens=64,
+        requires=("tool_calls",),
+    )
+)

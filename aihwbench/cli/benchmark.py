@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from ..agentic import AGENTIC_SCRIPTS, run_agentic_loop
 from ..analysis.cliff import find_offload_cliff
 from ..analysis.tune import (
     TUNING_AXES,
@@ -159,6 +160,52 @@ def cmd_sweep(args: argparse.Namespace) -> int:
             f"  {params:<50} tok/s={tok if tok is not None else '-'}"
             + (f" error={row['error']}" if row["error"] else "")
         )
+    return EXIT_OK
+
+
+def cmd_agentic(args: argparse.Namespace) -> int:
+    """Run a scripted agentic workload, timing model and tools separately."""
+    script = AGENTIC_SCRIPTS.get(args.workload)
+    if script is None:
+        fail(
+            f"unknown agentic workload {args.workload!r}; "
+            f"available: {', '.join(sorted(AGENTIC_SCRIPTS))}"
+        )
+        return EXIT_USAGE_ERROR
+    try:
+        backend = resolve(args.runtime)
+    except BackendError as exc:
+        fail(str(exc))
+        return EXIT_USAGE_ERROR
+
+    generate = getattr(backend, "generate_text", None)
+    if generate is None:
+        fail(
+            f"runtime {args.runtime!r} does not implement generate_text, which "
+            "an agentic workload needs to drive its own multi-turn loop. "
+            "Backends that stream a single completion per call can add it; "
+            "graph runtimes emit no tokens and cannot run this workload."
+        )
+        return EXIT_USAGE_ERROR
+
+    config = BenchmarkConfig(
+        model=args.model or "",
+        max_tokens=args.max_tokens,
+        iterations=1,
+        warmup_runs=0,
+        device=args.device,
+        extra={"model_path": args.model_path},
+    )
+    try:
+        report = run_agentic_loop(lambda prompt: generate(prompt, config), script)
+    except BackendError as exc:
+        fail(str(exc))
+        return EXIT_USAGE_ERROR
+
+    report["workload"] = args.workload
+    report["runtime"] = args.runtime
+    report["model"] = args.model
+    echo_json(report)
     return EXIT_OK
 
 
@@ -339,6 +386,22 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     )
     sweep_p.add_argument("--output", default="results/sweeps")
     sweep_p.set_defaults(func=cmd_sweep)
+
+    agentic_p = sub.add_parser(
+        "agentic",
+        help="Run a scripted agentic workload (LLM time vs tool time)",
+    )
+    agentic_p.add_argument("--runtime", required=True, choices=sorted(BACKENDS))
+    agentic_p.add_argument("--model", default=None)
+    agentic_p.add_argument("--model-path", default=None)
+    agentic_p.add_argument("--device", default="auto")
+    agentic_p.add_argument("--max-tokens", type=int, default=64)
+    agentic_p.add_argument(
+        "--workload",
+        default="agentic_swe",
+        choices=sorted(AGENTIC_SCRIPTS),
+    )
+    agentic_p.set_defaults(func=cmd_agentic)
 
     cliff_p = sub.add_parser("cliff", help="Find the offload cliff in a sweep matrix")
     cliff_p.add_argument("sweep", help="Path to a sweep-*.json produced by `aihwbench sweep`")

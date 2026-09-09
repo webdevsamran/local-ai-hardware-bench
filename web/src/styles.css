@@ -519,3 +519,111 @@ pre.codeblock {
 
 .matrix-table td.yes { color: var(--ok); font-weight: 700; }
 .matrix-table td.no { color: var(--text-muted); }
+/* ---------------------------------------------------------------------------
+   Leaderboard comparison groups
+
+   Results are ranked only within a group of mutually comparable runs, so each
+   group is visually a separate table rather than a section of one ranking.
+   --------------------------------------------------------------------------- */
+
+.leaderboard-group {
+  margin: 28px 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.leaderboard-group:first-of-type {
+  border-top: none;
+}
+
+.group-title {
+  font-size: clamp(1rem, 0.94rem + 0.3vw, 1.15rem);
+  font-weight: 600;
+  margin: 18px 0 4px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.small {
+  font-size: 0.875rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Motion
+
+   One easing curve and three durations, so timings stay consistent rather than
+   ad hoc per component. Everything here is decoration: the reduced-motion block
+   at the top of this file disables transitions wholesale, and each animation
+   below also resolves to its final state rather than its initial one.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --dur-slow: 320ms;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.leaderboard-group,
+.card,
+.page-title {
+  animation: rise-in var(--dur-slow) var(--ease) both;
+}
+
+/* Stagger the first few groups so the page assembles rather than snapping in.
+   Capped deliberately: a long list must not delay content the reader wants. */
+.leaderboard-group:nth-of-type(2) {
+  animation-delay: 60ms;
+}
+.leaderboard-group:nth-of-type(3) {
+  animation-delay: 120ms;
+}
+.leaderboard-group:nth-of-type(n + 4) {
+  animation-delay: 180ms;
+}
+
+/* Micro-interactions: feedback on press and hover, never movement that shifts
+   surrounding layout. */
+.btn {
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+tbody tr {
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+/* A visible, consistent focus ring is a requirement, not decoration; it is
+   deliberately outside the reduced-motion opt-out. */
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leaderboard-group,
+  .card,
+  .page-title {
+    animation: none;
+  }
+}

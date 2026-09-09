@@ -97,13 +97,22 @@ export interface ModelEntry {
 }
 
 export interface LeaderboardRow {
+  /** Rank *within* the comparison group, not across the dataset. */
   rank: number
+  /** Index of the comparison group this result belongs to. */
+  group: number
+  /** What the members of that group share (same model, runtime, workload). */
+  group_label: string
+  /** How many results are in the group; 1 means nothing to compare against. */
+  group_size: number
   run_id: string
   runtime?: string | null
   model?: string | null
   cpu?: string | null
   gpu?: string | null
   value?: number | null
+  /** Unit for performance-per-watt rows: tok/s/W and inf/s/W are different. */
+  unit?: string | null
 }
 
 export interface LeaderboardViews {

@@ -45,7 +45,18 @@ const dataset = {
   ],
   leaderboard: {
     throughput: [
-      { rank: 1, run_id: 'test-run-1', runtime: 'ollama', model: 'm', cpu: 'Test CPU', gpu: null, value: 10.0 },
+      {
+        rank: 1,
+        group: 0,
+        group_label: 'm on ollama',
+        group_size: 1,
+        run_id: 'test-run-1',
+        runtime: 'ollama',
+        model: 'm',
+        cpu: 'Test CPU',
+        gpu: null,
+        value: 10.0,
+      },
     ],
     ttft: [],
     perf_watt: [],

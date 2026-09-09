@@ -147,6 +147,21 @@ value proposition is honesty about what was measured cannot carry that.
   real paths `data/results.json` would resolve to `/models/data/results.json`
   and 404. It is now anchored to the deploy base.
 
+### Fixed — the dashboard no longer ranks incomparable results
+
+- The web leaderboard assigned a global rank across every result, so the two
+  runtimes measuring different things appeared as #1 and #2. Worse, the
+  performance-per-watt view ranked six rows 1-6 while mixing `tok/s/W` with
+  `inf/s/W` — the same defect fixed for the Markdown leaderboard in 0.2.0,
+  still live on the more visible surface.
+- `scripts/generate_frontend_data.py` now carries the comparison group, its
+  label, its size and the perf/W unit on every leaderboard row, and ranks
+  within a group rather than across the dataset. The dashboard renders one
+  table per group and states plainly when nothing is comparable. The
+  fail-closed dataset validator requires the new fields, so a regression to
+  ungrouped data breaks the build rather than quietly restoring a false
+  ranking.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

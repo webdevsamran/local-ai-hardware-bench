@@ -534,6 +534,19 @@ long-prompt workflow.
   entry, because the entire reason the curve exists is that it cannot be
   predicted from one point.
 
+### Added — a page per model-on-GPU pair
+
+- `/models/<model>/on/<gpu>` gives every measured model-and-card combination
+  its own indexable URL. "How fast is this model on that card" is the query
+  people actually type, and it is a different question from "how fast is this
+  model" or "how fast is this card" — answering it inside a page about
+  something else is the difference between ranking for it and not.
+- Routes are generated only for pairs that were actually benchmarked. A page
+  promising a number it does not have is worse than no page.
+- Results from different runtimes appear together but are explicitly **not**
+  ranked against one another, with a pointer to the comparison-safety
+  classifier explaining why.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

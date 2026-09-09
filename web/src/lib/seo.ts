@@ -138,6 +138,21 @@ export function metaForPath(path: string, dataset?: Dataset | null): PageMeta {
   const section = segments[0]
   const key = segments[1] ? decodeURIComponent(segments[1]) : undefined
 
+  // /models/<model>/on/<gpu> -- "how fast is X on a Y", which is a different
+  // query from either half and deserves its own indexable page.
+  if (section === 'models' && key && segments[2] === 'on' && segments[3]) {
+    const gpuSlug = decodeURIComponent(segments[3])
+    const model = dataset?.models.find((m) => slugify(m.name) === key)
+    const hardware = dataset?.hardware.find((h) => slugify(h.gpu ?? '') === gpuSlug)
+    const modelName = model?.name ?? key
+    const gpuName = hardware?.gpu ?? gpuSlug
+    return {
+      path: clean,
+      title: `${modelName} on ${gpuName} — benchmark — AIHWBench`,
+      description: `Measured local inference performance for ${modelName} running on ${gpuName}: tokens per second, time to first token and peak VRAM, with the full environment of every run recorded.`,
+    }
+  }
+
   if (section === 'models' && key) {
     const model = dataset?.models.find((m) => slugify(m.name) === key)
     const name = model?.name ?? key
@@ -194,6 +209,16 @@ export function metaForPath(path: string, dataset?: Dataset | null): PageMeta {
 export function allRoutes(dataset: Dataset): string[] {
   const routes = Object.keys(STATIC_META)
   for (const m of dataset.models) routes.push(`/models/${slugify(m.name)}`)
+  // One page per measured model-on-GPU pair. Only pairs that were actually
+  // benchmarked get a route: a page promising a number it does not have is
+  // worse than no page.
+  const pairs = new Set<string>()
+  for (const result of dataset.results) {
+    const modelSlug = slugify(result.model?.name ?? '')
+    const gpuSlug = slugify(result.system?.gpu ?? '')
+    if (modelSlug && gpuSlug) pairs.add(`/models/${modelSlug}/on/${gpuSlug}`)
+  }
+  routes.push(...pairs)
   for (const h of dataset.hardware) routes.push(`/hardware/${h.fingerprint}`)
   for (const r of dataset.runtimes) routes.push(`/runtimes/${r.name}`)
   for (const r of dataset.results) routes.push(`/results/${r.run_id}`)

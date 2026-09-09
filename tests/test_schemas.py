@@ -1,5 +1,7 @@
 """Tests for result schema validation."""
 
+import json
+
 from aihwbench.schemas import SCHEMA_VERSION, validate_result
 
 
@@ -197,3 +199,70 @@ def test_new_optional_metrics_accepted():
     data["metrics"]["throughput_inferences_per_second"] = 55.5
     data["metrics"]["energy_joules_per_token"] = None
     assert validate_result(data) == []
+
+
+# ---------------------------------------------------------- formal schema
+#
+# schemas/result-*.schema.json is the contract downstream consumers code
+# against, but nothing validated against it: validate_file defaulted to
+# formal=False, the CLI exposed no flag, and jsonschema was not a declared
+# dependency. These tests keep the published contract enforced.
+
+
+def _v2(**overrides):
+    from aihwbench.versions import CURRENT_SCHEMA_VERSION, PROTOCOL_VERSION
+
+    doc = make_valid_result()
+    doc["schema_version"] = CURRENT_SCHEMA_VERSION
+    doc["protocol_version"] = PROTOCOL_VERSION
+    doc.update(overrides)
+    return doc
+
+
+def test_formal_validation_catches_what_the_semantic_layer_cannot():
+    """A fabricated trust state is invisible to the semantic checks.
+
+    `schemas.py` only asserts `trust_state` is a `str`; the enum of real
+    lifecycle states lives in the published JSON Schema. Without formal
+    validation a result could claim any trust state it liked.
+    """
+    from aihwbench.formal_schema import validate_formal
+
+    doc = _v2(trust_state="totally_trusted")
+    assert validate_result(doc) == [], "precondition: semantic layer passes this"
+    errors = validate_formal(doc)
+    assert errors, "the published schema must reject an unknown trust state"
+    assert "trust_state" in errors[0]
+
+
+def test_formal_validation_accepts_every_real_trust_state():
+    from aihwbench.formal_schema import validate_formal
+    from aihwbench.trust import TRUST_STATES
+
+    for state in TRUST_STATES:
+        assert validate_formal(_v2(trust_state=state)) == [], state
+
+
+def test_validate_file_applies_the_formal_schema_when_asked(tmp_path):
+    from aihwbench.validate import validate_file
+
+    path = tmp_path / "r.json"
+    path.write_text(json.dumps(_v2(trust_state="totally_trusted")), encoding="utf-8")
+
+    assert validate_file(path, formal=False)[0] is True
+    valid, errors = validate_file(path, formal=True)
+    assert valid is False
+    assert any("trust_state" in e for e in errors)
+
+
+def test_every_published_result_passes_formal_validation():
+    """The dataset must satisfy the contract it publishes."""
+    import pathlib
+
+    from aihwbench.formal_schema import validate_formal
+
+    files = sorted(pathlib.Path("results/published").glob("*.json"))
+    assert files, "no published results found"
+    for path in files:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        assert validate_formal(doc) == [], f"{path.name} violates its own schema"

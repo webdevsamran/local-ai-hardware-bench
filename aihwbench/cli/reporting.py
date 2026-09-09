@@ -27,9 +27,10 @@ from .common import echo_json, fail, load_results_dir
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
-    valid, errors = validate_file(Path(args.result))
+    valid, errors = validate_file(Path(args.result), formal=args.formal)
     if valid:
-        print(f"VALID: {args.result}")
+        scope = "VALID (semantic + formal schema)" if args.formal else "VALID"
+        print(f"{scope}: {args.result}")
         return EXIT_OK
     fail(f"INVALID: {args.result}")
     for error in errors:
@@ -180,6 +181,14 @@ def cmd_score(args: argparse.Namespace) -> int:
 def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     val = sub.add_parser("validate", help="Validate a result JSON file")
     val.add_argument("result")
+    val.add_argument(
+        "--formal",
+        action="store_true",
+        help=(
+            "also validate against the published JSON Schema for the "
+            "document's schema_version (requires the 'schema' extra)"
+        ),
+    )
     val.set_defaults(func=cmd_validate)
 
     rep = sub.add_parser("report", help="Render a markdown report")

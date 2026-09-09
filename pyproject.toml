@@ -44,12 +44,14 @@ Changelog = "https://github.com/webdevsamran/local-ai-hardware-bench/blob/main/C
 [project.optional-dependencies]
 parquet = ["pyarrow>=14"]
 telemetry = ["psutil>=5.9"]
+schema = ["jsonschema>=4"]
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
     "mypy>=1.14,<3",
     "psutil>=5.9",
     "numpy>=1.26",
+    "jsonschema>=4",
     "types-PyYAML>=6.0",
     "tomli>=1.1.0; python_version < \"3.11\"",
 ]

@@ -47,9 +47,7 @@ def render() -> str:
         "| Project | License | Stars | Last push | Latest release | Status |",
         "|---|---|---|---|---|---|",
     ]
-    for entry in sorted(
-        data["repos"].values(), key=lambda r: (r.get("stars") or 0), reverse=True
-    ):
+    for entry in sorted(data["repos"].values(), key=lambda r: r.get("stars") or 0, reverse=True):
         release = entry.get("latest_release") or {}
         tag = release.get("tag")
         published = (release.get("published_at") or "")[:10]
@@ -88,8 +86,10 @@ def main() -> int:
     if args.check:
         if current == updated:
             data = json.loads(DATA.read_text(encoding="utf-8"))
-            print(f"ok     landscape table matches competitor-meta.json "
-                  f"({len(data['repos'])} projects, fetched {data['fetched_utc'][:10]})")
+            print(
+                f"ok     landscape table matches competitor-meta.json "
+                f"({len(data['repos'])} projects, fetched {data['fetched_utc'][:10]})"
+            )
             return 0
         print(
             "The landscape table no longer matches competitor-meta.json.\n"
@@ -100,8 +100,11 @@ def main() -> int:
 
         for line in list(
             difflib.unified_diff(
-                current.splitlines(), updated.splitlines(),
-                fromfile="committed", tofile="rendered", lineterm="",
+                current.splitlines(),
+                updated.splitlines(),
+                fromfile="committed",
+                tofile="rendered",
+                lineterm="",
             )
         )[:40]:
             print(line, file=sys.stderr)

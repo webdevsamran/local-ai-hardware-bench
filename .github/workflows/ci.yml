@@ -39,8 +39,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python scripts/check_action_pins.py
-      - run: ruff check aihwbench tests
-      - run: ruff format --check aihwbench tests
+      - run: ruff check aihwbench tests scripts
+      - run: ruff format --check aihwbench tests scripts
 
   test:
     name: Unit tests (${{ matrix.os }}, py${{ matrix.python }})

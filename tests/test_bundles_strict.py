@@ -165,3 +165,97 @@ def test_missing_bundle_file_reports_reason(tmp_path):
     report = verify_bundle(tmp_path / "does-not-exist.aihwbench")
     assert report["valid"] is False
     assert report["reason"] == "bundle not found"
+
+
+# ------------------------------------------------------------- signing
+#
+# sign_bundle_cosign and verify_bundle_cosign shipped with no callers outside
+# tests: `aihwbench bundle` exposed no --sign, so a bundle could carry
+# checksums and never a signature. Checksums show a bundle is internally
+# consistent; anyone who edits the contents can recompute them. The signature
+# is the part that carries authorship.
+
+
+def test_bundle_signing_is_reachable_from_the_cli():
+    from aihwbench.cli import build_parser
+
+    parser = build_parser()
+    args = parser.parse_args(["bundle", "r.json", "--sign", "--key", "k"])
+    assert args.sign is True
+    assert args.key == "k"
+
+
+def test_verify_bundle_can_require_a_signature():
+    from aihwbench.cli import build_parser
+
+    args = build_parser().parse_args(["verify-bundle", "b.aihwbench", "--verify-signature"])
+    assert args.verify_signature is True
+
+
+def test_signing_without_cosign_is_a_configuration_error(tmp_path, monkeypatch):
+    """The bundle is valid; the environment is not. Those are different."""
+    import json
+
+    from aihwbench.cli import main
+    from tests.test_ecosystem import _result
+
+    source = tmp_path / "r.json"
+    source.write_text(json.dumps(_result("sign-me", 100.0)), encoding="utf-8")
+
+    monkeypatch.setattr(
+        "aihwbench.cli.repro.sign_bundle_cosign",
+        lambda *a, **k: {
+            "signed": False,
+            "reason": "cosign not installed",
+        },
+    )
+    code = main(
+        ["bundle", str(source), "--output", str(tmp_path / "r.aihwbench"), "--sign"]
+    )
+    assert code == 4  # EXIT_CONFIGURATION_ERROR, not a validation failure
+    assert (tmp_path / "r.aihwbench").is_file(), "the bundle must still be written"
+
+
+def test_a_successful_signature_is_written_beside_the_bundle(tmp_path, monkeypatch):
+    import json
+
+    from aihwbench.cli import main
+    from tests.test_ecosystem import _result
+
+    source = tmp_path / "r.json"
+    source.write_text(json.dumps(_result("signed", 100.0)), encoding="utf-8")
+    monkeypatch.setattr(
+        "aihwbench.cli.repro.sign_bundle_cosign",
+        lambda *a, **k: {
+            "signed": True,
+            "signature": "MEUCIQfake",
+        },
+    )
+
+    bundle = tmp_path / "r.aihwbench"
+    assert main(["bundle", str(source), "--output", str(bundle), "--sign"]) == 0
+    signature = bundle.with_suffix(bundle.suffix + ".sig")
+    assert signature.is_file()
+    assert signature.read_text(encoding="utf-8").strip() == "MEUCIQfake"
+
+
+def test_a_failed_signature_check_invalidates_the_bundle(tmp_path, monkeypatch):
+    """Checksums passing while the signature fails is the case this catches."""
+    import json
+
+    from aihwbench.cli import main
+    from tests.test_ecosystem import _result
+
+    source = tmp_path / "r.json"
+    source.write_text(json.dumps(_result("tampered", 100.0)), encoding="utf-8")
+    bundle = tmp_path / "r.aihwbench"
+    assert main(["bundle", str(source), "--output", str(bundle)]) == 0
+
+    monkeypatch.setattr(
+        "aihwbench.cli.repro.verify_bundle_cosign",
+        lambda *a, **k: {
+            "verified": False,
+            "output": "signature mismatch",
+        },
+    )
+    assert main(["verify-bundle", str(bundle), "--verify-signature"]) == 1

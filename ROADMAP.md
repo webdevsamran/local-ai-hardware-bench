@@ -29,7 +29,8 @@ shipped-but-unreachable is not done.
       degradation still needs per-sample throughput, which requires the
       sustained-load protocol; those fields stay null with a stated reason.
 - [x] Optional signing/attestation interface (cosign sign/verify wrappers
-      that report unavailability honestly)
+      that report unavailability honestly), reachable from the CLI:
+      `aihwbench bundle --sign` and `verify-bundle --verify-signature`
 - [x] Typed workload engine + registry and aihwbench.workloads plugin API
 - [x] Load generator (constant/closed-loop/Poisson/Gamma/burst arrivals)
 - [x] Parameter sweep engine and declarative experiment manifests

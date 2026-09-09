@@ -496,6 +496,26 @@ does, so an under-measured result was indistinguishable from a careful one.
   is computed last, so it covers the derived energy, thermal and battery
   blocks too.
 
+### Added — submitted results are validated on the pull request
+
+- A new workflow checks every result a pull request adds and **comments the
+  verdict on the PR**: schema and formal-schema errors, privacy findings,
+  impossible values, statistical confidence, and how many published results
+  the submission can actually be compared with.
+- `benchmark-validation.yml` had existed as a reusable workflow with no
+  callers, so a submission was checked only by the repository-wide
+  data-quality job — which reports into a log nobody reading the PR sees.
+- **What blocks is deliberately narrow**: schema errors, privacy findings and
+  impossible values. An under-measured run or one comparable with nothing yet
+  is reported and merged. Losing a real measurement from a contributor whose
+  hardware cannot sit through a long run is a worse outcome than publishing it
+  with a label, and "comparable with nothing" is what genuinely new hardware
+  looks like.
+- The logic lives in `scripts/validate_pr_results.py`, not inline in YAML, so
+  it is unit-tested — including that the public comment never echoes a leaked
+  identifier, and that every already-published result would pass the gate it
+  holds submissions to.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

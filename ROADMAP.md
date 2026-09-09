@@ -34,12 +34,11 @@ shipped-but-unreachable is not done.
 - [x] Load generator (constant/closed-loop/Poisson/Gamma/burst arrivals)
 - [x] Parameter sweep engine and declarative experiment manifests
 - [x] Capacity ladder testing
-- [~] Advanced streaming metrics and expanded statistics with guarded
-      bootstrap CIs. The statistics are done. Of the streaming metrics only
-      `itl_ms` has a producer (`metrics.py`), and it is a scalar mean rather
-      than a distribution; `tpot_ms`, `time_to_second_token_ms`,
-      `inter_chunk_latency_ms`, `prefill_latency_ms` and `decode_duration_ms`
-      exist as registered vocabulary and schema slots that nothing writes.
+- [x] Advanced streaming metrics and expanded statistics with guarded
+      bootstrap CIs. Inter-token latency is published as a distribution
+      (p50/p90/p99/max) from per-chunk arrival times, alongside `tpot_ms`,
+      `time_to_second_token_ms` and `decode_duration_ms`. A mean cannot show a
+      stall, and a stall is what makes a stream feel slow.
 - [x] Prefill/decode separation, ISL/OSL profiles, mixed traffic,
       multi-turn and deterministic agentic workloads
 

@@ -87,3 +87,61 @@ def test_regression_gate_force_evaluates_and_still_fails(tmp_path):
         ]
     )
     assert code == 5  # EXIT_REGRESSION_DETECTED
+
+
+def test_quantization_refuses_a_speed_only_table(tmp_path, capsys):
+    """The anti-goal: speed across quantizations with no quality signal.
+
+    Lower precision is faster and also changes the output. Publishing the
+    first without the second walks a reader into a worse configuration while
+    looking like measured data.
+    """
+    from tests.test_ecosystem import _result
+
+    published = tmp_path / "published"
+    published.mkdir()
+    doc = _result("speed-only", 90.0)
+    doc["model"]["quantization"] = "q4_0"
+    doc.pop("quality", None)
+    (published / "a.json").write_text(json.dumps(doc), encoding="utf-8")
+
+    code = main(["quantization", "--results-dir", str(published)])
+    assert code == 1
+    assert "speed-only quantization table" in capsys.readouterr().err
+
+
+def test_quantization_prints_when_a_quality_signal_is_present(tmp_path, capsys):
+    from tests.test_ecosystem import _result
+
+    published = tmp_path / "published"
+    published.mkdir()
+    doc = _result("with-quality", 90.0)
+    doc["model"]["quantization"] = "q4_0"
+    doc["quality"] = {"output_hash": "sha256:abc", "deterministic": True}
+    (published / "a.json").write_text(json.dumps(doc), encoding="utf-8")
+
+    assert main(["quantization", "--results-dir", str(published)]) == 0
+    assert "output_hash" in capsys.readouterr().out
+
+
+def test_quantization_override_is_available_but_explicit(tmp_path):
+    from tests.test_ecosystem import _result
+
+    published = tmp_path / "published"
+    published.mkdir()
+    doc = _result("speed-only", 90.0)
+    doc["model"]["quantization"] = "q4_0"
+    doc.pop("quality", None)
+    (published / "a.json").write_text(json.dumps(doc), encoding="utf-8")
+
+    assert (
+        main(
+            [
+                "quantization",
+                "--results-dir",
+                str(published),
+                "--allow-missing-quality",
+            ]
+        )
+        == 0
+    )

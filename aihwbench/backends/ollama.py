@@ -108,6 +108,13 @@ def _generate_stream(model: str, prompt: str, config: BenchmarkConfig) -> dict[s
     ttft_ms: float | None = None
     start = time.perf_counter()
     final: dict[str, Any] = {}
+    # Arrival time of every streamed chunk, and the text itself. The stream
+    # previously read `response` only to detect the first token and dropped
+    # both -- which left no way to measure the inter-token latency
+    # distribution, and no way to tell whether a quantized run still produced
+    # the same output.
+    chunk_times_ms: list[float] = []
+    text_parts: list[str] = []
     try:
         with urllib.request.urlopen(request, timeout=600) as resp:
             for raw_line in resp:
@@ -115,8 +122,13 @@ def _generate_stream(model: str, prompt: str, config: BenchmarkConfig) -> dict[s
                 if not line:
                     continue
                 chunk = json.loads(line)
-                if ttft_ms is None and chunk.get("response"):
-                    ttft_ms = (time.perf_counter() - start) * 1000.0
+                piece = chunk.get("response")
+                if piece:
+                    now = (time.perf_counter() - start) * 1000.0
+                    if ttft_ms is None:
+                        ttft_ms = now
+                    chunk_times_ms.append(now)
+                    text_parts.append(piece)
                 if chunk.get("done"):
                     final = chunk
     except urllib.error.HTTPError as exc:
@@ -146,6 +158,11 @@ def _generate_stream(model: str, prompt: str, config: BenchmarkConfig) -> dict[s
         "prompt_tokens": prompt_count,
         "prompt_eval_seconds": (prompt_duration_ns / 1e9) if prompt_duration_ns else None,
         "load_time_ms": (round(load_duration_ns / 1e6, 2) if load_duration_ns else None),
+        # Consumed by the runner for the streaming-latency distribution and
+        # the output-fidelity probe, then stripped: neither the raw text nor
+        # a per-token timing array belongs in a published result.
+        "chunk_times_ms": [round(t, 3) for t in chunk_times_ms],
+        "text": "".join(text_parts),
     }
 
 

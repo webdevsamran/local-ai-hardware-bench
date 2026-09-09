@@ -209,9 +209,7 @@ def test_signing_without_cosign_is_a_configuration_error(tmp_path, monkeypatch):
             "reason": "cosign not installed",
         },
     )
-    code = main(
-        ["bundle", str(source), "--output", str(tmp_path / "r.aihwbench"), "--sign"]
-    )
+    code = main(["bundle", str(source), "--output", str(tmp_path / "r.aihwbench"), "--sign"])
     assert code == 4  # EXIT_CONFIGURATION_ERROR, not a validation failure
     assert (tmp_path / "r.aihwbench").is_file(), "the bundle must still be written"
 

@@ -16,7 +16,13 @@ const dataset = {
     source_dir: 'results/published',
     note: '',
   },
-  results: [{ run_id: 'ollama-123' }],
+  results: [
+    {
+      run_id: 'ollama-123',
+      model: { name: 'qwen2.5:0.5b-instruct-q4_K_M' },
+      system: { gpu: 'NVIDIA RTX 3080 Ti Laptop' },
+    },
+  ],
   hardware: [
     {
       fingerprint: 'hwfp-v2-abc',
@@ -96,6 +102,31 @@ describe('metaForPath', () => {
     expect(routes).toContain('/hardware/hwfp-v2-abc')
     expect(routes).toContain('/runtimes/ollama')
     expect(routes).toContain('/results/ollama-123')
+  })
+
+  it('gives every measured model-on-GPU pair its own route', () => {
+    // "How fast is X on a Y" is the query people type, and it is a different
+    // question from either half. It needs its own indexable URL.
+    const routes = allRoutes(dataset)
+    expect(routes).toContain(
+      '/models/qwen2-5-0-5b-instruct-q4_k_m/on/nvidia-rtx-3080-ti-laptop',
+    )
+  })
+
+  it('does not invent a page for an unmeasured pair', () => {
+    // A page promising a number it does not have is worse than no page.
+    const routes = allRoutes(dataset)
+    expect(routes).not.toContain('/models/qwen2-5-0-5b-instruct-q4_k_m/on/rtx-4090')
+  })
+
+  it('describes a combination page with both halves', () => {
+    const meta = metaForPath(
+      '/models/qwen2-5-0-5b-instruct-q4_k_m/on/nvidia-rtx-3080-ti-laptop',
+      dataset,
+    )
+    expect(meta.title).toContain('qwen2.5:0.5b-instruct-q4_K_M')
+    expect(meta.title).toContain('RTX 3080 Ti')
+    expect(meta.description).toContain('peak VRAM')
   })
 
   it('never emits a duplicate route', () => {

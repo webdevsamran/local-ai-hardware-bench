@@ -5,6 +5,7 @@ import Home from './pages/Home'
 import Leaderboard from './pages/Leaderboard'
 import WillItRun from './pages/WillItRun'
 import Tco from './pages/Tco'
+import ModelOnHardware from './pages/ModelOnHardware'
 import HardwareExplorer from './pages/HardwareExplorer'
 import HardwareDetail from './pages/HardwareDetail'
 import RuntimeExplorer from './pages/RuntimeExplorer'
@@ -37,6 +38,10 @@ export function AppRoutes() {
           <Route path="/runtimes/:name" element={<RuntimeDetail />} />
           <Route path="/models" element={<ModelExplorer />} />
           <Route path="/models/:slug" element={<ModelDetail />} />
+          <Route
+            path="/models/:modelSlug/on/:gpuSlug"
+            element={<ModelOnHardware />}
+          />
           <Route path="/results" element={<ResultExplorer />} />
           <Route path="/results/:runId" element={<ResultDetail />} />
           <Route path="/compare" element={<Compare />} />

@@ -1,0 +1,653 @@
+{
+  "info": {
+    "description": "Static JSON served from GitHub Pages. There is no server and no authentication: every file is a plain GET, cacheable and mirrorable.\n\nThat is deliberate. A benchmark dataset behind a running service stops existing when someone stops paying for it; one that is a set of files in a public repository does not.\n\nResult documents follow schema version 2.0 and protocol version 1. Endpoints marked **stable** change only through a versioned schema bump with a migration path. Endpoints marked **unstable** are convenience views for the dashboard and may be reshaped.\n\nThe rank in `leaderboard.json` is *within* a comparison group, never across the dataset. Two results in different groups are not ranked against each other, and treating them as if they were is the mistake this project exists to prevent.",
+    "license": {
+      "name": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    "summary": "Read-only access to published local AI benchmark results.",
+    "title": "AIHWBench dataset",
+    "version": "0.2.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/data/comparability.json": {
+      "get": {
+        "description": "The comparison-safety rule tables, and a verdict for every published pair.\n\nGenerated from `aihwbench/comparability.py`. Consumers implementing the classifier themselves should read the rules from here rather than hardcoding them.\n\n**Stability: stable.**",
+        "operationId": "getComparability",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "conditional": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "empty_case": {
+                      "properties": {
+                        "classification": {
+                          "type": "string"
+                        },
+                        "machine_reasons": {
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "insufficient_metadata_reason": {
+                      "type": "string"
+                    },
+                    "reference_cases": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "required_present": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "strict": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The comparison-safety rule tables, and a verdict for every published pair."
+          }
+        },
+        "summary": "The comparison-safety rule tables, and a verdict for every published pair.",
+        "tags": [
+          "stable"
+        ]
+      }
+    },
+    "/data/constants.json": {
+      "get": {
+        "description": "Bits-per-weight table and overhead factor for the model-fit estimator.\n\nGenerated from `aihwbench/analysis/fit.py`, with reference vectors.\n\n**Stability: stable.**",
+        "operationId": "getConstants",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "bits_per_weight": {
+                      "properties": {
+                        "bf16": {
+                          "type": "number"
+                        },
+                        "f16": {
+                          "type": "number"
+                        },
+                        "fp16": {
+                          "type": "number"
+                        },
+                        "fp32": {
+                          "type": "number"
+                        },
+                        "int8": {
+                          "type": "number"
+                        },
+                        "iq2_xxs": {
+                          "type": "number"
+                        },
+                        "iq3_xxs": {
+                          "type": "number"
+                        },
+                        "iq4_xs": {
+                          "type": "number"
+                        },
+                        "q2_k": {
+                          "type": "number"
+                        },
+                        "q3_k_m": {
+                          "type": "number"
+                        },
+                        "q3_k_s": {
+                          "type": "number"
+                        },
+                        "q4_0": {
+                          "type": "number"
+                        },
+                        "q4_1": {
+                          "type": "number"
+                        },
+                        "q4_k_m": {
+                          "type": "number"
+                        },
+                        "q4_k_s": {
+                          "type": "number"
+                        },
+                        "q5_0": {
+                          "type": "number"
+                        },
+                        "q5_1": {
+                          "type": "number"
+                        },
+                        "q5_k_m": {
+                          "type": "number"
+                        },
+                        "q5_k_s": {
+                          "type": "number"
+                        },
+                        "q6_k": {
+                          "type": "number"
+                        },
+                        "q8": {
+                          "type": "number"
+                        },
+                        "q8_0": {
+                          "type": "number"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "overhead_factor": {
+                      "type": "number"
+                    },
+                    "reference_cases": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bits-per-weight table and overhead factor for the model-fit estimator."
+          }
+        },
+        "summary": "Bits-per-weight table and overhead factor for the model-fit estimator.",
+        "tags": [
+          "stable"
+        ]
+      }
+    },
+    "/data/hardware.json": {
+      "get": {
+        "description": "Every machine with published results, keyed by hardware fingerprint.\n\nThe fingerprint is a stable identifier for a hardware configuration.\n\n**Stability: stable.**",
+        "operationId": "getHardware",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "properties": {
+                      "cpu": {
+                        "type": "string"
+                      },
+                      "fingerprint": {
+                        "type": "string"
+                      },
+                      "gpu": {
+                        "type": "string"
+                      },
+                      "npu": {
+                        "type": "null"
+                      },
+                      "os": {
+                        "type": "string"
+                      },
+                      "ram_gb": {
+                        "type": "number"
+                      },
+                      "result_ids": {
+                        "type": "array"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Every machine with published results, keyed by hardware fingerprint."
+          }
+        },
+        "summary": "Every machine with published results, keyed by hardware fingerprint.",
+        "tags": [
+          "stable"
+        ]
+      }
+    },
+    "/data/index.json": {
+      "get": {
+        "description": "Dataset counts and provenance.\n\nSmall and unlikely to change shape.\n\n**Stability: stable.**",
+        "operationId": "getIndex",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "hardware_count": {
+                      "type": "integer"
+                    },
+                    "model_count": {
+                      "type": "integer"
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "results_count": {
+                      "type": "integer"
+                    },
+                    "runtime_count": {
+                      "type": "integer"
+                    },
+                    "schema_version": {
+                      "type": "string"
+                    },
+                    "source_dir": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Dataset counts and provenance."
+          }
+        },
+        "summary": "Dataset counts and provenance.",
+        "tags": [
+          "stable"
+        ]
+      }
+    },
+    "/data/leaderboard.json": {
+      "get": {
+        "description": "Ranked views, grouped by comparison safety.\n\nA convenience view for the dashboard. Rank is *within* a comparison group and never across the dataset; do not read it as a global ranking. Shape may change when the dashboard does.\n\n**Stability: unstable.**",
+        "operationId": "getLeaderboard",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "perf_watt": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "throughput": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "ttft": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Ranked views, grouped by comparison safety."
+          }
+        },
+        "summary": "Ranked views, grouped by comparison safety.",
+        "tags": [
+          "convenience views"
+        ]
+      }
+    },
+    "/data/models.json": {
+      "get": {
+        "description": "Every benchmarked model, with formats, quantizations and checksums.\n\n**Stability: stable.**",
+        "operationId": "getModels",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "properties": {
+                      "checksums": {
+                        "type": "array"
+                      },
+                      "format": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "quantizations": {
+                        "type": "array"
+                      },
+                      "result_ids": {
+                        "type": "array"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Every benchmarked model, with formats, quantizations and checksums."
+          }
+        },
+        "summary": "Every benchmarked model, with formats, quantizations and checksums.",
+        "tags": [
+          "stable"
+        ]
+      }
+    },
+    "/data/pareto.json": {
+      "get": {
+        "description": "Pareto-optimal points for each efficiency frontier.\n\nA convenience view for the dashboard.\n\n**Stability: unstable.**",
+        "operationId": "getPareto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "throughput_vs_latency": {
+                      "properties": {
+                        "excluded_missing_metrics": {
+                          "type": "integer"
+                        },
+                        "points": {
+                          "type": "array"
+                        },
+                        "x_higher_is_better": {
+                          "type": "boolean"
+                        },
+                        "x_metric": {
+                          "type": "string"
+                        },
+                        "y_higher_is_better": {
+                          "type": "boolean"
+                        },
+                        "y_metric": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "throughput_vs_power": {
+                      "properties": {
+                        "excluded_missing_metrics": {
+                          "type": "integer"
+                        },
+                        "points": {
+                          "type": "array"
+                        },
+                        "x_higher_is_better": {
+                          "type": "boolean"
+                        },
+                        "x_metric": {
+                          "type": "string"
+                        },
+                        "y_higher_is_better": {
+                          "type": "boolean"
+                        },
+                        "y_metric": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "throughput_vs_vram": {
+                      "properties": {
+                        "excluded_missing_metrics": {
+                          "type": "integer"
+                        },
+                        "points": {
+                          "type": "array"
+                        },
+                        "x_higher_is_better": {
+                          "type": "boolean"
+                        },
+                        "x_metric": {
+                          "type": "string"
+                        },
+                        "y_higher_is_better": {
+                          "type": "boolean"
+                        },
+                        "y_metric": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Pareto-optimal points for each efficiency frontier."
+          }
+        },
+        "summary": "Pareto-optimal points for each efficiency frontier.",
+        "tags": [
+          "convenience views"
+        ]
+      }
+    },
+    "/data/results.json": {
+      "get": {
+        "description": "Every published benchmark result, in full.\n\nEach element follows the versioned result schema in `schemas/`. Breaking changes go through a schema version bump and a migration, never a silent reshape.\n\n**Stability: stable.**",
+        "operationId": "getResults",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "properties": {
+                      "_file": {
+                        "type": "string"
+                      },
+                      "git_commit": {
+                        "type": "string"
+                      },
+                      "iterations": {
+                        "type": "array"
+                      },
+                      "metrics": {
+                        "type": "object"
+                      },
+                      "model": {
+                        "type": "object"
+                      },
+                      "reproducibility": {
+                        "type": "object"
+                      },
+                      "run_id": {
+                        "type": "string"
+                      },
+                      "runtime": {
+                        "type": "object"
+                      },
+                      "schema_version": {
+                        "type": "string"
+                      },
+                      "system": {
+                        "type": "object"
+                      },
+                      "timestamp": {
+                        "type": "string"
+                      },
+                      "trust_state": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Every published benchmark result, in full."
+          }
+        },
+        "summary": "Every published benchmark result, in full.",
+        "tags": [
+          "stable"
+        ]
+      }
+    },
+    "/data/runtimes.json": {
+      "get": {
+        "description": "Every benchmarked runtime, with the versions and devices measured.\n\n**Stability: stable.**",
+        "operationId": "getRuntimes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "properties": {
+                      "device_options": {
+                        "type": "array"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "result_ids": {
+                        "type": "array"
+                      },
+                      "versions": {
+                        "type": "array"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Every benchmarked runtime, with the versions and devices measured."
+          }
+        },
+        "summary": "Every benchmarked runtime, with the versions and devices measured.",
+        "tags": [
+          "stable"
+        ]
+      }
+    },
+    "/data/tco.json": {
+      "get": {
+        "description": "Reference vectors for the local-vs-cloud calculator.\n\nContains no pricing: cloud prices are supplied by the caller.\n\n**Stability: unstable.**",
+        "operationId": "getTco",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "note": {
+                      "type": "string"
+                    },
+                    "reference_cases": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Reference vectors for the local-vs-cloud calculator."
+          }
+        },
+        "summary": "Reference vectors for the local-vs-cloud calculator.",
+        "tags": [
+          "convenience views"
+        ]
+      }
+    },
+    "/data/trends.json": {
+      "get": {
+        "description": "Per-runtime measurements over time.\n\nA convenience view for the dashboard.\n\n**Stability: unstable.**",
+        "operationId": "getTrends",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "llama.cpp": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "ollama": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "onnxruntime": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "openvino": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Per-runtime measurements over time."
+          }
+        },
+        "summary": "Per-runtime measurements over time.",
+        "tags": [
+          "convenience views"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Published dataset",
+      "url": "https://webdevsamran.github.io/local-ai-hardware-bench"
+    }
+  ],
+  "tags": [
+    {
+      "description": "Versioned; breaking changes require a schema bump.",
+      "name": "stable"
+    },
+    {
+      "description": "Shaped for the dashboard; may change with it.",
+      "name": "convenience views"
+    }
+  ]
+}

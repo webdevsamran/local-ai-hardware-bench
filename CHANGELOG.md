@@ -583,6 +583,27 @@ prerenderer loads every file the browser loads.
 - A model that was already resident reports the cold figure as **absent, not
   zero**: the run did not measure a fast load, it measured no load at all.
 
+### Added — the dataset is a documented, versioned API
+
+The generated JSON files were already a public API: served from a stable path,
+fetchable by anyone, and people will build against them whether or not they
+are described. `web/public/api/openapi.json` turns that accident into a
+contract.
+
+- Eleven endpoints, each carrying an explicit **stability** marker. Result
+  documents, hardware, models, runtimes and the comparability rules are
+  `stable` and change only through a versioned schema bump with a migration.
+  The dashboard's convenience views are marked `unstable` and may be reshaped.
+- The leaderboard endpoint states plainly that its rank is **within a
+  comparison group, never across the dataset** — a consumer reading it as a
+  global ranking would make exactly the mistake this project exists to prevent.
+- Generated from the real files, so the description cannot claim a shape they
+  do not have, and checked in CI. Tests assert both directions: nothing
+  documented is missing, and nothing served is undocumented.
+- No server is implied. A benchmark dataset behind a running service stops
+  existing when someone stops paying for it; a set of files in a public
+  repository does not.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

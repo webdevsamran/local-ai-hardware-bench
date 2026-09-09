@@ -14,7 +14,7 @@ jobs:
     name: Lint & format check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
@@ -23,6 +23,17 @@ jobs:
       # 0.11.13, so `ruff format` locally and `ruff format --check` here
       # disagreed about the same file.
       - run: pip install ruff==0.16.4
+      - name: Secret scan
+        # This repo had npm audit and security-extended CodeQL but no secret
+        # scanning at all, while tooltrace-bench had the reverse. Each of the
+        # four had what the others lacked.
+        run: python scripts/secret_scan.py
+      - name: Pinned actions match their version comments
+        # Sixteen `uses:` lines here pinned actions/checkout@3d3c42e5aac5 and
+        # called it v7.0.0; that SHA is v7.0.1.
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/check_action_pins.py
       - run: ruff check aihwbench tests
       - run: ruff format --check aihwbench tests
 
@@ -37,7 +48,7 @@ jobs:
         # 3.11 user ran code the matrix never exercised.
         python: ["3.10", "3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python }}
@@ -48,7 +59,7 @@ jobs:
     name: Test coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
@@ -59,7 +70,7 @@ jobs:
     name: Type check (mypy)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
@@ -74,7 +85,7 @@ jobs:
     name: Build package
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
@@ -86,7 +97,7 @@ jobs:
     name: Docs link check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
@@ -96,7 +107,7 @@ jobs:
     name: Frontend (lint, tests, build)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
@@ -116,13 +127,17 @@ jobs:
         run: npm run build
 
   dependencies:
+    # NOT renamed to mention pip-audit, though it now runs it: this exact
+    # string is a required status check in branch protection, matched
+    # byte-for-byte. tooltrace-bench spent an entire merge backlog on a
+    # renamed required check; a more accurate job name is not worth that.
     name: Dependency review (npm audit + action)
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
@@ -134,6 +149,17 @@ jobs:
       - name: npm audit (fail on high+)
         working-directory: web
         run: npm audit --audit-level=high
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install package + audit tool
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e . pip-audit
+      - name: pip-audit (fail on any known advisory)
+        # The Python surface was entirely unaudited here: npm audit gated the
+        # frontend while nothing checked the package's own dependencies.
+        run: pip-audit --skip-editable
       # NOTE: dependency-review-action requires the repository setting
       # "Dependency graph" (Settings -> Code security -> Dependency graph),
       # which is UI-only and cannot be enabled via API. Until it is switched
@@ -155,7 +181,7 @@ jobs:
     name: Generated frontend data is up to date
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
@@ -173,7 +199,7 @@ jobs:
     name: Result pipeline (schema + privacy + duplicates)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"

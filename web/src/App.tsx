@@ -1,4 +1,4 @@
-import { HashRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import Layout from './components/Layout'
 import Home from './pages/Home'
@@ -53,10 +53,29 @@ export function AppRoutes() {
   )
 }
 
+/**
+ * Layout plus routes, without a router.
+ *
+ * The browser wraps this in a BrowserRouter; the prerenderer wraps the same
+ * tree in a StaticRouter. Keeping the router out of here is what lets one
+ * component tree serve both.
+ */
+export function AppShell({ children }: { children?: ReactNode }) {
+  return <Layout>{children ?? <AppRoutes />}</Layout>
+}
+
+// Vite injects the deploy sub-path ('/' locally, '/local-ai-hardware-bench/'
+// on GitHub Pages). React Router wants a basename with no trailing slash.
+const BASENAME = (import.meta.env.BASE_URL || '/').replace(/[/]$/, '')
+
 export default function App({ children }: { children?: ReactNode }) {
   return (
-    <HashRouter>
-      <Layout>{children ?? <AppRoutes />}</Layout>
-    </HashRouter>
+    // BrowserRouter, not HashRouter: to a crawler '/#/models/x' is the home
+    // page, so every route shared one identity and none could rank on its own.
+    // Real paths rely on the prerendered HTML from scripts/prerender.mjs and
+    // the 404.html fallback for deep links on GitHub Pages.
+    <BrowserRouter basename={BASENAME}>
+      <AppShell>{children}</AppShell>
+    </BrowserRouter>
   )
 }

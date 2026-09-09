@@ -5,11 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && npm run build:client && npm run build:ssr && npm run prerender",
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "eslint . --max-warnings 0",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "build:client": "vite build",
+    "build:ssr": "vite build --ssr src/entry-server.tsx --outDir dist-ssr",
+    "prerender": "node scripts/prerender.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

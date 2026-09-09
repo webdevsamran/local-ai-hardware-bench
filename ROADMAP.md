@@ -161,6 +161,7 @@ shipped-but-unreachable is not done.
       hashing and tamper verification
 - [x] self-test precondition/noise checks; doctor enhancements
 - [x] Reusable benchmark-validation GitHub workflow with machine-readable
-      verdicts
+      verdicts, and a pull-request validator that comments the verdict on
+      submissions (`scripts/validate_pr_results.py`)
 - [x] React + TypeScript production dashboard (20 routes) deployed to
       GitHub Pages from generated static dataset

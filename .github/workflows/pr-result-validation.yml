@@ -1,0 +1,86 @@
+# Validates benchmark results submitted in a pull request and comments the
+# verdict on the PR.
+#
+# benchmark-validation.yml has existed as a reusable workflow with no callers,
+# so a submitted result was checked only by the repository-wide data-quality
+# job, which reports into a log nobody reading the PR sees. A contributor
+# should learn what is wrong with their submission from the pull request,
+# before a maintainer looks at it.
+#
+# The logic lives in scripts/validate_pr_results.py rather than inline here,
+# so it is unit-tested. Validation embedded in workflow YAML is only ever
+# exercised by opening a pull request, which is a slow and public way to
+# discover the validator is broken.
+#
+# Uses the preinstalled `gh` CLI to comment, so this adds no new pinned
+# action dependency.
+
+name: Validate submitted results
+
+on:
+  pull_request:
+    paths:
+      - "results/**"
+      - "schemas/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate:
+    name: Validate and report
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The base commit is needed to work out which results this PR added.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - run: pip install -e ".[schema]"
+
+      - name: List the result files this pull request changed
+        id: changed
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # --diff-filter=d ignores deletions: a removed result has nothing
+          # left to validate.
+          git diff --name-only --diff-filter=d "$BASE_SHA" HEAD -- 'results/**/*.json' \
+            > changed-results.txt
+          echo "count=$(wc -l < changed-results.txt)" >> "$GITHUB_OUTPUT"
+          cat changed-results.txt
+
+      - name: Validate the submissions
+        id: validate
+        # `|| true` so the report is still posted when validation fails; the
+        # explicit gate below decides the job's outcome.
+        run: |
+          set -o pipefail
+          xargs -r python scripts/validate_pr_results.py --output pr-comment.md \
+            < changed-results.txt && echo "blocking=0" >> "$GITHUB_OUTPUT" \
+            || echo "blocking=1" >> "$GITHUB_OUTPUT"
+
+      - name: Add the report to the run summary
+        if: always() && hashFiles('pr-comment.md') != ''
+        run: cat pr-comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment the verdict on the pull request
+        # A fork's token cannot write to the PR. The run summary above still
+        # carries the full report, so a missing comment is never a silent pass.
+        if: >-
+          always() && hashFiles('pr-comment.md') != '' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment "${{ github.event.pull_request.number }}" --body-file pr-comment.md
+
+      - name: Fail when a submission is not publishable
+        if: steps.validate.outputs.blocking == '1'
+        run: |
+          echo "::error::One or more submitted results failed validation; see the comment above."
+          exit 1

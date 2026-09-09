@@ -288,10 +288,22 @@ export function ScatterChart({
 }) {
   if (points.length === 0) return null
 
-  const padLeft = 10
-  const padBottom = 26
-  const plotW = 100 - padLeft - 2
-  const plotH = height - padBottom
+  // A fixed 100x60 viewBox with the default `meet` aspect ratio, rather than
+  // the stretched `preserveAspectRatio="none"` the bar and line charts use.
+  // Stretching turns a marker into a sliver on a narrow screen, and this chart
+  // distinguishes its points by shape.
+  const VIEW_W = 100
+  const VIEW_H = 60
+  const MARKER = 1.9
+
+  // Padding leaves room for the axis labels, and enough margin that a marker
+  // at an extreme value is not clipped by the viewBox edge.
+  const padLeft = 6
+  const padRight = 4
+  const padTop = 4
+  const padBottom = 10
+  const plotW = VIEW_W - padLeft - padRight
+  const plotH = VIEW_H - padTop - padBottom
 
   const xs = points.map((p) => p.x)
   const ys = points.map((p) => p.y)
@@ -299,26 +311,28 @@ export function ScatterChart({
   const xMax = Math.max(...xs)
   const yMin = Math.min(...ys)
   const yMax = Math.max(...ys)
-  // A single point, or several sharing a value, would divide by zero.
+  // A single point, or several sharing a value, would divide by zero; centre
+  // them rather than pinning them to an edge.
   const xSpan = xMax - xMin || 1
   const ySpan = yMax - yMin || 1
 
-  const px = (x: number) => padLeft + ((x - xMin) / xSpan) * plotW
-  const py = (y: number) => plotH - ((y - yMin) / ySpan) * (plotH - 12) - 6
+  const px = (x: number) =>
+    padLeft + (xMax === xMin ? 0.5 : (x - xMin) / xSpan) * plotW
+  const py = (y: number) =>
+    padTop + plotH - (yMax === yMin ? 0.5 : (y - yMin) / ySpan) * plotH
 
   const optimal = points.filter((p) => p.optimal)
 
   return (
     <figure className="chart">
       <svg
-        viewBox={`0 0 100 ${height}`}
+        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
         role="img"
         aria-label={
           `Scatter of ${yLabel} against ${xLabel}. ` +
           `${optimal.length} of ${points.length} points are Pareto-optimal.`
         }
-        preserveAspectRatio="none"
-        style={{ width: '100%', height }}
+        style={{ width: '100%', height: 'auto', maxHeight: height }}
       >
         {points.map((point) =>
           point.optimal ? (
@@ -326,7 +340,12 @@ export function ScatterChart({
             // survive for a reader who cannot separate the hues.
             <polygon
               key={point.run_id}
-              points={`${px(point.x)},${py(point.y) - 3} ${px(point.x) + 2.2},${py(point.y)} ${px(point.x)},${py(point.y) + 3} ${px(point.x) - 2.2},${py(point.y)}`}
+              points={
+                `${px(point.x)},${py(point.y) - MARKER} ` +
+                `${px(point.x) + MARKER},${py(point.y)} ` +
+                `${px(point.x)},${py(point.y) + MARKER} ` +
+                `${px(point.x) - MARKER},${py(point.y)}`
+              }
               className="scatter-optimal"
             >
               <title>{`${point.label ?? point.run_id} — optimal`}</title>
@@ -336,17 +355,22 @@ export function ScatterChart({
               key={point.run_id}
               cx={px(point.x)}
               cy={py(point.y)}
-              r={1.8}
+              r={MARKER * 0.75}
               className="scatter-point"
             >
               <title>{point.label ?? point.run_id}</title>
             </circle>
           ),
         )}
-        <text x={padLeft} y={height - 6} className="chart-label">
+        <text x={padLeft} y={VIEW_H - 2} className="chart-label">
           {xLabel} →
         </text>
-        <text x={98} y={height - 6} textAnchor="end" className="chart-label">
+        <text
+          x={VIEW_W - padRight}
+          y={VIEW_H - 2}
+          textAnchor="end"
+          className="chart-label"
+        >
           {yHigherIsBetter ? '↑' : '↓'} {yLabel}
         </text>
       </svg>

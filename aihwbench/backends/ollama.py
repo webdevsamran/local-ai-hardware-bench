@@ -191,21 +191,29 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             f"Run: ollama pull {config.model}. Local models: {', '.join(available)}"
         )
 
-    from ..metrics import aggregate_iteration_metrics
+    from ..metrics import aggregate_iteration_metrics, cold_start_metrics
     from ..versions import CURRENT_SCHEMA_VERSION
 
     sampler = TelemetrySampler(interval_seconds=0.5)
     sampler.start()
     iterations: list[dict[str, Any]] = []
+    warmups: list[dict[str, Any]] = []
     try:
         for _ in range(config.warmup_runs):
-            _generate_stream(config.model, config.prompt, config)
+            # Warm-ups are excluded from the published metrics, but the first
+            # one is the only cold-start measurement a run ever produces:
+            # Ollama reports load_duration only when it actually loaded the
+            # model. Discarding it outright threw away the number that answers
+            # "how long before this is usable", which is a real part of the
+            # experience and one throughput benchmarks ignore entirely.
+            warmups.append(_generate_stream(config.model, config.prompt, config))
         for _ in range(config.iterations):
             iterations.append(_generate_stream(config.model, config.prompt, config))
     finally:
         sampler.stop()
 
     metrics = aggregate_iteration_metrics(iterations)
+    metrics.update(cold_start_metrics(warmups, iterations))
     telemetry = sampler.summary()
     metrics.update(telemetry)
     # Recompute performance-per-watt now that measured power is available.

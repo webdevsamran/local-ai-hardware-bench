@@ -64,6 +64,9 @@ METRIC_REGISTRY: dict[str, dict[str, Any]] = {
     "itl_p90_ms": {"unit": "ms", "aliases": (), "family": "latency"},
     "itl_p99_ms": {"unit": "ms", "aliases": (), "family": "latency"},
     "itl_max_ms": {"unit": "ms", "aliases": (), "family": "latency"},
+    "cold_start_ms": {"unit": "ms", "aliases": (), "family": "latency"},
+    "warm_load_ms": {"unit": "ms", "aliases": (), "family": "latency"},
+    "cold_start_penalty_ms": {"unit": "ms", "aliases": (), "family": "latency"},
     "inter_token_samples": {"unit": "count", "aliases": (), "family": "coverage"},
     "time_to_second_token_ms": {"unit": "ms", "aliases": (), "family": "latency"},
     "inter_chunk_latency_ms": {"unit": "ms", "aliases": (), "family": "latency"},
@@ -267,6 +270,48 @@ def streaming_latency_metrics(iterations: list[dict[str, Any]]) -> dict[str, Any
         "time_to_second_token_ms": round(sum(second_token) / len(second_token), 3),
         "decode_duration_ms": round(sum(decode_durations) / len(decode_durations), 3),
         "inter_token_samples": len(gaps),
+    }
+
+
+def cold_start_metrics(
+    warmups: list[dict[str, Any]], measured: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Cold-start against warm load time.
+
+    The first request after a model is not resident pays for loading it; every
+    request afterwards does not. Throughput benchmarks discard warm-up runs
+    entirely and so never report the difference, even though "how long until
+    this is usable" is a real part of using a local model -- and on a machine
+    where the model does not stay resident, it is paid repeatedly.
+
+    ``cold_start_ms`` comes from the first warm-up, which is the only run that
+    can have loaded the model. All fields are None when the runtime reported no
+    load duration, which is what a warm model looks like: absent, not zero.
+    """
+
+    def _load(run: dict[str, Any]) -> float | None:
+        value = run.get("load_time_ms")
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        return float(value)
+
+    cold = _load(warmups[0]) if warmups else None
+    warm_values = [v for v in (_load(run) for run in measured) if v is not None]
+    warm = round(sum(warm_values) / len(warm_values), 3) if warm_values else None
+
+    penalty: float | None = None
+    if cold is not None and warm is not None:
+        penalty = round(cold - warm, 3)
+    elif cold is not None and measured and not warm_values:
+        # No load reported on the measured runs means the model stayed
+        # resident, so the whole cold figure is the penalty.
+        penalty = cold
+
+    return {
+        "cold_start_ms": cold,
+        "warm_load_ms": warm,
+        "cold_start_penalty_ms": penalty,
+        "cold_start_measured": cold is not None,
     }
 
 

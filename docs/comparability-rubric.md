@@ -123,3 +123,10 @@ Both commands exit non-zero rather than printing a comparison the
 rubric forbids. `--force` overrides, and still reports the true
 verdict so a forced run cannot be mistaken for a clean one.
 
+## Disagreeing with a verdict
+
+These rules encode a judgement about what makes two measurements the
+same experiment, and a judgement can be wrong. If a rule blocks a
+comparison that should be allowed, or permits one that should not,
+that is worth raising: see [disputes.md](disputes.md).
+

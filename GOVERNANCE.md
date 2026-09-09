@@ -37,6 +37,8 @@ high-quality involvement and alignment with the honesty policy.
   changes need a migration path for published results.
 - **Disputes**: resolved by discussion first; the lead maintainer makes
   the final call when consensus fails.
+  Disputes about a **published result** follow the written process in
+  [docs/disputes.md](docs/disputes.md).
 
 ## Current maintainers
 

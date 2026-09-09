@@ -12,6 +12,7 @@ from ..evaluators import list_evaluators, load_dataset, run_evaluation
 from ..exit_codes import EXIT_OK, EXIT_USAGE_ERROR, EXIT_VALIDATION_ERROR
 from ..export import DatasetLoadError, export_dataset, export_parquet
 from ..exporters import get_exporter, list_exporters
+from ..fingerprint import find_duplicates, result_fingerprint
 from ..quality import data_quality_report, flag_anomalies, invalidate_result
 from ..quantization import compare_quantizations, has_quality_signal
 from ..sanitize import redact_object, scan_object_detailed
@@ -138,6 +139,38 @@ def cmd_quality(args: argparse.Namespace) -> int:
         fail(str(exc))
         return EXIT_VALIDATION_ERROR
     echo_json(data_quality_report(result))
+    return EXIT_OK
+
+
+def cmd_fingerprint(args: argparse.Namespace) -> int:
+    """Print a result's experiment fingerprint, or find duplicates in a set."""
+    path = Path(args.path)
+    if path.is_dir():
+        results = load_results_dir(path)
+        if not results:
+            fail(f"no result JSON files found in {path}")
+            return EXIT_USAGE_ERROR
+        groups = find_duplicates(results)
+        echo_json(
+            {
+                "results": len(results),
+                "duplicate_groups": groups,
+                "duplicates": sum(len(g) for g in groups),
+                "note": (
+                    "results sharing a fingerprint ran the identical "
+                    "experiment; that is expected for repeat runs and a "
+                    "problem only when they are published as independent "
+                    "evidence"
+                ),
+            }
+        )
+        return EXIT_OK
+    try:
+        result = load_result(path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        fail(str(exc))
+        return EXIT_VALIDATION_ERROR
+    echo_json({"run_id": result.get("run_id"), "fingerprint": result_fingerprint(result)})
     return EXIT_OK
 
 
@@ -273,6 +306,13 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     qual = sub.add_parser("quality", help="Data-quality checks (file or directory)")
     qual.add_argument("path")
     qual.set_defaults(func=cmd_quality)
+
+    fp = sub.add_parser(
+        "fingerprint",
+        help="Print a result's experiment fingerprint, or find duplicates in a directory",
+    )
+    fp.add_argument("path", help="A result file, or a directory of results")
+    fp.set_defaults(func=cmd_fingerprint)
 
     red = sub.add_parser("redact", help="Write a privacy-scrubbed copy of a result")
     red.add_argument("result")

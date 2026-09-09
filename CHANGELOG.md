@@ -334,6 +334,21 @@ a workload validation set. The claim is now backed by an implementation.
   shareable link and survives a reload. When a combination matches nothing the
   page says so and offers to clear it, rather than showing an empty table.
 
+### Added — a written dispute process, and fingerprints on the CLI
+
+- **[`docs/disputes.md`](docs/disputes.md)** sets out how a published result
+  is challenged, reviewed and resolved, before anyone needs it. The moment a
+  leaderboard matters, someone will want a result changed; a process written
+  in advance lets a decision be checked against a rule rather than a mood.
+  It states what can be disputed (anything factual), what cannot ("this makes
+  our hardware look bad" is not a defect), that nothing is ever deleted or
+  silently edited, that automated flags are review requests and not
+  accusations, and how a maintainer conflict of interest is handled.
+- **`aihwbench fingerprint`** exposes the experiment fingerprint for a single
+  result and duplicate detection across a directory. Both existed in
+  `aihwbench/fingerprint.py` and in CI, with no way for a contributor to run
+  either before submitting.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

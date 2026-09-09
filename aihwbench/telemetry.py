@@ -21,6 +21,8 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+from .vendors import battery_sample, powermetrics_sample, rocm_sample
+
 __all__ = [
     "TelemetrySampler",
     "measure",
@@ -33,6 +35,33 @@ __all__ = [
 # this is roughly 40 minutes of full-resolution sampling; longer soaks are
 # downsampled uniformly rather than truncated, and the fact is recorded.
 MAX_TRACE_SAMPLES = 5000
+
+
+def _gpu_probes() -> tuple[tuple[str, Callable[[], dict[str, Any] | None]], ...]:
+    """GPU telemetry probes, in the order they are tried.
+
+    Built per call rather than held in a module-level tuple. A tuple would
+    capture the function objects at import time, which makes them unpatchable
+    -- tests that substitute a synthetic probe would silently exercise the
+    real one instead. Referencing them inside a function body resolves them
+    from module globals at call time and keeps them visible to the linter,
+    which a name-based lookup does not.
+
+    A machine has one GPU vendor in practice, so the first probe that answers
+    wins; probing the rest every half second would cost more than it measures.
+    NVIDIA is first because it is the only one confirmed on real hardware here.
+    """
+    return (
+        ("nvidia-smi", _nvidia_smi_sample),
+        ("rocm-smi", rocm_sample),
+        ("powermetrics", powermetrics_sample),
+    )
+
+
+#: Extra keys a vendor probe may contribute beyond the common sample shape.
+_GPU_EXTRA_KEYS = frozenset(
+    {"telemetry_vendor", "vram_percent", "cpu_power_watts", "gpu_power_watts", "power_basis"}
+)
 
 
 def _nvidia_smi_sample() -> dict[str, Any] | None:
@@ -301,14 +330,31 @@ class TelemetrySampler:
             }
             self._sources["ram_mb"] = ram_source
             self._sources["cpu_util_percent"] = cpu_source
-            gpu = _nvidia_smi_sample()
+
+            # First vendor that answers wins; see _gpu_probes.
+            gpu = None
+            gpu_source = None
+            for source_name, probe in _gpu_probes():
+                gpu = probe()
+                if gpu is not None:
+                    gpu_source = source_name
+                    break
+
             if gpu is not None:
-                sample.update(gpu)
+                sample.update({k: v for k, v in gpu.items() if k in sample or k in _GPU_EXTRA_KEYS})
                 for key in ("vram_mb", "gpu_util_percent", "temperature_c", "power_watts"):
-                    self._sources[key] = "nvidia-smi"
+                    self._sources[key] = gpu_source if gpu.get(key) is not None else None
             else:
                 for key in ("vram_mb", "gpu_util_percent", "temperature_c", "power_watts"):
                     self._sources[key] = None
+
+            # Battery, where there is one. Sampled per point rather than once,
+            # because the drain rate over a sustained run is the number laptop
+            # owners want and a single reading cannot give it.
+            battery = battery_sample()
+            if battery is not None:
+                sample.update(battery)
+                self._sources["battery_percent"] = "psutil"
             with self._lock:
                 self._samples.append(sample)
             time.sleep(self.interval)

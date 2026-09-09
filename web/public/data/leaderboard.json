@@ -2,137 +2,187 @@
   "perf_watt": [
     {
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "device": "cuda",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
       "group": 0,
       "group_label": "qwen2.5-0.5b-instruct-q4_k_m.gguf on llama.cpp (llama-server/cuda)",
       "group_size": 1,
       "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "quantization": null,
       "rank": 1,
       "run_id": "llamacpp-1787391945",
       "runtime": "llama.cpp",
+      "trust": "verified",
       "unit": "tok/s/W",
-      "value": 13.48542600896861
+      "value": 13.48542600896861,
+      "vram_mb": 16384,
+      "vram_tier": "16 GB"
     },
     {
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "device": "cpu",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
       "group": 2,
       "group_label": "mobilenetv2-12.onnx on onnxruntime (execution-providers:CPUExecutionProvider/cpu)",
       "group_size": 1,
       "model": "mobilenetv2-12.onnx",
+      "quantization": null,
       "rank": 1,
       "run_id": "onnxruntime-1787391388",
       "runtime": "onnxruntime",
+      "trust": "verified",
       "unit": "inf/s/W",
-      "value": 13.46753567139
+      "value": 13.46753567139,
+      "vram_mb": 16384,
+      "vram_tier": "16 GB"
     },
     {
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "device": "dml",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
       "group": 3,
       "group_label": "mobilenetv2-12.onnx on onnxruntime (execution-providers:DmlExecutionProvider,CPUExecutionProvider/dml)",
       "group_size": 1,
       "model": "mobilenetv2-12.onnx",
+      "quantization": null,
       "rank": 1,
       "run_id": "onnxruntime-1787391455",
       "runtime": "onnxruntime",
+      "trust": "verified",
       "unit": "inf/s/W",
-      "value": 11.353989914187999
+      "value": 11.353989914187999,
+      "vram_mb": 16384,
+      "vram_tier": "16 GB"
     },
     {
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "device": "cpu",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
       "group": 4,
       "group_label": "mobilenetv2-12.onnx on openvino (device:CPU/cpu)",
       "group_size": 1,
       "model": "mobilenetv2-12.onnx",
+      "quantization": null,
       "rank": 1,
       "run_id": "openvino-1787391625",
       "runtime": "openvino",
+      "trust": "verified",
       "unit": "inf/s/W",
-      "value": 5.878096883870219
+      "value": 5.878096883870219,
+      "vram_mb": 16384,
+      "vram_tier": "16 GB"
     },
     {
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "device": "gpu",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
       "group": 5,
       "group_label": "mobilenetv2-12.onnx on openvino (device:GPU.0/gpu)",
       "group_size": 1,
       "model": "mobilenetv2-12.onnx",
+      "quantization": null,
       "rank": 1,
       "run_id": "openvino-1787391710",
       "runtime": "openvino",
+      "trust": "verified",
       "unit": "inf/s/W",
-      "value": 4.461760364141747
+      "value": 4.461760364141747,
+      "vram_mb": 16384,
+      "vram_tier": "16 GB"
     },
     {
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "device": "auto",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
       "group": 1,
       "group_label": "qwen2.5:0.5b-instruct-q4_K_M on ollama (ollama-http-api/auto)",
       "group_size": 1,
       "model": "qwen2.5:0.5b-instruct-q4_K_M",
+      "quantization": null,
       "rank": 1,
       "run_id": "ollama-1787388930",
       "runtime": "ollama",
+      "trust": "verified",
       "unit": "tok/s/W",
-      "value": 4.240443425076453
+      "value": 4.240443425076453,
+      "vram_mb": 16384,
+      "vram_tier": "16 GB"
     }
   ],
   "throughput": [
     {
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "device": "cuda",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
       "group": 0,
       "group_label": "qwen2.5-0.5b-instruct-q4_k_m.gguf on llama.cpp (llama-server/cuda)",
       "group_size": 1,
       "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "quantization": null,
       "rank": 1,
       "run_id": "llamacpp-1787391945",
       "runtime": "llama.cpp",
+      "trust": "verified",
       "unit": null,
-      "value": 360.87
+      "value": 360.87,
+      "vram_mb": 16384,
+      "vram_tier": "16 GB"
     },
     {
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "device": "auto",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
       "group": 1,
       "group_label": "qwen2.5:0.5b-instruct-q4_K_M on ollama (ollama-http-api/auto)",
       "group_size": 1,
       "model": "qwen2.5:0.5b-instruct-q4_K_M",
+      "quantization": null,
       "rank": 1,
       "run_id": "ollama-1787388930",
       "runtime": "ollama",
+      "trust": "verified",
       "unit": null,
-      "value": 110.93
+      "value": 110.93,
+      "vram_mb": 16384,
+      "vram_tier": "16 GB"
     }
   ],
   "ttft": [
     {
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "device": "cuda",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
       "group": 0,
       "group_label": "qwen2.5-0.5b-instruct-q4_k_m.gguf on llama.cpp (llama-server/cuda)",
       "group_size": 1,
       "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "quantization": null,
       "rank": 1,
       "run_id": "llamacpp-1787391945",
       "runtime": "llama.cpp",
+      "trust": "verified",
       "unit": null,
-      "value": 14.52
+      "value": 14.52,
+      "vram_mb": 16384,
+      "vram_tier": "16 GB"
     },
     {
       "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "device": "auto",
       "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
       "group": 1,
       "group_label": "qwen2.5:0.5b-instruct-q4_K_M on ollama (ollama-http-api/auto)",
       "group_size": 1,
       "model": "qwen2.5:0.5b-instruct-q4_K_M",
+      "quantization": null,
       "rank": 1,
       "run_id": "ollama-1787388930",
       "runtime": "ollama",
+      "trust": "verified",
       "unit": null,
-      "value": 2069.71
+      "value": 2069.71,
+      "vram_mb": 16384,
+      "vram_tier": "16 GB"
     }
   ]
 }

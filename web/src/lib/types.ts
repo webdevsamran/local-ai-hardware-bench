@@ -113,6 +113,12 @@ export interface LeaderboardRow {
   value?: number | null
   /** Unit for performance-per-watt rows: tok/s/W and inf/s/W are different. */
   unit?: string | null
+  /** Filterable dimensions. */
+  vram_mb?: number | null
+  vram_tier?: string | null
+  quantization?: string | null
+  device?: string | null
+  trust?: string | null
 }
 
 export interface LeaderboardViews {

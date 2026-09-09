@@ -142,6 +142,19 @@ describe('App routes (smoke)', () => {
     expect(await screen.findByText(/Fits entirely in VRAM/)).toBeTruthy()
   })
 
+  it('filters the leaderboard from the URL query string', async () => {
+    // Filters live in the URL so a filtered view is shareable and survives a
+    // reload. The fixture's single result is on ollama, so filtering to a
+    // different runtime must empty the table rather than ignore the filter.
+    renderAt('/leaderboard?runtime=llama.cpp')
+    expect(await screen.findByText(/No result matches these filters/)).toBeTruthy()
+  })
+
+  it('shows the leaderboard when a filter matches', async () => {
+    renderAt('/leaderboard?runtime=ollama')
+    expect(await screen.findByText('test-run-1')).toBeTruthy()
+  })
+
   it('renders result detail for a known run', async () => {
     renderAt('/results/test-run-1')
     expect(await screen.findByText('Reproducibility')).toBeTruthy()

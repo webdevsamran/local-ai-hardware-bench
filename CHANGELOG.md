@@ -46,6 +46,21 @@ Format based on Keep a Changelog; versioning is SemVer.
   the question behind every "will this fit in my VRAM" decision — measures
   something. The default is unchanged when no value is supplied.
 
+### Added — privacy scrubbing, not just detection
+
+- **`aihwbench redact <result>`** writes a scrubbed copy of a result, and
+  `sanitize.redact_object()` / `redact_text()` back it. The scanner could only
+  ever *report* a leak; there was no way to remove one. A contributor who
+  found an identifier in their result had no supported path to fixing it, and
+  a single leak in published data is unrecoverable.
+- Redaction placeholders keep **nothing** of the matched value — `redact_match`
+  deliberately keeps a short prefix so a CI finding stays recognisable, which
+  is the wrong trade for data being published. Every occurrence is replaced
+  (the scanner reports only the first per pattern, which is enough to fail CI
+  but not enough to scrub), dictionary keys are scrubbed as well as values,
+  colliding keys are suffixed rather than dropped, and the command fails
+  closed rather than writing a file that still scans dirty.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

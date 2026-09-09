@@ -14,6 +14,7 @@ from ..export import DatasetLoadError, export_dataset, export_parquet
 from ..exporters import get_exporter, list_exporters
 from ..quality import data_quality_report, flag_anomalies, invalidate_result
 from ..quantization import compare_quantizations
+from ..sanitize import redact_object, scan_object_detailed
 from ..validate import load_result
 from .common import echo_json, fail, load_results_dir
 
@@ -121,6 +122,43 @@ def cmd_quality(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def cmd_redact(args: argparse.Namespace) -> int:
+    """Write a scrubbed copy of a result, removing private identifiers.
+
+    Detection alone cannot protect published data: a contributor needs a way
+    to *remove* a leak before submitting, because a single one in the public
+    dataset is unrecoverable.
+    """
+    path = Path(args.result)
+    try:
+        result = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        fail(str(exc))
+        return EXIT_VALIDATION_ERROR
+
+    findings = scan_object_detailed(result)
+    cleaned = redact_object(result)
+    residual = scan_object_detailed(cleaned)
+    if residual:
+        # Fail closed: never hand back a file we believe is still dirty.
+        fail(
+            f"{len(residual)} identifier(s) survived redaction; refusing to "
+            "write a file that may still leak. Please open an issue with the "
+            "pattern ids: " + ", ".join(sorted({f["pattern"] for f in residual}))
+        )
+        return EXIT_VALIDATION_ERROR
+
+    destination = Path(args.output) if args.output else path.with_suffix(".redacted.json")
+    destination.write_text(json.dumps(cleaned, indent=2) + "\n", encoding="utf-8")
+    removed = sorted({f["pattern"] for f in findings})
+    print(f"Redacted {len(findings)} finding(s) -> {destination}")
+    if removed:
+        print("  patterns removed: " + ", ".join(removed))
+    else:
+        print("  nothing matched; the copy is identical")
+    return EXIT_OK
+
+
 def cmd_invalidate(args: argparse.Namespace) -> int:
     """Record an invalidation; original history is preserved (#42)."""
     try:
@@ -208,6 +246,11 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     qual = sub.add_parser("quality", help="Data-quality checks (file or directory)")
     qual.add_argument("path")
     qual.set_defaults(func=cmd_quality)
+
+    red = sub.add_parser("redact", help="Write a privacy-scrubbed copy of a result")
+    red.add_argument("result")
+    red.add_argument("--output", default=None, help="destination (default: <name>.redacted.json)")
+    red.set_defaults(func=cmd_redact)
 
     inval = sub.add_parser("invalidate", help="Record an invalidation (history preserved)")
     inval.add_argument("result")

@@ -27,6 +27,8 @@ from typing import Any
 __all__ = [
     "PATTERN_IDS",
     "redact_match",
+    "redact_object",
+    "redact_text",
     "scan_file",
     "scan_object",
     "scan_object_detailed",
@@ -101,6 +103,60 @@ def redact_match(value: str, keep: int = _REDACT_KEEP) -> str:
     if len(value) <= keep:
         return f"[redacted len={len(value)}]"
     return f"{value[:keep]}...[redacted len={len(value)}]"
+
+
+def redact_text(text: str) -> str:
+    """Replace every occurrence of every pattern with an inert placeholder.
+
+    Unlike :func:`redact_match`, which keeps a short prefix so a CI finding is
+    recognisable, this keeps *nothing* of the matched value: the output is
+    published data, and a four-character prefix of a leak is still a leak.
+    The placeholder names the pattern instead, so a reader can tell what was
+    removed without seeing any of it.
+
+    Every match is replaced, not just the first -- ``_scan_text`` reports one
+    finding per pattern per string because that is enough to fail CI, but
+    scrubbing must remove all of them.
+    """
+    for pattern_id, _, pattern in _PATTERNS:
+        text = pattern.sub(f"[redacted:{pattern_id}]", text)
+    return text
+
+
+def redact_object(data: Any) -> Any:
+    """Return a copy of ``data`` with every detected identifier removed.
+
+    Detection alone cannot protect a published dataset: a leak in a submitted
+    result has to be *removed*, and a single leak in public data is
+    unrecoverable. This is the counterpart to :func:`scan_object` -- the same
+    pattern registry, applied as a rewrite instead of a report.
+
+    Dictionary keys are scrubbed as well as values, because the scanner
+    inspects keys too. When two distinct keys scrub to the same string the
+    later one is suffixed rather than dropped: silently losing a field would
+    be a worse failure than an ugly key.
+
+    Scalars other than strings pass through untouched, and the result is
+    idempotent -- scanning it yields no findings.
+    """
+    if isinstance(data, dict):
+        cleaned: dict[Any, Any] = {}
+        for key, value in data.items():
+            new_key = redact_text(key) if isinstance(key, str) else key
+            if new_key in cleaned:
+                suffix = 2
+                while f"{new_key}#{suffix}" in cleaned:
+                    suffix += 1
+                new_key = f"{new_key}#{suffix}"
+            cleaned[new_key] = redact_object(value)
+        return cleaned
+    if isinstance(data, list):
+        return [redact_object(item) for item in data]
+    if isinstance(data, tuple):
+        return tuple(redact_object(item) for item in data)
+    if isinstance(data, str):
+        return redact_text(data)
+    return data
 
 
 def _scan_text(text: str, path: str, findings: list[dict[str, Any]]) -> None:

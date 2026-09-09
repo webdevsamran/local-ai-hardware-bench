@@ -77,6 +77,7 @@ const dataset = {
     empty_case: { classification: 'NOT_COMPARABLE', machine_reasons: ['insufficient_metadata'] },
   },
   pareto: {},
+  recommend: { note: '', reference_cases: [] },
 }
 
 beforeEach(() => {
@@ -94,6 +95,7 @@ beforeEach(() => {
         'data/constants.json': dataset.constants,
         'data/comparability.json': dataset.comparability,
         'data/pareto.json': dataset.pareto,
+        'data/recommend.json': dataset.recommend,
       }
       // The app requests base-anchored URLs (`/data/x.json`, or
       // `/local-ai-hardware-bench/data/x.json` in production) because a

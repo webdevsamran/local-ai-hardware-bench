@@ -1,0 +1,192 @@
+{
+  "note": "recommendations are estimates from a memory budget and an assumed quantization density; measured results upgrade the evidence tier",
+  "reference_cases": [
+    {
+      "expected": {
+        "assumed_quantization": "q4_k_m",
+        "evidence_tier": "measured",
+        "fit_check": {
+          "assumptions": {
+            "bits_per_weight": 4.85,
+            "context_tokens": 4096,
+            "note": "estimate from parameter count x bits/weight x overhead factor; KV cache scales with context and is approximated by the factor",
+            "overhead_factor": 1.15
+          },
+          "estimated_total_gb": 22.101,
+          "estimated_weights_gb": 19.218,
+          "fit_target": "vram",
+          "fits": true,
+          "reason": "estimated 22.10 GB needed vs vram 24.6 GB, ram 64.0 GB"
+        },
+        "reasons": [
+          "GPU VRAM 24576 MB -> ~22.1 GB usable weights budget (90%)",
+          "best measured throughput 360.9 tok/s on runtime=llama.cpp",
+          "~31.7B parameters at q4_k_m density (4.85 bits/weight), leaving 1.15x for KV cache and runtime overhead \u2014 an estimate"
+        ],
+        "recommended_context_length": 4096,
+        "recommended_device": "cuda",
+        "recommended_model_parameters_b": 31.7,
+        "recommended_runtime": "llama.cpp",
+        "uncertainty": "runtime/device anchored on this machine's own measurements"
+      },
+      "gpu_vram_mb": 24576,
+      "ram_gb": 64.0
+    },
+    {
+      "expected": {
+        "assumed_quantization": "q4_k_m",
+        "evidence_tier": "measured",
+        "fit_check": {
+          "assumptions": {
+            "bits_per_weight": 4.85,
+            "context_tokens": 4096,
+            "note": "estimate from parameter count x bits/weight x overhead factor; KV cache scales with context and is approximated by the factor",
+            "overhead_factor": 1.15
+          },
+          "estimated_total_gb": 14.78,
+          "estimated_weights_gb": 12.852,
+          "fit_target": "vram",
+          "fits": true,
+          "reason": "estimated 14.78 GB needed vs vram 16.4 GB, ram 32.0 GB"
+        },
+        "reasons": [
+          "GPU VRAM 16384 MB -> ~14.7 GB usable weights budget (90%)",
+          "best measured throughput 360.9 tok/s on runtime=llama.cpp",
+          "~21.2B parameters at q4_k_m density (4.85 bits/weight), leaving 1.15x for KV cache and runtime overhead \u2014 an estimate"
+        ],
+        "recommended_context_length": 4096,
+        "recommended_device": "cuda",
+        "recommended_model_parameters_b": 21.2,
+        "recommended_runtime": "llama.cpp",
+        "uncertainty": "runtime/device anchored on this machine's own measurements"
+      },
+      "gpu_vram_mb": 16384,
+      "ram_gb": 32.0
+    },
+    {
+      "expected": {
+        "assumed_quantization": "q4_k_m",
+        "evidence_tier": "measured",
+        "fit_check": {
+          "assumptions": {
+            "bits_per_weight": 4.85,
+            "context_tokens": 4096,
+            "note": "estimate from parameter count x bits/weight x overhead factor; KV cache scales with context and is approximated by the factor",
+            "overhead_factor": 1.15
+          },
+          "estimated_total_gb": 11.085,
+          "estimated_weights_gb": 9.639,
+          "fit_target": "vram",
+          "fits": true,
+          "reason": "estimated 11.09 GB needed vs vram 12.3 GB, ram 32.0 GB"
+        },
+        "reasons": [
+          "GPU VRAM 12288 MB -> ~11.1 GB usable weights budget (90%)",
+          "best measured throughput 360.9 tok/s on runtime=llama.cpp",
+          "~15.9B parameters at q4_k_m density (4.85 bits/weight), leaving 1.15x for KV cache and runtime overhead \u2014 an estimate"
+        ],
+        "recommended_context_length": 4096,
+        "recommended_device": "cuda",
+        "recommended_model_parameters_b": 15.9,
+        "recommended_runtime": "llama.cpp",
+        "uncertainty": "runtime/device anchored on this machine's own measurements"
+      },
+      "gpu_vram_mb": 12288,
+      "ram_gb": 32.0
+    },
+    {
+      "expected": {
+        "assumed_quantization": "q4_k_m",
+        "evidence_tier": "measured",
+        "fit_check": {
+          "assumptions": {
+            "bits_per_weight": 4.85,
+            "context_tokens": 4096,
+            "note": "estimate from parameter count x bits/weight x overhead factor; KV cache scales with context and is approximated by the factor",
+            "overhead_factor": 1.15
+          },
+          "estimated_total_gb": 7.39,
+          "estimated_weights_gb": 6.426,
+          "fit_target": "vram",
+          "fits": true,
+          "reason": "estimated 7.39 GB needed vs vram 8.2 GB, ram 16.0 GB"
+        },
+        "reasons": [
+          "GPU VRAM 8192 MB -> ~7.4 GB usable weights budget (90%)",
+          "best measured throughput 360.9 tok/s on runtime=llama.cpp",
+          "~10.6B parameters at q4_k_m density (4.85 bits/weight), leaving 1.15x for KV cache and runtime overhead \u2014 an estimate"
+        ],
+        "recommended_context_length": 4096,
+        "recommended_device": "cuda",
+        "recommended_model_parameters_b": 10.6,
+        "recommended_runtime": "llama.cpp",
+        "uncertainty": "runtime/device anchored on this machine's own measurements"
+      },
+      "gpu_vram_mb": 8192,
+      "ram_gb": 16.0
+    },
+    {
+      "expected": {
+        "assumed_quantization": "q4_k_m",
+        "evidence_tier": "measured",
+        "fit_check": {
+          "assumptions": {
+            "bits_per_weight": 4.85,
+            "context_tokens": 4096,
+            "note": "estimate from parameter count x bits/weight x overhead factor; KV cache scales with context and is approximated by the factor",
+            "overhead_factor": 1.15
+          },
+          "estimated_total_gb": 5.508,
+          "estimated_weights_gb": 4.789,
+          "fit_target": "vram",
+          "fits": true,
+          "reason": "estimated 5.51 GB needed vs vram 6.1 GB, ram 16.0 GB"
+        },
+        "reasons": [
+          "GPU VRAM 6144 MB -> ~5.5 GB usable weights budget (90%)",
+          "best measured throughput 360.9 tok/s on runtime=llama.cpp",
+          "~7.9B parameters at q4_k_m density (4.85 bits/weight), leaving 1.15x for KV cache and runtime overhead \u2014 an estimate",
+          "small memory budget: conservative 2048-token context suggested"
+        ],
+        "recommended_context_length": 2048,
+        "recommended_device": "cuda",
+        "recommended_model_parameters_b": 7.9,
+        "recommended_runtime": "llama.cpp",
+        "uncertainty": "runtime/device anchored on this machine's own measurements"
+      },
+      "gpu_vram_mb": 6144,
+      "ram_gb": 16.0
+    },
+    {
+      "expected": {
+        "assumed_quantization": "q4_k_m",
+        "evidence_tier": "measured",
+        "fit_check": {
+          "assumptions": {
+            "bits_per_weight": 4.85,
+            "context_tokens": 4096,
+            "note": "estimate from parameter count x bits/weight x overhead factor; KV cache scales with context and is approximated by the factor",
+            "overhead_factor": 1.15
+          },
+          "estimated_total_gb": 15.966,
+          "estimated_weights_gb": 13.883,
+          "fit_target": "ram",
+          "fits": true,
+          "reason": "estimated 15.97 GB needed vs ram 32.0 GB"
+        },
+        "reasons": [
+          "no discrete GPU VRAM data; using 50% of 32 GB RAM",
+          "best measured throughput 360.9 tok/s on runtime=llama.cpp",
+          "~22.9B parameters at q4_k_m density (4.85 bits/weight), leaving 1.15x for KV cache and runtime overhead \u2014 an estimate"
+        ],
+        "recommended_context_length": 4096,
+        "recommended_device": "cuda",
+        "recommended_model_parameters_b": 22.9,
+        "recommended_runtime": "llama.cpp",
+        "uncertainty": "runtime/device anchored on this machine's own measurements"
+      },
+      "gpu_vram_mb": null,
+      "ram_gb": 32.0
+    }
+  ]
+}

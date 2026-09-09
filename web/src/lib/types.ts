@@ -223,4 +223,5 @@ export interface Dataset {
   constants: FitConstants
   comparability: ComparabilityRules
   pareto: Record<string, ParetoView>
+  recommend: { note: string; reference_cases: unknown[] }
 }

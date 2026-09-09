@@ -67,6 +67,7 @@ function makeDataset(): Dataset {
       empty_case: { classification: 'NOT_COMPARABLE', machine_reasons: ['insufficient_metadata'] },
     },
     pareto: {},
+    recommend: { note: '', reference_cases: [] },
   }
 }
 

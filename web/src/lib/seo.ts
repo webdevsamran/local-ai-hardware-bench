@@ -47,6 +47,11 @@ const STATIC_META: Record<string, Omit<PageMeta, 'path'>> = {
     description:
       'Which local AI configurations are not beaten on both axes at once: throughput against power draw, peak VRAM and time to first token. A card that is slower but far more efficient is still on the frontier, which a single ranked leaderboard cannot show.',
   },
+  '/recommend': {
+    title: 'What local LLM should I run on my hardware? — AIHWBench',
+    description:
+      'Get a model size, runtime, device and context length for your GPU and RAM. The size is estimated from your memory budget; the runtime is anchored on benchmarks people actually measured, and the page states which is which.',
+  },
   '/hardware': {
     title: 'Hardware — AIHWBench',
     description:

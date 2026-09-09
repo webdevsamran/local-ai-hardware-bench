@@ -99,3 +99,36 @@ def test_the_unreviewed_notice_stays_until_the_review_happens() -> None:
         assert (root / "docs" / "methodology-review.md").is_file(), (
             "the ROADMAP points readers at a review packet that does not exist"
         )
+
+
+def test_every_comparability_rule_is_documented():
+    """A new rule must arrive with its reason, not just its field name.
+
+    The rubric is what makes the classifier auditable rather than arbitrary.
+    A field added to the rule set without an explanation would appear in the
+    published table with a generic placeholder, which is how a rubric quietly
+    stops explaining anything.
+    """
+    import importlib
+
+    from aihwbench.comparability import _CONDITIONAL, _REQUIRED_PRESENT, _STRICT
+
+    module = importlib.import_module("scripts.generate_comparability_rubric")
+
+    for field in (*_STRICT, *_REQUIRED_PRESENT):
+        assert field in module._WHY, f"{field} needs an entry in _WHY"
+    for field in _CONDITIONAL:
+        assert field in module._WHY_CONDITIONAL, f"{field} needs an entry in _WHY_CONDITIONAL"
+
+
+def test_published_rubric_is_current():
+    """The same check CI runs, so a stale rubric fails locally too."""
+    import importlib
+    import pathlib
+
+    module = importlib.import_module("scripts.generate_comparability_rubric")
+    published = pathlib.Path(module.OUT)
+    assert published.is_file(), "docs/comparability-rubric.md has not been generated"
+    assert published.read_text(encoding="utf-8") == module.render(), (
+        "docs/comparability-rubric.md is stale; run python scripts/generate_comparability_rubric.py"
+    )

@@ -353,3 +353,73 @@ def test_leaderboard_states_plainly_when_nothing_is_comparable(tmp_path: Path):
     export_dataset(published, tmp_path / "dataset")
     text = (tmp_path / "dataset" / "LEADERBOARD.md").read_text(encoding="utf-8")
     assert "No two published results are comparable yet" in text
+
+
+# --------------------------------------------------- statistical confidence
+#
+# docs/methodology.md states "Minimum 5 measured iterations after 2 warm-ups
+# for published results" and nothing enforced it. A single measurement renders
+# as "110.93 tok/s" exactly like a five-iteration median does.
+
+
+@pytest.mark.parametrize(
+    ("iterations", "warmups", "expected"),
+    [
+        (5, 2, "compliant"),
+        (10, 2, "compliant"),
+        (1, 2, "single_run"),
+        (3, 2, "below_policy"),
+        (10, 0, "below_policy"),
+        (None, 2, "unstated"),
+    ],
+)
+def test_statistical_confidence_labels(iterations, warmups, expected):
+    from aihwbench.quality import statistical_confidence
+
+    repro = {"warmup_runs": warmups}
+    if iterations is not None:
+        repro["iterations"] = iterations
+    assert statistical_confidence({"reproducibility": repro})["label"] == expected
+
+
+def test_an_unwarmed_run_is_below_policy_however_many_iterations():
+    """Cold-start cost inside the measurement is not fixed by repeating it."""
+    from aihwbench.quality import statistical_confidence
+
+    report = statistical_confidence({"reproducibility": {"iterations": 50, "warmup_runs": 0}})
+    assert report["meets_policy"] is False
+    assert "cold-start" in report["detail"]
+
+
+def test_leaderboard_marks_a_single_run_result(tmp_path: Path):
+    """The number must not look like a five-iteration median."""
+    published = tmp_path / "published"
+    published.mkdir()
+    single = _result("single", 100.0)
+    single["reproducibility"]["iterations"] = 1
+    (published / "a.json").write_text(json.dumps(single), encoding="utf-8")
+
+    export_dataset(published, tmp_path / "dataset")
+    text = (tmp_path / "dataset" / "LEADERBOARD.md").read_text(encoding="utf-8")
+    assert "**single run**" in text
+
+
+def test_leaderboard_shows_the_iteration_count_when_compliant(tmp_path: Path):
+    published = tmp_path / "published"
+    published.mkdir()
+    (published / "a.json").write_text(json.dumps(_result("ok", 100.0)), encoding="utf-8")
+
+    export_dataset(published, tmp_path / "dataset")
+    text = (tmp_path / "dataset" / "LEADERBOARD.md").read_text(encoding="utf-8")
+    assert "| 5 |" in text
+    assert "single run" not in text
+
+
+def test_data_quality_report_carries_the_confidence_label():
+    from aihwbench.quality import data_quality_report
+
+    single = _result("single", 100.0)
+    single["reproducibility"]["iterations"] = 1
+    checks = data_quality_report(single)["checks"]
+    assert checks["statistical_confidence"] == "single_run"
+    assert checks["meets_iteration_policy"] is False

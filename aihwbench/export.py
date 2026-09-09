@@ -25,6 +25,7 @@ from typing import Any
 
 from .comparability import NOT_COMPARABLE, compare_classification
 from .metrics import performance_per_watt_unit
+from .quality import MIN_PUBLISHED_ITERATIONS, MIN_WARMUP_RUNS, statistical_confidence
 from .schemas import validate_result
 from .trust import effective_trust
 
@@ -256,10 +257,20 @@ def export_dataset(results_dir: Path, output_dir: Path, *, strict: bool = False)
                 -((d.get("metrics") or {}).get("generation_tokens_per_second") or 0.0),
             ),
         )
-        lines.append("| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Trust |")
-        lines.append("| --- | --- | --- | --- | --- | --- | --- |")
+        lines.append("| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |")
+        lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
         for result in ordered:
             row = by_run[result.get("run_id")]
+            # The published policy is 5 measured iterations after 2 warm-ups.
+            # A single-run number renders identically to a five-iteration
+            # median, so anything short of the policy is marked rather than
+            # left looking like the rest.
+            confidence = statistical_confidence(result)
+            runs = (
+                str(confidence["iterations"])
+                if confidence["meets_policy"]
+                else f"**{confidence['label'].replace('_', ' ')}**"
+            )
             # Perf/W is tok/s/W for generative runtimes and inf/s/W for graph
             # ones. The unit is published alongside the number: without it the
             # column silently mixes two different quantities.
@@ -267,7 +278,8 @@ def export_dataset(results_dir: Path, output_dir: Path, *, strict: bool = False)
             lines.append(
                 f"| {row['run_id']} | {row['gpu']} "
                 f"| {_num(row['generation_tokens_per_second'])} | {_num(row['ttft_ms'])} "
-                f"| {_num(row['performance_per_watt'])} | {unit} | {row['trust']} |"
+                f"| {_num(row['performance_per_watt'])} | {unit} | {runs} "
+                f"| {row['trust']} |"
             )
         lines.append("")
 
@@ -280,6 +292,12 @@ def export_dataset(results_dir: Path, output_dir: Path, *, strict: bool = False)
         "> **Perf/W is not one quantity.** `tok/s/W` rows are generative "
         "throughput per watt; `inf/s/W` rows are inferences per watt. They "
         "are not comparable to each other."
+    )
+    lines.append(
+        "> **Runs** is the measured iteration count. The published policy is "
+        f"{MIN_PUBLISHED_ITERATIONS} iterations after {MIN_WARMUP_RUNS} "
+        "warm-ups; anything short of it is marked, because a single "
+        "measurement renders identically to a five-iteration median."
     )
     md_path.write_text(chr(10).join(lines) + chr(10), encoding="utf-8")
 

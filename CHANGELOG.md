@@ -457,6 +457,25 @@ vendor-shaped hole in it was the wrong hole to have.
 - The projected runtime is labelled an upper bound: it extrapolates a constant
   rate from a full charge, and real batteries do worse near empty.
 
+### Added — the statistical policy is now enforced, not just stated
+
+`docs/methodology.md` has said "minimum 5 measured iterations after 2 warm-ups
+for published results" since 0.1.0, and nothing checked it. A single
+measurement renders as `110.93 tok/s` exactly like a five-iteration median
+does, so an under-measured result was indistinguishable from a careful one.
+
+- `statistical_confidence()` labels every result `compliant`, `single_run`,
+  `below_policy`, or `unstated` — the last because a protocol that was never
+  recorded cannot be reproduced or weighed.
+- The leaderboard carries a **Runs** column: a compliant result shows its
+  iteration count, anything short of the policy is marked in bold. Results are
+  still published — losing real data from contributors whose hardware cannot
+  sit through a long run would be worse — but they no longer look identical to
+  results that met the policy.
+- A run with many iterations but no warm-ups is `below_policy` too: repeating
+  a measurement does not remove the cold-start cost baked into it.
+- `data_quality_report` reports the label alongside its other checks.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

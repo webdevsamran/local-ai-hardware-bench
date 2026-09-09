@@ -66,7 +66,12 @@ beforeEach(() => {
         'data/leaderboard.json': dataset.leaderboard,
         'data/trends.json': dataset.trends,
       }
-      const body = map[url]
+      // The app requests base-anchored URLs (`/data/x.json`, or
+      // `/local-ai-hardware-bench/data/x.json` in production) because a
+      // relative path would 404 on deep routes under BrowserRouter. Match on
+      // the tail so the mock does not depend on the deploy base.
+      const key = Object.keys(map).find((k) => url.endsWith(k))
+      const body = key === undefined ? undefined : map[key]
       return Promise.resolve({
         ok: body !== undefined,
         status: body !== undefined ? 200 : 404,

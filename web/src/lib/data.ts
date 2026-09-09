@@ -18,7 +18,11 @@ async function fetchDataset(): Promise<Dataset> {
     await Promise.all(
       ['index', 'results', 'hardware', 'runtimes', 'models', 'leaderboard', 'trends'].map(
         async (name) => {
-          const r = await fetch(`data/${name}.json`)
+          // Absolute (base-anchored), not relative. Under BrowserRouter the
+          // page URL can be /models/foo, where a relative `data/x.json`
+          // resolves to /models/data/x.json and 404s. BASE_URL carries the
+          // GitHub Pages sub-path and always ends in a slash.
+          const r = await fetch(`${import.meta.env.BASE_URL}data/${name}.json`)
           if (!r.ok)
             throw new Error(`Failed to load data/${name}.json (${r.status})`)
           return r.json()
@@ -42,6 +46,23 @@ export function loadDataset(): Promise<Dataset> {
     })
   }
   return inflight
+}
+
+/**
+ * Supply the dataset synchronously.
+ *
+ * The browser fetches `data/*.json`, but the prerenderer reads those files
+ * from disk and seeds them here before rendering, so static HTML contains the
+ * real content rather than a loading spinner. A page whose content only
+ * appears after client-side fetch is a page search engines index as empty.
+ */
+export function seedDataset(dataset: Dataset): void {
+  cache = dataset
+}
+
+/** The cached dataset, or null when it has not been loaded or seeded yet. */
+export function peekDataset(): Dataset | null {
+  return cache
 }
 
 export function resultById(dataset: Dataset, runId: string | undefined) {

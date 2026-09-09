@@ -127,6 +127,26 @@ value proposition is honesty about what was measured cannot carry that.
   ranked table of incomparable results. The duplicate generator is gone and
   the HTML view now publishes the perf/W unit too.
 
+### Added — the dashboard is now indexable
+
+- **Real URLs and prerendered HTML.** The dashboard used `HashRouter`, so every
+  one of its 20 routes lived under `/#/...`. To a crawler that is a single URL
+  with a single title, so no page could rank for its own subject however good
+  its content was. It now uses `BrowserRouter`, and `npm run build`
+  prerenders every route — including one page per model, per GPU, per runtime
+  and per result — to static HTML containing that page's real content and its
+  own `<head>`.
+- Each route gets a distinct `<title>`, meta description, canonical URL and
+  Open Graph/Twitter tags from a single source (`src/lib/seo.ts`) shared by the
+  prerenderer and client-side navigation, so the two cannot drift. The home
+  page carries schema.org `Dataset` JSON-LD.
+- `sitemap.xml`, `robots.txt`, `.nojekyll` and a `404.html` fallback (GitHub
+  Pages cannot rewrite server-side, so deep links recover through it).
+- **Fixed in passing:** dataset JSON was fetched with a relative path. That
+  worked only because `HashRouter` kept the browser at the site root; under
+  real paths `data/results.json` would resolve to `/models/data/results.json`
+  and 404. It is now anchored to the deploy base.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

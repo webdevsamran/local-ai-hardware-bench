@@ -263,6 +263,30 @@ can answer and a vendor benchmark cannot.
   a benchmark partway. Quantizing the cache is a *memory* feature — it buys
   context length or headroom when f16 does not fit — and is documented as one.
 
+### Added — agentic workloads, with the timing actually decomposed
+
+`ROADMAP.md` and this changelog have claimed "deterministic agentic tool-call
+benchmarks" since 0.1.0, while `agentic` existed only as a permitted string in
+a workload validation set. The claim is now backed by an implementation.
+
+- **`aihwbench agentic --runtime ollama --workload agentic_swe`** runs a
+  scripted agent loop and reports **LLM inference time and tool execution time
+  separately**, plus the unattributed remainder as `overhead_ms`. An agent
+  loop's two halves scale with unrelated things, so a single end-to-end number
+  cannot distinguish a slow GPU from a slow tool.
+- Two scenarios ship: a software-engineering agent (search and file reads) and
+  a data-analyst agent (table summary).
+- The tools are **local and deterministic** — they answer from a bundled
+  corpus and import no networking module, enforced by a test that inspects the
+  module's imports. A benchmark whose results depend on DNS or a rate limit is
+  not reproducible.
+- The tool sequence is **scripted rather than model-chosen**. Small local
+  models emit tool calls unreliably; letting the model drive would measure its
+  function-calling accuracy — a real thing to measure, but not hardware
+  performance — and would make the loop differ between runs.
+- Backends opt in by implementing `generate_text`. A graph runtime that emits
+  no tokens is told it cannot run the workload rather than silently skipped.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

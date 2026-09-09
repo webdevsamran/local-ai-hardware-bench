@@ -166,6 +166,18 @@ def _generate_stream(model: str, prompt: str, config: BenchmarkConfig) -> dict[s
     }
 
 
+def generate_text(prompt: str, config: BenchmarkConfig) -> str:
+    """One completion, returning only the text.
+
+    The optional contract an agentic workload needs: it drives its own loop
+    and supplies a different prompt each turn, so it needs a plain
+    prompt-in/text-out call rather than the full measured benchmark path. A
+    backend that does not implement this cannot run agentic workloads, which
+    the CLI reports rather than silently skipping.
+    """
+    return str(_generate_stream(config.model, prompt, config).get("text") or "")
+
+
 def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     """Execute a full benchmark and return a schema-1.0 result document."""
     info = detect()

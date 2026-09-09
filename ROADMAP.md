@@ -40,7 +40,10 @@ shipped-but-unreachable is not done.
       `time_to_second_token_ms` and `decode_duration_ms`. A mean cannot show a
       stall, and a stall is what makes a stream feel slow.
 - [x] Prefill/decode separation, ISL/OSL profiles, mixed traffic,
-      multi-turn and deterministic agentic workloads
+      multi-turn and deterministic agentic workloads. The agentic workloads
+      (`agentic_swe`, `agentic_data_analyst`) run a scripted loop over local,
+      deterministic tools and report LLM inference time and tool execution
+      time separately, with the unattributed remainder shown as overhead.
 
 ## Track 2 — Runtime Ecosystem
 

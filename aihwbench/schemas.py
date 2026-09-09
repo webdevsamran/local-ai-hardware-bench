@@ -149,6 +149,21 @@ _THERMAL_FIELDS = {
     "reason": str,
 }
 
+# Battery discharge, measured only when the machine ran unplugged.
+_BATTERY_FIELDS = {
+    "measured": bool,
+    "samples": int,
+    "samples_on_battery": int,
+    "start_percent": (int, float),
+    "end_percent": (int, float),
+    "discharged_percent": (int, float),
+    "elapsed_hours": (int, float),
+    "rate_percent_per_hour": (int, float),
+    "projected_runtime_hours": (int, float),
+    "reason": str,
+    "note": str,
+}
+
 _QUALITY_FIELDS = {
     # Output-fidelity probe, measured on every generative run.
     "output_hash": str,
@@ -430,6 +445,16 @@ def validate_result(data: Any) -> list[str]:
                 _check_metric(
                     thermal["time_to_throttle_s"], "thermal.time_to_throttle_s", errors, minimum=0
                 )
+
+    battery = data.get("battery")
+    if battery is not None:
+        if not isinstance(battery, dict):
+            errors.append("battery: must be an object")
+        else:
+            _check_fields(battery, _BATTERY_FIELDS, "battery", errors)
+            for key in ("start_percent", "end_percent"):
+                if battery.get(key) is not None:
+                    _check_metric(battery[key], f"battery.{key}", errors, minimum=0, maximum=100)
 
     quality = data.get("quality")
     if quality is not None:

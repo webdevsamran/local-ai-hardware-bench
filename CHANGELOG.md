@@ -442,6 +442,21 @@ vendor-shaped hole in it was the wrong hole to have.
   than watts, so a wrapped counter is corrected where the wrap point is known
   and reported as unmeasurable where it is not, never as negative power.
 
+### Added — battery drain during sustained inference
+
+- Results now carry a `battery` block: discharge rate per hour and a projected
+  runtime, measured from the telemetry trace. A laptop's throughput is only
+  half the story; how long it sustains that unplugged is the other half, and
+  no local-AI benchmark publishes it.
+- Samples taken on mains power are **excluded rather than averaged in** — a
+  charging machine folded into a discharge rate understates it or inverts its
+  sign. A run made while plugged in reports that, not a rate of zero.
+- A discharge smaller than the battery gauge can resolve (most step in whole
+  percent) is refused with the actual figures, rather than reported as a rate
+  derived from gauge noise.
+- The projected runtime is labelled an upper bound: it extrapolates a constant
+  rate from a full charge, and real batteries do worse near empty.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

@@ -169,3 +169,67 @@ def test_unverified_vendors_say_so():
         assert "not run on real hardware" in VENDOR_STATUS[vendor] or (
             "not read on real hardware" in VENDOR_STATUS[vendor]
         )
+
+
+# ------------------------------------------------------- battery drain
+
+
+def _battery_series(minutes: int, start: float, per_minute: float, on_ac: bool = False):
+    return [
+        {
+            "timestamp": 1000.0 + i * 60,
+            "battery_percent": start - i * per_minute,
+            "on_ac_power": on_ac,
+        }
+        for i in range(minutes + 1)
+    ]
+
+
+def test_drain_rate_is_measured_from_the_trace():
+    """The figure laptop owners want and nobody publishes."""
+    from aihwbench.analysis.battery import battery_profile
+
+    # 30 minutes unplugged, 0.6% per minute -> 36% per hour.
+    report = battery_profile(_battery_series(30, 100.0, 0.6))
+    assert report["measured"] is True
+    assert report["rate_percent_per_hour"] == 36.0
+    assert report["projected_runtime_hours"] == pytest.approx(2.78, abs=0.01)
+
+
+def test_mains_power_samples_are_excluded_not_averaged():
+    """A charging machine folded into a discharge rate inverts its sign."""
+    from aihwbench.analysis.battery import battery_profile
+
+    report = battery_profile(_battery_series(20, 75.0, 0.0, on_ac=True))
+    assert report["measured"] is False
+    assert report["rate_percent_per_hour"] is None
+    assert "mains power" in report["reason"]
+
+
+def test_a_discharge_below_gauge_resolution_is_refused():
+    """Most gauges step in whole percent; a 0.03% drop measures noise."""
+    from aihwbench.analysis.battery import battery_profile
+
+    series = [
+        {"timestamp": 1000.0 + i, "battery_percent": 100.0 - i * 0.001, "on_ac_power": False}
+        for i in range(30)
+    ]
+    report = battery_profile(series)
+    assert report["measured"] is False
+    assert "below the" in report["reason"]
+
+
+def test_no_battery_telemetry_says_so():
+    from aihwbench.analysis.battery import battery_profile
+
+    report = battery_profile([])
+    assert report["measured"] is False
+    assert "no battery telemetry" in report["reason"]
+
+
+def test_projection_is_labelled_an_upper_bound():
+    """Real runtime is worse near empty; the projection must not imply otherwise."""
+    from aihwbench.analysis.battery import battery_profile
+
+    report = battery_profile(_battery_series(30, 100.0, 0.6))
+    assert "upper bound" in report["note"]

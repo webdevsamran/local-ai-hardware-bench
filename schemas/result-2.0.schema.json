@@ -606,6 +606,71 @@
           ]
         }
       }
+    },
+    "battery": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Battery discharge measured during the run. Only populated when the machine was unplugged and discharged enough for the gauge to resolve a rate; otherwise `measured` is false and `reason` says why.",
+      "additionalProperties": true,
+      "properties": {
+        "measured": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "samples": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "start_percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "end_percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "discharged_percent": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "rate_percent_per_hour": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "projected_runtime_hours": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
     }
   },
   "additionalProperties": true

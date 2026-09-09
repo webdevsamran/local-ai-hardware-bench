@@ -28,7 +28,9 @@ from __future__ import annotations
 import pytest
 
 from aihwbench.comparability import (
+    _REQUIRED_PRESENT,
     CONDITIONALLY_COMPARABLE,
+    INSUFFICIENT_METADATA,
     NOT_COMPARABLE,
     STRICTLY_COMPARABLE,
     _same,
@@ -219,3 +221,59 @@ def test_the_error_names_every_reason() -> None:
     message = str(excinfo.value)
     assert "model.name" in message or "models differ" in message
     assert "runtime.backend" in message
+
+
+# ------------------------------------------------- required provenance
+#
+# `_same(None, None)` is True by design (above). The consequence, left
+# unguarded, was that two documents which recorded *nothing* agreed about
+# everything and classified STRICTLY_COMPARABLE -- the strongest verdict,
+# on no evidence at all. These tests hold the presence gate in place.
+
+
+def test_two_documents_with_no_provenance_are_not_comparable() -> None:
+    """The headline case: absence of evidence is not evidence of sameness."""
+    verdict = compare_classification({}, {})
+    assert verdict["classification"] == NOT_COMPARABLE
+    assert INSUFFICIENT_METADATA in verdict["machine_reasons"]
+
+
+def test_the_reason_names_every_missing_field() -> None:
+    """A refusal the submitter cannot act on is not actionable."""
+    verdict = compare_classification({}, {})
+    joined = " ".join(verdict["reasons"])
+    for field in ("model.name", "runtime.name", "reproducibility.iterations"):
+        assert field in joined
+
+
+@pytest.mark.parametrize("path", list(_REQUIRED_PRESENT))
+def test_each_required_field_is_load_bearing(path: str) -> None:
+    """Dropping any one required field on one side must block comparison."""
+    other = result()
+    section, _, key = path.partition(".")
+    del other[section][key]
+    verdict = compare_classification(result(), other)
+    assert verdict["classification"] == NOT_COMPARABLE
+    assert INSUFFICIENT_METADATA in verdict["machine_reasons"]
+
+
+def test_a_present_but_null_field_counts_as_missing() -> None:
+    """`"seed": null` records no seed; it must not pass the presence gate."""
+    other = result()
+    other["runtime"]["device"] = None
+    verdict = compare_classification(result(), other)
+    assert INSUFFICIENT_METADATA in verdict["machine_reasons"]
+
+
+def test_legitimately_sparse_results_are_still_comparable() -> None:
+    """The gate must not punish results for fields that do not apply.
+
+    An image-classification run has no prompt, seed or temperature. Those are
+    in `_STRICT` but deliberately not in `_REQUIRED_PRESENT`, so two such runs
+    still compare -- otherwise the rule would mark honest results incomparable.
+    """
+    a, b = result(), result()
+    for doc in (a, b):
+        for key in ("prompt", "seed", "temperature", "max_tokens"):
+            del doc["reproducibility"][key]
+    assert compare_classification(a, b)["classification"] == STRICTLY_COMPARABLE

@@ -119,11 +119,23 @@ def evaluate_regression(
     baseline: dict[str, Any],
     candidate: dict[str, Any],
     thresholds: RegressionThresholds | None = None,
+    *,
+    force: bool = False,
 ) -> RegressionReport:
-    """Compare candidate against baseline under the given thresholds."""
+    """Compare candidate against baseline under the given thresholds.
+
+    When the pair is NOT_COMPARABLE the verdict is ``INCOMPARABLE`` and no
+    checks run: a threshold comparison between two different experiments
+    measures nothing. Callers must treat that as a failed gate, not a pass —
+    ``aihwbench regression`` exits ``EXIT_NOT_COMPARABLE`` for it.
+
+    ``force=True`` runs the checks anyway for an operator who has accepted
+    that risk. The classification is still reported verbatim, so a forced
+    run can never be mistaken for a comparable one.
+    """
     t = thresholds or RegressionThresholds()
     classification = compare_classification(baseline, candidate)["classification"]
-    if classification == NOT_COMPARABLE:
+    if classification == NOT_COMPARABLE and not force:
         return RegressionReport(classification=classification, status="INCOMPARABLE")
 
     bm = baseline.get("metrics", {})

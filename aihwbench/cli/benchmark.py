@@ -11,6 +11,7 @@ from typing import Any
 
 from ..agentic import AGENTIC_SCRIPTS, run_agentic_loop
 from ..analysis.cliff import find_offload_cliff
+from ..analysis.context import analyze_context_scaling
 from ..analysis.tune import (
     TUNING_AXES,
     UnsupportedAxisError,
@@ -211,17 +212,33 @@ def cmd_agentic(args: argparse.Namespace) -> int:
 
 def cmd_cliff(args: argparse.Namespace) -> int:
     """Locate the offload cliff in a saved sweep matrix."""
-    path = Path(args.sweep)
+    matrix = _load_matrix(Path(args.sweep))
+    if matrix is None:
+        return EXIT_USAGE_ERROR
+    echo_json(find_offload_cliff(matrix, axis=args.axis))
+    return EXIT_OK
+
+
+def _load_matrix(path: Path) -> list[dict[str, Any]] | None:
+    """Read a sweep matrix, tolerating either the file or a bare array."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         fail(str(exc))
-        return EXIT_USAGE_ERROR
+        return None
     matrix = data.get("matrix") if isinstance(data, dict) else data
     if not isinstance(matrix, list):
         fail(f"{path}: expected a sweep file with a 'matrix' array")
+        return None
+    return matrix
+
+
+def cmd_context_scaling(args: argparse.Namespace) -> int:
+    """Analyse how performance degrades as context depth grows."""
+    matrix = _load_matrix(Path(args.sweep))
+    if matrix is None:
         return EXIT_USAGE_ERROR
-    echo_json(find_offload_cliff(matrix, axis=args.axis))
+    echo_json(analyze_context_scaling(matrix, axis=args.axis, min_acceptable_tps=args.min_tps))
     return EXIT_OK
 
 
@@ -407,6 +424,20 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     cliff_p.add_argument("sweep", help="Path to a sweep-*.json produced by `aihwbench sweep`")
     cliff_p.add_argument("--axis", default="gpu_layers")
     cliff_p.set_defaults(func=cmd_cliff)
+
+    ctx_p = sub.add_parser(
+        "context-scaling",
+        help="Analyse a context-length sweep: prefill degradation and memory saturation",
+    )
+    ctx_p.add_argument("sweep", help="Path to a sweep-*.json produced by `aihwbench sweep`")
+    ctx_p.add_argument("--axis", default="context_length")
+    ctx_p.add_argument(
+        "--min-tps",
+        type=float,
+        default=None,
+        help="Throughput floor, to report the deepest context still above it",
+    )
+    ctx_p.set_defaults(func=cmd_context_scaling)
 
     run_p = sub.add_parser("run", help="Run a declarative experiment manifest (JSON/TOML/YAML)")
     run_p.add_argument("manifest")

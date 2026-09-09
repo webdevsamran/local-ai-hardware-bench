@@ -29,6 +29,23 @@ Format based on Keep a Changelog; versioning is SemVer.
   — are deliberately excluded, so honest sparse results still compare. No
   published result changes classification.
 
+### Fixed — the auto-tuner no longer recommends noise
+
+- **`aihwbench tune` swept axes that no backend applied.** `threads`,
+  `batch_size`, `gpu_layers` and `concurrency` reached
+  `BenchmarkConfig.extra` and were dropped there — every backend reads only
+  `model_path` and `model_dir`. So `tune --gpu-layers-list 0,16,32,99
+  --threads-list 1,2,4,8` ran 32 *identical* benchmarks and reported whichever
+  repeat won on run-to-run variance as the optimal configuration, "citing
+  measured values". Backends now declare what they actually apply in a
+  module-level `TUNABLE_AXES` tuple, and the tuner refuses any axis absent
+  from it rather than measuring noise.
+- **`gpu_layers` is now a real llama.cpp parameter.** `-ngl` was hardcoded to
+  `99` (or `0` for CPU) from `device` alone. It now honours the swept value
+  and records it in the result's reproducibility block, so the offload sweep —
+  the question behind every "will this fit in my VRAM" decision — measures
+  something. The default is unchanged when no value is supplied.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

@@ -9,8 +9,14 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ..analysis.tune import run_tuner
-from ..backends import BACKENDS, BackendError, BenchmarkConfig, resolve
+from ..analysis.tune import UnsupportedAxisError, run_tuner
+from ..backends import (
+    BACKENDS,
+    BackendError,
+    BenchmarkConfig,
+    backend_tunable_axes,
+    resolve,
+)
 from ..capacity import CapacityConfig, run_capacity_ladder
 from ..exit_codes import EXIT_OK, EXIT_USAGE_ERROR
 from ..manifests import ExperimentError, load_experiment
@@ -229,7 +235,15 @@ def cmd_tune(args: argparse.Namespace) -> int:
 
     try:
         resolve(args.runtime)
-        report = run_tuner(axes, run_fn)
+        report = run_tuner(
+            axes,
+            run_fn,
+            supported_axes=backend_tunable_axes(args.runtime),
+            runtime=args.runtime,
+        )
+    except UnsupportedAxisError as exc:
+        fail(str(exc))
+        return EXIT_USAGE_ERROR
     except BackendError as exc:
         fail(str(exc))
         return EXIT_USAGE_ERROR

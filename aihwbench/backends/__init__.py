@@ -143,6 +143,18 @@ def backend_metadata(name: str) -> BenchmarkMetadata | None:
     return md
 
 
+def backend_tunable_axes(name: str) -> tuple[str, ...]:
+    """Sweepable parameters a backend actually applies to the run.
+
+    A backend declares this as a module-level ``TUNABLE_AXES`` tuple. The
+    default is empty on purpose: an axis is inert until a backend proves
+    otherwise by reading it, and sweeping an inert axis produces run-to-run
+    noise that looks like a measured difference.
+    """
+    module = resolve(name)
+    return tuple(getattr(module, "TUNABLE_AXES", ()))
+
+
 __all__ = [
     "BACKENDS",
     "ALIASES",
@@ -154,6 +166,7 @@ __all__ = [
     "BenchmarkMetadata",
     "RuntimeStatus",
     "backend_metadata",
+    "backend_tunable_axes",
     "detect_all",
     "resolve",
 ]

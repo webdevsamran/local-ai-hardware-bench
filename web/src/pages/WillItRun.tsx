@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useDataset } from '../lib/useDataset'
 import { Loading, ErrorState } from '../components/States'
 import { estimateModelFit, offloadFraction } from '../lib/fit'
+import { CliffChart, type CliffPoint } from '../components/Charts'
 import { fmtNum } from '../lib/format'
 
 // "Will this model run on my machine?" is the first question every local-AI
@@ -95,6 +96,19 @@ export default function WillItRun() {
   const spill = estimate
     ? offloadFraction(estimate.estimated_total_gb, vramMb > 0 ? vramMb : null)
     : null
+
+  // The cliff curve: offload share across the range of cards people own.
+  // Computed from the same estimate as the verdict, so the chart and the
+  // headline can never disagree.
+  const cliff: CliffPoint[] = useMemo(() => {
+    const total = estimate?.estimated_total_gb ?? null
+    if (total === null) return []
+    const points: CliffPoint[] = []
+    for (let gb = 0; gb <= 32; gb += 0.5) {
+      points.push({ vramGb: gb, offload: offloadFraction(total, gb * 1000) ?? 1 })
+    }
+    return points
+  }, [estimate])
 
   // Measured runs for this quantization, which beat any estimate.
   const measured = useMemo(() => {
@@ -203,6 +217,22 @@ export default function WillItRun() {
               </div>
             )
           })()}
+
+          {cliff.length > 0 && estimate.estimated_total_gb !== null && (
+            <>
+              <h2 className="section-title">Where the cliff is</h2>
+              <p className="muted">
+                Throughput does not taper as a model outgrows VRAM — it
+                collapses once layers move to the CPU. This is the share that
+                would sit outside GPU memory at each card size.
+              </p>
+              <CliffChart
+                points={cliff}
+                requiredGb={estimate.estimated_total_gb}
+                currentGb={vramMb > 0 ? vramMb / 1000 : null}
+              />
+            </>
+          )}
 
           <p className="muted small">
             {dataset.constants.note}. Overhead factor{' '}

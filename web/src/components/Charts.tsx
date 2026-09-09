@@ -147,3 +147,109 @@ export function HBar({
     </div>
   )
 }
+export interface CliffPoint {
+  /** VRAM in GB. */
+  vramGb: number
+  /** Fraction of the model that must live outside VRAM, 0..1. */
+  offload: number
+}
+
+/**
+ * The VRAM cliff: how much of a model spills out of GPU memory as VRAM shrinks.
+ *
+ * The shape is the point. Offload is zero up to the moment the model no longer
+ * fits, and then climbs — and that transition is where throughput collapses.
+ * Drawing it makes the discontinuity obvious in a way a single "fits / does
+ * not fit" verdict cannot.
+ *
+ * The curve is arithmetic on an estimate, not measured throughput, and the
+ * caption says so.
+ */
+export function CliffChart({
+  points,
+  requiredGb,
+  currentGb,
+  height = 200,
+}: {
+  points: CliffPoint[]
+  requiredGb: number
+  currentGb: number | null
+  height?: number
+}) {
+  if (points.length < 2) return null
+
+  const maxVram = Math.max(...points.map((p) => p.vramGb))
+  const padLeft = 8
+  const padBottom = 22
+  const plotW = 100 - padLeft
+  const plotH = height - padBottom
+
+  const x = (vramGb: number) => padLeft + (vramGb / maxVram) * plotW
+  const y = (offload: number) => plotH - offload * (plotH - 8)
+
+  const path = points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(p.vramGb).toFixed(2)} ${y(p.offload).toFixed(2)}`)
+    .join(' ')
+
+  const fitsAt = requiredGb
+  return (
+    <figure className="chart">
+      <svg
+        viewBox={`0 0 100 ${height}`}
+        role="img"
+        aria-label={
+          `Share of the model running outside VRAM, against GPU memory size. ` +
+          `It fits entirely at about ${fitsAt.toFixed(1)} gigabytes.`
+        }
+        preserveAspectRatio="none"
+        style={{ width: '100%', height }}
+      >
+        {/* Fully-resident region: everything at or above the requirement. */}
+        <rect
+          x={x(fitsAt)}
+          y={0}
+          width={Math.max(0, 100 - x(fitsAt))}
+          height={plotH}
+          className="cliff-safe"
+        />
+        <path d={path} className="cliff-line" vectorEffect="non-scaling-stroke" />
+        {/* The cliff edge itself. */}
+        <line
+          x1={x(fitsAt)}
+          x2={x(fitsAt)}
+          y1={0}
+          y2={plotH}
+          className="cliff-edge"
+          vectorEffect="non-scaling-stroke"
+        />
+        {currentGb !== null && currentGb > 0 && (
+          <line
+            x1={x(currentGb)}
+            x2={x(currentGb)}
+            y1={0}
+            y2={plotH}
+            className="cliff-you"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
+        <text x={padLeft} y={height - 6} className="chart-label">
+          0 GB
+        </text>
+        <text x={98} y={height - 6} textAnchor="end" className="chart-label">
+          {maxVram.toFixed(0)} GB
+        </text>
+      </svg>
+      <figcaption className="muted">
+        Share of the model outside VRAM as GPU memory varies. It becomes fully
+        resident at about <strong>{fitsAt.toFixed(1)} GB</strong>
+        {currentGb !== null && currentGb > 0 ? (
+          <> — the second line marks your {currentGb.toFixed(0)} GB.</>
+        ) : (
+          '.'
+        )}{' '}
+        Estimated from parameter count and quantization, not measured
+        throughput.
+      </figcaption>
+    </figure>
+  )
+}

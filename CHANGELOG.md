@@ -240,6 +240,29 @@ says; the speed half was measured and the other half was not.
   A mean cannot show a stall, and one long pause partway through a response
   reads far worse than a uniformly slower stream at the same average rate.
 
+### Added — the offload cliff and the KV-cache axis
+
+The largest performance discontinuity in local inference is the point where a
+model stops fitting in VRAM: throughput does not taper, it collapses. Where
+that happens depends on the machine — PCIe generation, memory bandwidth, what
+else is holding VRAM — which makes it the question a crowdsourced benchmark
+can answer and a vendor benchmark cannot.
+
+- **`aihwbench sweep --gpu-layers-list 0,8,16,24,99`** maps the offload curve,
+  now that `gpu_layers` genuinely reaches llama.cpp. The sweep refuses an axis
+  the backend does not apply, for the same reason the tuner does.
+- **`aihwbench cliff <sweep.json>`** reports the largest throughput drop
+  between adjacent configurations, the layer counts it sits between, and the
+  slowdown factor a user would feel. It measures drops between measured
+  points; it does not fit a curve or predict an unmeasured configuration.
+  Failed runs are excluded and counted, never read as a throughput of zero.
+- **KV-cache quantization** is a first-class llama.cpp axis
+  (`cache_type_k` / `cache_type_v`, settable independently because K and V
+  tolerate quantization differently). Values are validated against what
+  llama.cpp accepts and refused before the server starts, rather than failing
+  a benchmark partway. Quantizing the cache is a *memory* feature — it buys
+  context length or headroom when f16 does not fit — and is documented as one.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

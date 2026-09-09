@@ -9,7 +9,13 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ..analysis.tune import UnsupportedAxisError, run_tuner
+from ..analysis.cliff import find_offload_cliff
+from ..analysis.tune import (
+    TUNING_AXES,
+    UnsupportedAxisError,
+    check_axes_supported,
+    run_tuner,
+)
 from ..backends import (
     BACKENDS,
     BackendError,
@@ -94,11 +100,25 @@ def cmd_sweep(args: argparse.Namespace) -> int:
         axes["context_length"] = tuple(int(v) for v in args.context_list.split(","))
     if args.device_list:
         axes["device"] = tuple(args.device_list.split(","))
+    if args.gpu_layers_list:
+        axes["gpu_layers"] = tuple(int(v) for v in args.gpu_layers_list.split(","))
     if not axes:
         fail(
-            "provide at least one sweep axis "
-            "(--max-tokens-list/--iterations-list/--context-list/--device-list)"
+            "provide at least one sweep axis (--max-tokens-list/"
+            "--iterations-list/--context-list/--device-list/--gpu-layers-list)"
         )
+        return EXIT_USAGE_ERROR
+    # Refuse an axis the backend will not apply, for the same reason the tuner
+    # does: sweeping an inert parameter measures run-to-run variance and
+    # presents it as a difference between configurations.
+    try:
+        check_axes_supported(
+            {k: v for k, v in axes.items() if k in TUNING_AXES},
+            backend_tunable_axes(args.runtime),
+            args.runtime,
+        )
+    except UnsupportedAxisError as exc:
+        fail(str(exc))
         return EXIT_USAGE_ERROR
     spec = SweepSpec(axes=axes, base={"runtime": args.runtime, "model": args.model or ""})
 
@@ -109,7 +129,9 @@ def cmd_sweep(args: argparse.Namespace) -> int:
             iterations=point.get("iterations", 5),
             context_length=point.get("context_length", 2048),
             device=point.get("device", "auto"),
-            extra={"model_path": args.model_path},
+            # Forward the swept point so backend-applied axes (gpu_layers)
+            # actually reach the backend.
+            extra={"model_path": args.model_path, **point},
         )
         return run_benchmark(point["runtime"], config)
 
@@ -137,6 +159,22 @@ def cmd_sweep(args: argparse.Namespace) -> int:
             f"  {params:<50} tok/s={tok if tok is not None else '-'}"
             + (f" error={row['error']}" if row["error"] else "")
         )
+    return EXIT_OK
+
+
+def cmd_cliff(args: argparse.Namespace) -> int:
+    """Locate the offload cliff in a saved sweep matrix."""
+    path = Path(args.sweep)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        fail(str(exc))
+        return EXIT_USAGE_ERROR
+    matrix = data.get("matrix") if isinstance(data, dict) else data
+    if not isinstance(matrix, list):
+        fail(f"{path}: expected a sweep file with a 'matrix' array")
+        return EXIT_USAGE_ERROR
+    echo_json(find_offload_cliff(matrix, axis=args.axis))
     return EXIT_OK
 
 
@@ -290,8 +328,22 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     sweep_p.add_argument("--iterations-list", default=None, help="Comma-separated values")
     sweep_p.add_argument("--context-list", default=None, help="Comma-separated values")
     sweep_p.add_argument("--device-list", default=None, help="Comma-separated values")
+    sweep_p.add_argument(
+        "--gpu-layers-list",
+        default=None,
+        help=(
+            "Comma-separated GPU layer counts, e.g. 0,8,16,24,99. Maps the "
+            "offload cliff: where throughput collapses as the model stops "
+            "fitting in VRAM. Analyse with `aihwbench cliff`."
+        ),
+    )
     sweep_p.add_argument("--output", default="results/sweeps")
     sweep_p.set_defaults(func=cmd_sweep)
+
+    cliff_p = sub.add_parser("cliff", help="Find the offload cliff in a sweep matrix")
+    cliff_p.add_argument("sweep", help="Path to a sweep-*.json produced by `aihwbench sweep`")
+    cliff_p.add_argument("--axis", default="gpu_layers")
+    cliff_p.set_defaults(func=cmd_cliff)
 
     run_p = sub.add_parser("run", help="Run a declarative experiment manifest (JSON/TOML/YAML)")
     run_p.add_argument("manifest")

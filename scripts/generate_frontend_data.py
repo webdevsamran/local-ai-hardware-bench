@@ -33,6 +33,13 @@ RESULTS_DIR = REPO / "results" / "published"
 OUT_DIR = REPO / "web" / "public" / "data"
 
 from aihwbench.analysis.fit import BITS_PER_WEIGHT, estimate_model_fit  # noqa: E402
+from aihwbench.comparability import (  # noqa: E402
+    _CONDITIONAL,
+    _REQUIRED_PRESENT,
+    _STRICT,
+    INSUFFICIENT_METADATA,
+    compare_classification,
+)
 from aihwbench.export import comparison_groups, group_label  # noqa: E402
 from aihwbench.metrics import performance_per_watt_unit  # noqa: E402
 
@@ -49,6 +56,43 @@ _FIT_REFERENCE_CASES = [
     ("13B", "unknown-quant", 12000.0, 32000.0, 4096),
     (None, "q4_k_m", 12000.0, 32000.0, 4096),
 ]
+
+
+def _comparability_rules(results: list[dict]) -> dict:
+    """The classifier's rule tables, plus verdicts it produced.
+
+    The dashboard must reach the same verdict as the CLI for any pair a reader
+    selects, and the pair is chosen at runtime so it cannot be precomputed.
+    The rules therefore travel to the browser as data, and reference verdicts
+    computed here pin the TypeScript implementation to this one in
+    web/tests -- the same anti-drift arrangement as the fit estimator.
+    """
+    cases = []
+    # Every ordered pair of published results, plus the degenerate cases that
+    # the presence gate exists to catch.
+    for a in results:
+        for b in results:
+            verdict = compare_classification(a, b)
+            cases.append(
+                {
+                    "a": a.get("run_id"),
+                    "b": b.get("run_id"),
+                    "classification": verdict["classification"],
+                    "machine_reasons": verdict["machine_reasons"],
+                }
+            )
+    empty = compare_classification({}, {})
+    return {
+        "strict": list(_STRICT),
+        "conditional": list(_CONDITIONAL),
+        "required_present": list(_REQUIRED_PRESENT),
+        "insufficient_metadata_reason": INSUFFICIENT_METADATA,
+        "reference_cases": cases,
+        "empty_case": {
+            "classification": empty["classification"],
+            "machine_reasons": empty["machine_reasons"],
+        },
+    }
 
 
 def _fit_constants() -> dict:
@@ -290,6 +334,7 @@ def build(results: list[dict]) -> dict[str, object]:
         },
         "trends": dict(sorted(trends.items())),
         "constants": _fit_constants(),
+        "comparability": _comparability_rules(results),
     }
 
 

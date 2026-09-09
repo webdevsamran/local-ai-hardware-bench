@@ -14,7 +14,17 @@ let cache: Dataset | null = null
 let inflight: Promise<Dataset> | null = null
 
 async function fetchDataset(): Promise<Dataset> {
-  const [index, results, hardware, runtimes, models, leaderboard, trends, constants] =
+  const [
+    index,
+    results,
+    hardware,
+    runtimes,
+    models,
+    leaderboard,
+    trends,
+    constants,
+    comparability,
+  ] =
     await Promise.all(
       [
         'index',
@@ -25,6 +35,7 @@ async function fetchDataset(): Promise<Dataset> {
         'leaderboard',
         'trends',
         'constants',
+        'comparability',
       ].map(
         async (name) => {
           // Absolute (base-anchored), not relative. Under BrowserRouter the
@@ -47,6 +58,7 @@ async function fetchDataset(): Promise<Dataset> {
     leaderboard,
     trends,
     constants,
+    comparability,
   }
   // Fail closed: corruption or schema drift must surface here, not as
   // silently undefined fields in the UI.

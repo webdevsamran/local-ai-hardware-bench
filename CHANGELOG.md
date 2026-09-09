@@ -287,6 +287,24 @@ a workload validation set. The claim is now backed by an implementation.
 - Backends opt in by implementing `generate_text`. A graph runtime that emits
   no tokens is told it cannot run the workload rather than silently skipped.
 
+### Fixed — the compare view now applies the classifier
+
+- **`/compare` renders a verdict, and withholds deltas it should not show.**
+  It previously computed a percentage change between *any* two selected runs,
+  guarded by a footnote asking the reader to check the workload parameters
+  themselves. A percentage between two different experiments is not a
+  comparison; it is a number with a `%` sign. The page now shows the
+  `STRICTLY` / `CONDITIONALLY` / `NOT_COMPARABLE` verdict with the specific
+  reasons, and withholds the delta column when the pair is not comparable.
+  Both runs stay visible — the measurements are real, only the comparison is
+  not.
+- The browser reaches the **same verdict as `aihwbench compare`**. The rule
+  tables are generated from `aihwbench/comparability.py` into
+  `data/comparability.json`, together with a reference verdict for every
+  published pair, and the frontend test suite replays each one through the
+  TypeScript implementation. A divergence fails the build rather than showing
+  a reader the wrong badge.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

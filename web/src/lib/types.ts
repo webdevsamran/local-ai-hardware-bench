@@ -165,6 +165,28 @@ export interface FitConstants {
   reference_cases: FitReferenceCase[]
 }
 
+/** Verdict computed by the canonical Python classifier, for parity tests. */
+export interface ComparabilityReferenceCase {
+  a: string
+  b: string
+  classification: string
+  machine_reasons: string[]
+}
+
+/**
+ * The comparison-safety rule tables, generated from
+ * `aihwbench/comparability.py` so the browser reaches the same verdict as
+ * the CLI for any pair a reader picks.
+ */
+export interface ComparabilityRules {
+  strict: string[]
+  conditional: string[]
+  required_present: string[]
+  insufficient_metadata_reason: string
+  reference_cases: ComparabilityReferenceCase[]
+  empty_case: { classification: string; machine_reasons: string[] }
+}
+
 export interface Dataset {
   index: DatasetIndex
   results: BenchmarkResultDoc[]
@@ -174,4 +196,5 @@ export interface Dataset {
   leaderboard: LeaderboardViews
   trends: Record<string, TrendPoint[]>
   constants: FitConstants
+  comparability: ComparabilityRules
 }

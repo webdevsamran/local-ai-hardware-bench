@@ -99,3 +99,19 @@ describe('compareLocalVsCloud honesty properties', () => {
     ).toContain('cloud price per million tokens is required')
   })
 })
+
+describe('currency formatting', () => {
+  // A negative amount rendered as "$-1,586.22" reads as a typo; the sign
+  // belongs outside the symbol.
+  const usd = (value: number | null | undefined) => {
+    if (value == null) return '—'
+    const amount = Math.abs(value).toLocaleString('en-US', { maximumFractionDigits: 2 })
+    return `${value < 0 ? '-' : ''}$${amount}`
+  }
+
+  it('puts the sign outside the currency symbol', () => {
+    expect(usd(-1586.22)).toBe('-$1,586.22')
+    expect(usd(1586.22)).toBe('$1,586.22')
+    expect(usd(null)).toBe('—')
+  })
+})

@@ -12,8 +12,12 @@ import { fmtNum } from '../lib/format'
 // No cloud price is bundled. Provider prices change often, and a static site
 // carrying a stale table would go on giving confident wrong answers.
 
-const usd = (value: number | null | undefined) =>
-  value == null ? '—' : `$${value.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+/** Money, with the sign outside the currency symbol: -$1,586.22, not $-1,586.22. */
+const usd = (value: number | null | undefined) => {
+  if (value == null) return '—'
+  const amount = Math.abs(value).toLocaleString('en-US', { maximumFractionDigits: 2 })
+  return `${value < 0 ? '-' : ''}$${amount}`
+}
 
 export default function Tco() {
   const { dataset, loading, error, retry } = useDataset()

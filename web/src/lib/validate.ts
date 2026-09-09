@@ -245,6 +245,18 @@ export function validateFitConstants(d: unknown): Issue[] {
   return issues
 }
 
+export function validateComparabilityRules(d: unknown): Issue[] {
+  const issues: Issue[] = []
+  if (!isRecord(d)) return [`comparability: expected object, got ${String(d)}`]
+  for (const key of ['strict', 'conditional', 'required_present'] as const) {
+    if (!Array.isArray(d[key])) issues.push(`comparability.${key}: expected array`)
+  }
+  if (!isNonEmptyString(d.insufficient_metadata_reason)) {
+    issues.push('comparability.insufficient_metadata_reason: expected non-empty string')
+  }
+  return issues
+}
+
 export function validateDataset(d: unknown): Issue[] {
   if (!isRecord(d)) return [`dataset: expected object, got ${String(d)}`]
   const issues: Issue[] = []
@@ -267,6 +279,10 @@ export function validateDataset(d: unknown): Issue[] {
   // Required, not optional: without them the fit wizard cannot answer anything,
   // and a clear contract error beats a component crashing on undefined.
   issues.push(...validateFitConstants(d.constants))
+  // Required: without the rule tables the compare view cannot tell a safe
+  // comparison from an unsafe one, and would silently render deltas between
+  // results the classifier rejects.
+  issues.push(...validateComparabilityRules(d.comparability))
   return issues
 }
 

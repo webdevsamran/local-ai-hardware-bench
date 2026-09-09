@@ -58,6 +58,14 @@ function makeDataset(): Dataset {
       note: 'test constants',
       reference_cases: [],
     },
+    comparability: {
+      strict: ['model.name', 'runtime.name'],
+      conditional: ['runtime.version'],
+      required_present: ['model.name', 'runtime.name'],
+      insufficient_metadata_reason: 'insufficient_metadata',
+      reference_cases: [],
+      empty_case: { classification: 'NOT_COMPARABLE', machine_reasons: ['insufficient_metadata'] },
+    },
   }
 }
 

@@ -751,3 +751,16 @@ button:focus-visible,
     animation: none;
   }
 }
+
+/* Reasons a comparison was blocked or downgraded, inside a verdict card. */
+.verdict-reasons {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.verdict-headline {
+  text-transform: capitalize;
+}

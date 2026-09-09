@@ -68,6 +68,14 @@ const dataset = {
     note: 'test constants',
     reference_cases: [],
   },
+  comparability: {
+    strict: ['model.name', 'runtime.name'],
+    conditional: ['runtime.version'],
+    required_present: ['model.name', 'runtime.name'],
+    insufficient_metadata_reason: 'insufficient_metadata',
+    reference_cases: [],
+    empty_case: { classification: 'NOT_COMPARABLE', machine_reasons: ['insufficient_metadata'] },
+  },
 }
 
 beforeEach(() => {
@@ -83,6 +91,7 @@ beforeEach(() => {
         'data/leaderboard.json': dataset.leaderboard,
         'data/trends.json': dataset.trends,
         'data/constants.json': dataset.constants,
+        'data/comparability.json': dataset.comparability,
       }
       // The app requests base-anchored URLs (`/data/x.json`, or
       // `/local-ai-hardware-bench/data/x.json` in production) because a

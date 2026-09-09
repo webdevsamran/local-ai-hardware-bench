@@ -1,0 +1,551 @@
+{
+  "conditional": [
+    "reproducibility.power_profile",
+    "system.os_version",
+    "runtime.version"
+  ],
+  "empty_case": {
+    "classification": "NOT_COMPARABLE",
+    "machine_reasons": [
+      "insufficient_metadata"
+    ]
+  },
+  "insufficient_metadata_reason": "insufficient_metadata",
+  "reference_cases": [
+    {
+      "a": "llamacpp-1787391945",
+      "b": "llamacpp-1787391945",
+      "classification": "STRICTLY_COMPARABLE",
+      "machine_reasons": []
+    },
+    {
+      "a": "llamacpp-1787391945",
+      "b": "ollama-1787388930",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.name",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "llamacpp-1787391945",
+      "b": "onnxruntime-1787391388",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "llamacpp-1787391945",
+      "b": "onnxruntime-1787391455",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "llamacpp-1787391945",
+      "b": "openvino-1787391625",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "llamacpp-1787391945",
+      "b": "openvino-1787391710",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1787388930",
+      "b": "llamacpp-1787391945",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.name",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1787388930",
+      "b": "ollama-1787388930",
+      "classification": "STRICTLY_COMPARABLE",
+      "machine_reasons": []
+    },
+    {
+      "a": "ollama-1787388930",
+      "b": "onnxruntime-1787391388",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1787388930",
+      "b": "onnxruntime-1787391455",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1787388930",
+      "b": "openvino-1787391625",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1787388930",
+      "b": "openvino-1787391710",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391388",
+      "b": "llamacpp-1787391945",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391388",
+      "b": "ollama-1787388930",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391388",
+      "b": "onnxruntime-1787391388",
+      "classification": "STRICTLY_COMPARABLE",
+      "machine_reasons": []
+    },
+    {
+      "a": "onnxruntime-1787391388",
+      "b": "onnxruntime-1787391455",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "runtime.backend",
+        "runtime.device",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391388",
+      "b": "openvino-1787391625",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "runtime.backend",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391388",
+      "b": "openvino-1787391710",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391455",
+      "b": "llamacpp-1787391945",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391455",
+      "b": "ollama-1787388930",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391455",
+      "b": "onnxruntime-1787391388",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "runtime.backend",
+        "runtime.device",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391455",
+      "b": "onnxruntime-1787391455",
+      "classification": "STRICTLY_COMPARABLE",
+      "machine_reasons": []
+    },
+    {
+      "a": "onnxruntime-1787391455",
+      "b": "openvino-1787391625",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391455",
+      "b": "openvino-1787391710",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "openvino-1787391625",
+      "b": "llamacpp-1787391945",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "openvino-1787391625",
+      "b": "ollama-1787388930",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "openvino-1787391625",
+      "b": "onnxruntime-1787391388",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "runtime.backend",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "openvino-1787391625",
+      "b": "onnxruntime-1787391455",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "openvino-1787391625",
+      "b": "openvino-1787391625",
+      "classification": "STRICTLY_COMPARABLE",
+      "machine_reasons": []
+    },
+    {
+      "a": "openvino-1787391625",
+      "b": "openvino-1787391710",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "runtime.backend",
+        "runtime.device"
+      ]
+    },
+    {
+      "a": "openvino-1787391710",
+      "b": "llamacpp-1787391945",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "openvino-1787391710",
+      "b": "ollama-1787388930",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "openvino-1787391710",
+      "b": "onnxruntime-1787391388",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "openvino-1787391710",
+      "b": "onnxruntime-1787391455",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "openvino-1787391710",
+      "b": "openvino-1787391625",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "runtime.backend",
+        "runtime.device"
+      ]
+    },
+    {
+      "a": "openvino-1787391710",
+      "b": "openvino-1787391710",
+      "classification": "STRICTLY_COMPARABLE",
+      "machine_reasons": []
+    }
+  ],
+  "required_present": [
+    "model.name",
+    "runtime.name",
+    "runtime.backend",
+    "runtime.device",
+    "reproducibility.iterations",
+    "reproducibility.warmup_runs"
+  ],
+  "strict": [
+    "model.name",
+    "model.checksum",
+    "model.format",
+    "model.quantization",
+    "model.revision",
+    "model.tokenizer",
+    "runtime.name",
+    "runtime.backend",
+    "runtime.device",
+    "reproducibility.workload_type",
+    "reproducibility.prompt",
+    "reproducibility.max_tokens",
+    "reproducibility.temperature",
+    "reproducibility.seed",
+    "reproducibility.context_length",
+    "reproducibility.batch_size",
+    "reproducibility.concurrency",
+    "reproducibility.warmup_runs",
+    "reproducibility.iterations"
+  ]
+}

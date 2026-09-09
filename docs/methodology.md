@@ -4,7 +4,11 @@
 
 1. **Measure, never estimate.** A metric that cannot be captured is `null`.
 2. **Record the environment.** A number without its environment is noise.
-3. **Compare only like with like.** The compare tool warns on any mismatch.
+3. **Compare only like with like.** The comparison-safety classifier decides
+   whether two results may be compared at all, and the exact rule set is
+   published in [comparability-rubric.md](comparability-rubric.md) — generated
+   from the classifier and checked in CI, so a verdict is predictable before
+   you run anything and auditable afterwards.
 4. **Reproducibility over peak numbers.** We prefer a slightly conservative,
    fully documented protocol over cherry-picked best-of-N.
 

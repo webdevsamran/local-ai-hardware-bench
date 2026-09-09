@@ -23,6 +23,8 @@ jobs:
       # 0.11.13, so `ruff format` locally and `ruff format --check` here
       # disagreed about the same file.
       - run: pip install ruff==0.16.4
+      - name: Published comparability rubric matches the classifier
+        run: python scripts/generate_comparability_rubric.py --check
       - name: Landscape table matches the fetched competitor data
         # The table states its own method ("fetched via the GitHub API")
         # but was typed by hand. In a sibling repo that drifted into

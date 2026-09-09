@@ -22,7 +22,7 @@ The framework already exists. Your hardware is the missing test platform.
 | Personal user / AI PC owner | [Quick start](#quick-start) → `aihwbench doctor` |
 | Developer choosing hardware | [Compatibility matrix](docs/compatibility-matrix.md) + published results |
 | Contributor | [CONTRIBUTING.md](CONTRIBUTING.md) · [good first issues](https://github.com/webdevsamran/local-ai-hardware-bench/issues?q=label%3A%22good+first+issue%22) |
-| Researcher | [Methodology](docs/methodology.md) · [CITATION.cff](CITATION.cff) |
+| Researcher | [Methodology](docs/methodology.md) · [Comparability rubric](docs/comparability-rubric.md) · [CITATION.cff](CITATION.cff) |
 | Runtime maintainer | [Plugin API](docs/guides/plugin-api.md) |
 | Hardware vendor | [Vendor collaboration](docs/vendor-collaboration.md) · [Hardware needed](docs/hardware-needed.md) |
 | Enterprise | [Enterprise overview](docs/enterprise/overview.md) (planned/future) |

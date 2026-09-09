@@ -218,6 +218,7 @@ jobs:
           sys.path.insert(0, ".")
           from aihwbench.fingerprint import result_fingerprint
           from aihwbench.formal_schema import validate_formal
+          from aihwbench.plausibility import check_plausibility
           from aihwbench.sanitize import scan_object
           from aihwbench.schemas import validate_result
           failures = []
@@ -234,6 +235,13 @@ jobs:
               # jsonschema is missing, so a broken environment fails the job
               # rather than silently passing every file.
               errors = errors + validate_formal(data)
+              # Impossible values -- more VRAM than the card has, a first
+              # token after the last one -- are measurement bugs, and a
+              # published dataset should not carry them.
+              errors = errors + [
+                  f"implausible {f['field']}: {f['detail']}"
+                  for f in check_plausibility(data)
+              ]
               clean, privacy = scan_object(data)
               fp = result_fingerprint(data)
               dup = fingerprints.get(fp)

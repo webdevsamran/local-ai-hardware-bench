@@ -160,3 +160,45 @@ def test_idle_sampling_can_be_skipped(patched, monkeypatch):
     assert energy["idle_baseline_power_watts"] is None
     assert energy["incremental_power_watts"] is None
     assert energy["gross_average_power_watts"] == 120.0
+
+
+def test_runner_attaches_tamper_evident_provenance(patched):
+    """compute_provenance was only ever called by `aihwbench bundle`.
+
+    Every result produced by a benchmark run therefore carried no hash, and
+    the data-quality report's provenance check failed on all six published
+    results for that reason.
+    """
+    from aihwbench.provenance import verify_hashes
+
+    result = make_valid_result()
+    patched(result)
+
+    out = runner.run_benchmark("ollama", _Config())
+
+    assert out["provenance"]["result_hash"]
+    assert verify_hashes(out)["checks"]["result_hash"] is True
+
+
+def test_provenance_detects_a_changed_number(patched):
+    from aihwbench.provenance import verify_hashes
+
+    result = make_valid_result()
+    patched(result)
+    out = runner.run_benchmark("ollama", _Config())
+
+    out["metrics"]["generation_tokens_per_second"] = 999.0
+    assert verify_hashes(out)["checks"]["result_hash"] is False
+
+
+def test_provenance_covers_the_derived_blocks_too(patched):
+    """The hash is computed last, so energy and thermal are inside it."""
+    from aihwbench.provenance import verify_hashes
+
+    result = make_valid_result()
+    result["metrics"]["average_power_watts"] = 120.0
+    patched(result)
+    out = runner.run_benchmark("ollama", _Config())
+
+    out["energy"]["energy_joules_per_token"] = 0.0001
+    assert verify_hashes(out)["checks"]["result_hash"] is False

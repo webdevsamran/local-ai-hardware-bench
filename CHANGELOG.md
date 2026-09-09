@@ -476,6 +476,26 @@ does, so an under-measured result was indistinguishable from a careful one.
   a measurement does not remove the cold-start cost baked into it.
 - `data_quality_report` reports the label alongside its other checks.
 
+### Added — implausible-value detection, and provenance on every result
+
+- **`aihwbench.plausibility`** flags values that are impossible (more VRAM
+  than the card has, utilisation above 100%, a first token arriving after the
+  last) or self-contradictory (percentiles out of order, an energy figure that
+  does not follow from the power and throughput beside it). It runs in the
+  data-quality report and in CI over the published dataset.
+- It deliberately asserts **no performance ceiling per hardware class.** "A
+  3080 Ti cannot exceed N tok/s" is a claim about hardware this project has
+  not measured across the range, and a false accusation costs far more than a
+  missed one. Statistical outliers stay the job of `flag_anomalies`, which
+  compares against a like-for-like cohort rather than a guessed bound. Every
+  finding is a review request, never a fraud verdict.
+- **`compute_provenance` is now called by the runner.** It was only ever
+  invoked by `aihwbench bundle`, so every result produced by a benchmark run
+  carried no hash and could not be checked for tampering — which is why the
+  data-quality provenance check failed on all six published results. The hash
+  is computed last, so it covers the derived energy, thermal and battery
+  blocks too.
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

@@ -20,6 +20,19 @@
     },
     {
       "a": "llamacpp-1787391945",
+      "b": "llamacpp-1789031931-b98435ea",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.quantization",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.warmup_runs",
+        "runtime.device"
+      ]
+    },
+    {
+      "a": "llamacpp-1787391945",
       "b": "ollama-1787388930",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
@@ -148,6 +161,158 @@
       ]
     },
     {
+      "a": "llamacpp-1789031931-b98435ea",
+      "b": "llamacpp-1787391945",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.quantization",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.warmup_runs",
+        "runtime.device"
+      ]
+    },
+    {
+      "a": "llamacpp-1789031931-b98435ea",
+      "b": "llamacpp-1789031931-b98435ea",
+      "classification": "STRICTLY_COMPARABLE",
+      "machine_reasons": []
+    },
+    {
+      "a": "llamacpp-1789031931-b98435ea",
+      "b": "ollama-1787388930",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.name",
+        "model.quantization",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.warmup_runs",
+        "runtime.backend",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "llamacpp-1789031931-b98435ea",
+      "b": "ollama-1789031359-bfb62628",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.name",
+        "runtime.backend",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "llamacpp-1789031931-b98435ea",
+      "b": "ollama-1789031428-39f82fdf",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.name",
+        "runtime.backend",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "llamacpp-1789031931-b98435ea",
+      "b": "onnxruntime-1787391388",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "model.quantization",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "llamacpp-1789031931-b98435ea",
+      "b": "onnxruntime-1787391455",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "model.quantization",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "llamacpp-1789031931-b98435ea",
+      "b": "openvino-1787391625",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "model.quantization",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "llamacpp-1789031931-b98435ea",
+      "b": "openvino-1787391710",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "model.quantization",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
       "a": "ollama-1787388930",
       "b": "llamacpp-1787391945",
       "classification": "NOT_COMPARABLE",
@@ -156,6 +321,23 @@
         "model.name",
         "runtime.backend",
         "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1787388930",
+      "b": "llamacpp-1789031931-b98435ea",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.name",
+        "model.quantization",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.warmup_runs",
+        "runtime.backend",
         "runtime.name",
         "runtime.version"
       ]
@@ -284,6 +466,18 @@
         "reproducibility.warmup_runs",
         "runtime.backend",
         "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1789031359-bfb62628",
+      "b": "llamacpp-1789031931-b98435ea",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.name",
+        "runtime.backend",
         "runtime.name",
         "runtime.version"
       ]
@@ -418,6 +612,18 @@
         "reproducibility.warmup_runs",
         "runtime.backend",
         "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1789031428-39f82fdf",
+      "b": "llamacpp-1789031931-b98435ea",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.name",
+        "runtime.backend",
         "runtime.name",
         "runtime.version"
       ]
@@ -551,6 +757,29 @@
         "reproducibility.prompt",
         "reproducibility.seed",
         "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391388",
+      "b": "llamacpp-1789031931-b98435ea",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "model.quantization",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
         "reproducibility.workload_type",
         "runtime.backend",
         "runtime.device",
@@ -674,6 +903,29 @@
         "reproducibility.prompt",
         "reproducibility.seed",
         "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391455",
+      "b": "llamacpp-1789031931-b98435ea",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "model.quantization",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
         "reproducibility.workload_type",
         "runtime.backend",
         "runtime.device",
@@ -798,6 +1050,29 @@
         "reproducibility.prompt",
         "reproducibility.seed",
         "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "openvino-1787391625",
+      "b": "llamacpp-1789031931-b98435ea",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "model.quantization",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
         "reproducibility.workload_type",
         "runtime.backend",
         "runtime.device",
@@ -920,6 +1195,29 @@
         "reproducibility.prompt",
         "reproducibility.seed",
         "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "openvino-1787391710",
+      "b": "llamacpp-1789031931-b98435ea",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "model.quantization",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
         "reproducibility.workload_type",
         "runtime.backend",
         "runtime.device",

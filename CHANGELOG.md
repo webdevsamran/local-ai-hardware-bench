@@ -5,6 +5,44 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Fixed — model identity that was available and recorded as null
+
+- **Every result ever published carried `model.quantization: null`.** Ollama's
+  `/api/tags` had been returning `details.quantization_level` all along, and a
+  GGUF file states its own quantization in its header. Both backends
+  hardcoded the field to `None`.
+
+  `model.quantization` is in the comparison-safety classifier's strict set,
+  and `_same(None, None)` is True by design — so null on both sides meant two
+  results at different quantizations *agreed* about it. With an Ollama tag the
+  classifier still caught the difference through the name, because the tag
+  happens to encode it. Served under a name that does not, two different
+  quantizations compared as STRICTLY_COMPARABLE with zero reasons given.
+
+  It also emptied `aihwbench quantization`, whose entire purpose is grouping
+  results by quantization and which reported `quantizations: [None]` for every
+  family, along with the dashboard filter beside it.
+
+- **`aihwbench/gguf.py`** reads identity from a GGUF header: quantization from
+  `general.file_type`, parameter count from `general.size_label`, architecture
+  from `general.architecture`. Header only, never tensor data, so it stays
+  bounded work on a file that may be tens of gigabytes — 0.3 ms on the
+  reference model. A truncated header, an unsupported version, an unknown
+  value type or an implausible length yields nothing rather than whatever sits
+  at the offset it guessed.
+
+  Neither backend parses the filename. `model.gguf` is a legal name for any
+  quantization, files get renamed, and a wrong quantization is worse than a
+  missing one because it makes two different models compare as one. The two
+  sources agree independently: Ollama's API and the GGUF header both report
+  `q4_k_m` for the same model.
+
+- **`docs/methodology.md` claimed llama.cpp generation tok/s is null.** It has
+  not been for some time: it is derived from the client wall-clock window
+  between the first and last streamed chunk, labelled `client_wall_clock` in
+  `metrics.metric_source`, and the published result carrying 360.87 tok/s sat
+  directly under a limitation saying it could not exist.
+
 ### Fixed — guards that could not fire, and verdicts that could not discriminate
 
 Found by running each command against real data and reading the numbers,

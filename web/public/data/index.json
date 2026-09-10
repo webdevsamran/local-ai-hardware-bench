@@ -2,7 +2,7 @@
   "hardware_count": 1,
   "model_count": 3,
   "note": "generated deterministically from published results; no synthetic benchmark numbers are included",
-  "results_count": 8,
+  "results_count": 9,
   "runtime_count": 4,
   "schema_version": "1.0",
   "source_dir": "results/published"

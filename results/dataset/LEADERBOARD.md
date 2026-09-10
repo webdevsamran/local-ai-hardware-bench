@@ -1,10 +1,10 @@
 # AIHWBench Leaderboard
 
-Generated from 8 validated result(s) in `results/published`.
+Generated from 9 validated result(s) in `results/published`.
 
 Results are grouped by the comparison-safety classifier (`aihwbench/comparability.py`), and **ranking is meaningful only within a group**. Putting every result in one table under a shared throughput column invites a comparison the classifier rejects for most pairs, and a footnote does not undo the claim the column makes.
 
-7 comparable group(s); 1 contain more than one result and can be ranked.
+8 comparable group(s); 1 contain more than one result and can be ranked.
 
 ## qwen2.5-0.5b-instruct-q4_k_m.gguf on llama.cpp (llama-server/cuda)
 
@@ -13,6 +13,14 @@ Results are grouped by the comparison-safety classifier (`aihwbench/comparabilit
 | Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | llamacpp-1787391945 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 360.87 | 14.52 | 13.485 | tok/s/W | 5 | verified |
+
+## qwen2.5-0.5b-instruct-q4_k_m.gguf q4_k_m on llama.cpp (llama-server/auto)
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| llamacpp-1789031931-b98435ea | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 338.31 | 13.94 | 4.671 | tok/s/W | 8 | verified |
 
 ## qwen2.5:0.5b-instruct-q4_K_M on ollama (ollama-http-api/auto)
 

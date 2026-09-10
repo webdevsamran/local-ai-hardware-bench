@@ -23,6 +23,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+from ..gguf import read_gguf_identity
 from ..telemetry import TelemetrySampler
 from .base import (
     BackendError,
@@ -336,8 +337,11 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
         "model": {
             "name": Path(model_path).name,
             "format": "gguf",
-            "quantization": None,
-            "parameters": None,
+            # From the file's own header, not its name. `model.gguf` is a
+            # legal name for any quantization, and `model.quantization` is a
+            # strict comparison key -- so null on both sides meant two runs at
+            # different quantizations agreed about it.
+            **read_gguf_identity(model_path),
             "checksum": f"sha256:{checksum}",
         },
         "metrics": metrics,

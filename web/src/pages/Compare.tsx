@@ -106,7 +106,7 @@ export default function Compare() {
                   }`}
                   role="status"
                 >
-                  <h3 className="verdict-headline">
+                  <h3 className="verdict-headline verdict-classification">
                     {verdict.classification.replace(/_/g, ' ').toLowerCase()}
                   </h3>
                   <p className="verdict-detail">

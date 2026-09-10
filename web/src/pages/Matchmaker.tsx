@@ -225,9 +225,15 @@ export default function Matchmaker() {
                   <strong>
                     {fmtNum(recommendation.sizeCeiling.estimated_total_gb)} GB
                   </strong>{' '}
-                  of weights and overhead at {recommendation.sizeCeiling.fit_target ?? 'this budget'}.{' '}
-                  {recommendation.sizeCeiling.reason}
+                  of weights and overhead, which fits in{' '}
+                  {recommendation.sizeCeiling.fit_target === 'vram'
+                    ? 'your GPU memory'
+                    : recommendation.sizeCeiling.fit_target === 'ram'
+                      ? 'system RAM, with the model spilling off the GPU'
+                      : 'the budget you gave'}
+                  .
                 </p>
+                <p className="muted small">{recommendation.sizeCeiling.reason}</p>
                 <p className="muted small">
                   An estimate from a memory budget and an assumed quantization
                   density. A measured result for the same model on the same

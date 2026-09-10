@@ -504,7 +504,15 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     bench.add_argument("--seed", type=int, default=42)
     bench.add_argument("--context-length", type=int, default=2048)
     bench.add_argument("--device", default="auto", help="auto | cpu | cuda | gpu | npu")
-    bench.add_argument("--output", default="results", help="Results output directory")
+    bench.add_argument(
+        "--output",
+        default="results",
+        help=(
+            "Directory. The result is written to <output>/raw/ and its report "
+            "to <output>/. Passing a file path here silently creates a "
+            "directory with that name."
+        ),
+    )
     bench.set_defaults(func=cmd_benchmark)
 
     suite_p = sub.add_parser("suite", help="Run a versioned benchmark suite profile")
@@ -515,7 +523,9 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     suite_p.add_argument(
         "--model-path", default=None, help="Local model file path (llama.cpp/ONNX/OpenVINO)"
     )
-    suite_p.add_argument("--output", default="results")
+    suite_p.add_argument(
+        "--output", default="results", help="Directory for the suite's result files"
+    )
     suite_p.set_defaults(func=cmd_suite)
 
     sweep_p = sub.add_parser("sweep", help="Parameter sweep producing a structured matrix")
@@ -535,7 +545,11 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
             "fitting in VRAM. Analyse with `aihwbench cliff`."
         ),
     )
-    sweep_p.add_argument("--output", default="results/sweeps")
+    sweep_p.add_argument(
+        "--output",
+        default="results/sweeps",
+        help="Directory; the matrix and its CSV are written as sweep-<runtime>.*",
+    )
     sweep_p.set_defaults(func=cmd_sweep)
 
     agentic_p = sub.add_parser(
@@ -589,7 +603,9 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     run_p.add_argument("manifest")
     run_p.add_argument("--iterations", type=int, default=5)
     run_p.add_argument("--model-path", default=None)
-    run_p.add_argument("--output", default="results/experiments")
+    run_p.add_argument(
+        "--output", default="results/experiments", help="Directory for experiment output"
+    )
     run_p.set_defaults(func=cmd_run_manifest)
 
     cap = sub.add_parser("capacity", help="Concurrency ladder capacity test")
@@ -615,5 +631,9 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     tune_p.add_argument("--max-tokens", type=int, default=64)
     tune_p.add_argument("--iterations", type=int, default=3)
     tune_p.add_argument("--device", default="auto")
-    tune_p.add_argument("--output", default="results/tuning")
+    tune_p.add_argument(
+        "--output",
+        default="results/tuning",
+        help="Directory; the report is written as tune-<runtime>.json",
+    )
     tune_p.set_defaults(func=cmd_tune)

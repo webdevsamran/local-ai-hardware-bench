@@ -48,7 +48,7 @@ class MetricCheck:
     candidate: float | None
     delta: float | None
     delta_pct: float | None
-    status: str  # PASS | FAIL | SKIPPED
+    status: str  # PASS | FAIL | SKIPPED | INFORMATIONAL
     reason: str = ""
 
 
@@ -115,6 +115,59 @@ def _check(
     return MetricCheck(name, direction, base_val, cand_val, delta, delta_pct, "PASS")
 
 
+#: Telemetry field behind each regression metric, for scope lookups.
+_METRIC_TELEMETRY_FIELD = {
+    "peak_ram_mb": "ram_mb",
+    "peak_vram_mb": "vram_mb",
+    "average_power_watts": "power_watts",
+}
+
+
+def _system_scoped_metrics(*results: dict[str, Any]) -> set[str]:
+    """Regression metrics either result declares as system-wide.
+
+    Read from the results rather than hardcoded, because scope depends on how
+    a given machine measured: `power_watts` is device-scoped from nvidia-smi
+    and CPU-package-scoped from RAPL, and a future sampler could report
+    process RAM instead of system RAM. The document says which; this asks it.
+    """
+    scoped: set[str] = set()
+    for result in results:
+        telemetry = result.get("telemetry")
+        if not isinstance(telemetry, dict):
+            continue
+        scope = telemetry.get("scope")
+        if not isinstance(scope, dict):
+            continue
+        for metric, field_name in _METRIC_TELEMETRY_FIELD.items():
+            if scope.get(field_name) == "system":
+                scoped.add(metric)
+    return scoped
+
+
+def _demote_if_system_scoped(check: MetricCheck, system_scoped: set[str]) -> MetricCheck:
+    """Turn a failure on a machine-wide metric into an observation.
+
+    The delta is kept: a large jump in system memory is worth seeing, and
+    might even be the benchmark's doing. What it cannot do is decide a gate,
+    because nothing here can attribute it to the run.
+    """
+    if check.metric not in system_scoped or check.status not in ("FAIL", "PASS"):
+        return check
+    reason = check.reason
+    note = "measured system-wide, so a delta cannot be attributed to this run; reported, not gated"
+    return MetricCheck(
+        check.metric,
+        check.direction,
+        check.baseline,
+        check.candidate,
+        check.delta,
+        check.delta_pct,
+        "INFORMATIONAL",
+        f"{reason}; {note}" if reason else note,
+    )
+
+
 def evaluate_regression(
     baseline: dict[str, Any],
     candidate: dict[str, Any],
@@ -140,6 +193,19 @@ def evaluate_regression(
 
     bm = baseline.get("metrics", {})
     cm = candidate.get("metrics", {})
+
+    # Metrics the result itself declares as measuring the whole machine rather
+    # than this run. `peak_ram_mb` comes from `psutil.virtual_memory` and is
+    # published with `telemetry.scope.ram_mb == "system"`, so a delta between
+    # two runs is the difference in what the machine was doing -- a browser
+    # tab, an indexer, an antivirus sweep -- not a change in the benchmark.
+    #
+    # Two runs of the same configuration minutes apart on the reference
+    # machine differed by 1.3 GB and failed the gate. A CI gate that fires on
+    # someone opening a browser is one people learn to ignore, which costs
+    # more than the check was ever worth. These are reported with their deltas
+    # and excluded from the verdict.
+    system_scoped = _system_scoped_metrics(baseline, candidate)
     checks = [
         _check(
             "generation_tokens_per_second",
@@ -190,6 +256,7 @@ def evaluate_regression(
             t.power_max_increase_pct,
         ),
     ]
+    checks = [_demote_if_system_scoped(c, system_scoped) for c in checks]
     failures = [f"{c.metric}: {c.reason}" for c in checks if c.status == "FAIL"]
     status = "FAIL" if failures else "PASS"
     return RegressionReport(

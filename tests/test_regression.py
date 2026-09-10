@@ -106,3 +106,93 @@ def test_force_still_reports_the_true_classification():
     cand["runtime"]["name"] = "llama.cpp"
     report = evaluate_regression(base, cand, force=True)
     assert report.classification == NOT_COMPARABLE
+
+
+# --- A machine-wide metric cannot decide a gate about one run ---------------
+#
+# `peak_ram_mb` comes from `psutil.virtual_memory` and every result publishes
+# it with `telemetry.scope.ram_mb == "system"`. Two runs of the same
+# configuration, minutes apart on the reference machine, differed by 1.3 GB
+# and failed the gate — the difference being what else the desktop was doing.
+# A CI gate that fires when someone opens a browser is one people learn to
+# ignore, which costs more than the check was worth.
+
+
+def _with_scope(result: dict, **scope) -> dict:
+    result = dict(result)
+    result["telemetry"] = {"scope": scope}
+    return result
+
+
+def test_system_scoped_memory_is_reported_but_does_not_fail_the_gate():
+    base = _with_scope(_result("base", 100.0), ram_mb="system", vram_mb="device")
+    cand = _with_scope(_result("cand", 100.0), ram_mb="system", vram_mb="device")
+    base["metrics"]["peak_ram_mb"] = 16000.0
+    cand["metrics"]["peak_ram_mb"] = 18000.0  # +2 GB of unrelated desktop use
+
+    report = evaluate_regression(base, cand)
+    ram = next(c for c in report.checks if c.metric == "peak_ram_mb")
+    assert ram.status == "INFORMATIONAL"
+    # The delta is still visible; only the verdict is withheld.
+    assert ram.delta == 2000.0
+    assert "cannot be attributed to this run" in ram.reason
+    assert report.status == "PASS"
+    assert report.failures == []
+
+
+def test_device_scoped_memory_still_gates():
+    """VRAM is the benchmark's own footprint, and a jump there is real."""
+    base = _with_scope(_result("base", 100.0), ram_mb="system", vram_mb="device")
+    cand = _with_scope(_result("cand", 100.0), ram_mb="system", vram_mb="device")
+    base["metrics"]["peak_vram_mb"] = 600.0
+    cand["metrics"]["peak_vram_mb"] = 4000.0
+
+    report = evaluate_regression(base, cand)
+    assert report.status == "FAIL"
+    assert any("peak_vram_mb" in f for f in report.failures)
+
+
+def test_scope_is_read_from_the_result_not_hardcoded():
+    """A sampler that measured process RAM would make the metric gateable.
+
+    Scope depends on how a machine measured: power is device-scoped from
+    nvidia-smi and CPU-package-scoped from RAPL. The document says which, so
+    the checker asks it rather than assuming.
+    """
+    base = _with_scope(_result("base", 100.0), ram_mb="process")
+    cand = _with_scope(_result("cand", 100.0), ram_mb="process")
+    base["metrics"]["peak_ram_mb"] = 1000.0
+    cand["metrics"]["peak_ram_mb"] = 9000.0
+
+    report = evaluate_regression(base, cand)
+    ram = next(c for c in report.checks if c.metric == "peak_ram_mb")
+    assert ram.status == "FAIL"
+    assert report.status == "FAIL"
+
+
+def test_a_result_without_telemetry_scope_still_gates():
+    """Absent scope must not silently disable a check.
+
+    Older results carry no scope block, and treating "unknown" as "system"
+    would quietly stop gating memory for the whole existing corpus.
+    """
+    base = _result("base", 100.0)
+    cand = _result("cand", 100.0)
+    base["metrics"]["peak_ram_mb"] = 1000.0
+    cand["metrics"]["peak_ram_mb"] = 9000.0
+
+    report = evaluate_regression(base, cand)
+    assert report.status == "FAIL"
+
+
+def test_a_real_regression_still_fails_alongside_an_informational_metric():
+    """The demotion must not swallow the verdict it sits next to."""
+    base = _with_scope(_result("base", 300.0), ram_mb="system")
+    cand = _with_scope(_result("cand", 30.0), ram_mb="system")  # 10x slower
+    base["metrics"]["peak_ram_mb"] = 16000.0
+    cand["metrics"]["peak_ram_mb"] = 18000.0
+
+    report = evaluate_regression(base, cand)
+    assert report.status == "FAIL"
+    assert any("generation_tokens_per_second" in f for f in report.failures)
+    assert not any("peak_ram_mb" in f for f in report.failures)

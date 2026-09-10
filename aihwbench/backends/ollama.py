@@ -72,16 +72,58 @@ def list_models() -> list[str]:
     return [m.get("name", "") for m in data.get("models", [])]
 
 
-def model_digest(model: str) -> str | None:
-    """Digest of a local model manifest (used as model checksum)."""
+def _model_entry(model: str) -> dict[str, Any] | None:
+    """The /api/tags entry for one model, or None if it is not installed."""
     data = _api_get("/api/tags")
     if not data:
         return None
-    for m in data.get("models", []):
-        if m.get("name") == model:
-            digest: str | None = m.get("digest")
-            return digest
+    for entry in data.get("models", []):
+        if entry.get("name") == model:
+            return entry if isinstance(entry, dict) else None
     return None
+
+
+def model_digest(model: str) -> str | None:
+    """Digest of a local model manifest (used as model checksum)."""
+    entry = _model_entry(model)
+    if entry is None:
+        return None
+    digest: str | None = entry.get("digest")
+    return digest
+
+
+def model_identity(model: str) -> dict[str, Any]:
+    """Model identity from what Ollama reports, not from its tag.
+
+    `quantization` and `parameters` were hardcoded to None while
+    `/api/tags` had been returning `details.quantization_level` and
+    `details.parameter_size` all along.
+
+    `model.quantization` is in the comparison-safety classifier's strict set,
+    so leaving it null meant two runs at different quantizations agreed about
+    it -- `_same(None, None)` is True. With an Ollama tag the classifier still
+    caught the difference through the name, because the tag happens to encode
+    it; served under a name that does not, two different quantizations
+    compared as STRICTLY_COMPARABLE with zero reasons.
+
+    It also emptied the `quantization` command, whose whole purpose is
+    grouping results by quantization, and the dashboard filter beside it.
+
+    Parsed from the tag is what this deliberately does not do: `:latest` and a
+    renamed model would both yield a confident wrong answer, and a wrong
+    quantization is worse than a missing one.
+    """
+    entry = _model_entry(model)
+    details = (entry or {}).get("details") or {}
+    quantization = details.get("quantization_level")
+    return {
+        # Lower-cased to match the vocabulary the fit estimator and the
+        # dashboard filter already use (`q4_k_m`, not `Q4_K_M`).
+        "quantization": quantization.lower() if isinstance(quantization, str) else None,
+        "parameters": details.get("parameter_size"),
+        "family": details.get("family"),
+        "format": details.get("format") or "gguf",
+    }
 
 
 def _generate_stream(model: str, prompt: str, config: BenchmarkConfig) -> dict[str, Any]:
@@ -212,6 +254,10 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     finally:
         sampler.stop()
 
+    # Asked once, after the run: the model is certainly resident by now, and
+    # a tag installed mid-run would describe the wrong thing.
+    identity = model_identity(config.model)
+
     metrics = aggregate_iteration_metrics(iterations)
     metrics.update(cold_start_metrics(warmups, iterations))
     telemetry = sampler.summary()
@@ -236,9 +282,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
         },
         "model": {
             "name": config.model,
-            "format": "gguf",
-            "quantization": None,
-            "parameters": None,
+            **identity,
             "checksum": model_digest(config.model),
         },
         "metrics": metrics,

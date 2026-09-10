@@ -221,6 +221,10 @@ _MODEL_FIELDS = {
     "checksum": str,
     "revision": str,
     "tokenizer": str,
+    # Architecture family as the runtime reports it (e.g. "qwen2", "llama").
+    # Not a comparison key -- two models of one family are still two models --
+    # but it is what lets the dataset group results by architecture.
+    "family": str,
 }
 
 _REPRO_FIELDS = {

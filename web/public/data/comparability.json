@@ -33,11 +33,12 @@
     },
     {
       "a": "llamacpp-1787391945",
-      "b": "ollama-1789023368-72264449",
+      "b": "ollama-1789031359-bfb62628",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.name",
+        "model.quantization",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
         "reproducibility.prompt",
@@ -50,11 +51,12 @@
     },
     {
       "a": "llamacpp-1787391945",
-      "b": "ollama-1789023447-6e15718a",
+      "b": "ollama-1789031428-39f82fdf",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.name",
+        "model.quantization",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
         "reproducibility.prompt",
@@ -166,9 +168,10 @@
     },
     {
       "a": "ollama-1787388930",
-      "b": "ollama-1789023368-72264449",
+      "b": "ollama-1789031359-bfb62628",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
+        "model.quantization",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
         "reproducibility.prompt",
@@ -177,9 +180,10 @@
     },
     {
       "a": "ollama-1787388930",
-      "b": "ollama-1789023447-6e15718a",
+      "b": "ollama-1789031428-39f82fdf",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
+        "model.quantization",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
         "reproducibility.prompt",
@@ -267,12 +271,13 @@
       ]
     },
     {
-      "a": "ollama-1789023368-72264449",
+      "a": "ollama-1789031359-bfb62628",
       "b": "llamacpp-1787391945",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.name",
+        "model.quantization",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
         "reproducibility.prompt",
@@ -284,10 +289,11 @@
       ]
     },
     {
-      "a": "ollama-1789023368-72264449",
+      "a": "ollama-1789031359-bfb62628",
       "b": "ollama-1787388930",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
+        "model.quantization",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
         "reproducibility.prompt",
@@ -295,25 +301,26 @@
       ]
     },
     {
-      "a": "ollama-1789023368-72264449",
-      "b": "ollama-1789023368-72264449",
+      "a": "ollama-1789031359-bfb62628",
+      "b": "ollama-1789031359-bfb62628",
       "classification": "STRICTLY_COMPARABLE",
       "machine_reasons": []
     },
     {
-      "a": "ollama-1789023368-72264449",
-      "b": "ollama-1789023447-6e15718a",
+      "a": "ollama-1789031359-bfb62628",
+      "b": "ollama-1789031428-39f82fdf",
       "classification": "STRICTLY_COMPARABLE",
       "machine_reasons": []
     },
     {
-      "a": "ollama-1789023368-72264449",
+      "a": "ollama-1789031359-bfb62628",
       "b": "onnxruntime-1787391388",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
@@ -329,13 +336,14 @@
       ]
     },
     {
-      "a": "ollama-1789023368-72264449",
+      "a": "ollama-1789031359-bfb62628",
       "b": "onnxruntime-1787391455",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
@@ -351,13 +359,14 @@
       ]
     },
     {
-      "a": "ollama-1789023368-72264449",
+      "a": "ollama-1789031359-bfb62628",
       "b": "openvino-1787391625",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
@@ -373,13 +382,14 @@
       ]
     },
     {
-      "a": "ollama-1789023368-72264449",
+      "a": "ollama-1789031359-bfb62628",
       "b": "openvino-1787391710",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
@@ -395,12 +405,13 @@
       ]
     },
     {
-      "a": "ollama-1789023447-6e15718a",
+      "a": "ollama-1789031428-39f82fdf",
       "b": "llamacpp-1787391945",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.name",
+        "model.quantization",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
         "reproducibility.prompt",
@@ -412,10 +423,11 @@
       ]
     },
     {
-      "a": "ollama-1789023447-6e15718a",
+      "a": "ollama-1789031428-39f82fdf",
       "b": "ollama-1787388930",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
+        "model.quantization",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
         "reproducibility.prompt",
@@ -423,25 +435,26 @@
       ]
     },
     {
-      "a": "ollama-1789023447-6e15718a",
-      "b": "ollama-1789023368-72264449",
+      "a": "ollama-1789031428-39f82fdf",
+      "b": "ollama-1789031359-bfb62628",
       "classification": "STRICTLY_COMPARABLE",
       "machine_reasons": []
     },
     {
-      "a": "ollama-1789023447-6e15718a",
-      "b": "ollama-1789023447-6e15718a",
+      "a": "ollama-1789031428-39f82fdf",
+      "b": "ollama-1789031428-39f82fdf",
       "classification": "STRICTLY_COMPARABLE",
       "machine_reasons": []
     },
     {
-      "a": "ollama-1789023447-6e15718a",
+      "a": "ollama-1789031428-39f82fdf",
       "b": "onnxruntime-1787391388",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
@@ -457,13 +470,14 @@
       ]
     },
     {
-      "a": "ollama-1789023447-6e15718a",
+      "a": "ollama-1789031428-39f82fdf",
       "b": "onnxruntime-1787391455",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
@@ -479,13 +493,14 @@
       ]
     },
     {
-      "a": "ollama-1789023447-6e15718a",
+      "a": "ollama-1789031428-39f82fdf",
       "b": "openvino-1787391625",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
@@ -501,13 +516,14 @@
       ]
     },
     {
-      "a": "ollama-1789023447-6e15718a",
+      "a": "ollama-1789031428-39f82fdf",
       "b": "openvino-1787391710",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
@@ -564,12 +580,13 @@
     },
     {
       "a": "onnxruntime-1787391388",
-      "b": "ollama-1789023368-72264449",
+      "b": "ollama-1789031359-bfb62628",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
@@ -586,12 +603,13 @@
     },
     {
       "a": "onnxruntime-1787391388",
-      "b": "ollama-1789023447-6e15718a",
+      "b": "ollama-1789031428-39f82fdf",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
@@ -685,12 +703,13 @@
     },
     {
       "a": "onnxruntime-1787391455",
-      "b": "ollama-1789023368-72264449",
+      "b": "ollama-1789031359-bfb62628",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
@@ -707,12 +726,13 @@
     },
     {
       "a": "onnxruntime-1787391455",
-      "b": "ollama-1789023447-6e15718a",
+      "b": "ollama-1789031428-39f82fdf",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
@@ -807,12 +827,13 @@
     },
     {
       "a": "openvino-1787391625",
-      "b": "ollama-1789023368-72264449",
+      "b": "ollama-1789031359-bfb62628",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
@@ -829,12 +850,13 @@
     },
     {
       "a": "openvino-1787391625",
-      "b": "ollama-1789023447-6e15718a",
+      "b": "ollama-1789031428-39f82fdf",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
@@ -927,12 +949,13 @@
     },
     {
       "a": "openvino-1787391710",
-      "b": "ollama-1789023368-72264449",
+      "b": "ollama-1789031359-bfb62628",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",
@@ -949,12 +972,13 @@
     },
     {
       "a": "openvino-1787391710",
-      "b": "ollama-1789023447-6e15718a",
+      "b": "ollama-1789031428-39f82fdf",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
         "model.checksum",
         "model.format",
         "model.name",
+        "model.quantization",
         "reproducibility.context_length",
         "reproducibility.iterations",
         "reproducibility.max_tokens",

@@ -197,6 +197,13 @@
             "string",
             "null"
           ]
+        },
+        "family": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Architecture family as the runtime reports it. Not a comparison key: two models of the same family are still two different models."
         }
       },
       "additionalProperties": true

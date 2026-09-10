@@ -12,7 +12,7 @@ Plus an ONNX-format model.
 ## Usage
 
 ```bash
-aihwbench benchmark --backend onnxruntime --model path/to/model.onnx
+aihwbench benchmark --runtime onnxruntime --model-path path/to/model.onnx
 ```
 
 ## Execution providers

@@ -17,7 +17,7 @@ aihwbench detect
 ## Usage
 
 ```bash
-aihwbench benchmark --backend openvino --model path/to/model.xml --device GPU.0
+aihwbench benchmark --runtime openvino --model-path path/to/model.xml --device GPU.0
 ```
 
 ## What is measured

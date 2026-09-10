@@ -5,6 +5,90 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Fixed — capabilities that were built, exported, and never called
+
+The dominant defect class in this repository. Each of these was written,
+sometimes tested, and reachable by nothing.
+
+- **`aihwbench self-test` reported `overall: fail` on every machine ever run.**
+  Its runtime check compared each backend's status against the string
+  `"ready"`, which no backend has ever returned — the states are `AVAILABLE`,
+  `NOT_INSTALLED`, `NOT_AVAILABLE`, `UNSUPPORTED_PLATFORM`,
+  `HARDWARE_REQUIRED` and `CONFIGURATION_REQUIRED`. On this machine `doctor`
+  listed four available runtimes while `self-test` said there were none. A
+  precondition check that always fails is worse than none: it teaches people
+  the tool's verdicts mean nothing.
+- **`ParquetExporter` was in `__all__` and not in the registry**, so
+  `get_exporter("parquet")` raised `KeyError`. Because nothing could reach it,
+  nobody found that its `export` also called `pq.Table` — `Table` lives in
+  `pyarrow`, not `pyarrow.parquet`. Two defects behind one missing
+  registration. A test now asserts every exported `*Exporter` is reachable.
+- **`rapl_power_sample` had no callers**, so a machine with no discrete GPU
+  measured no power at all — and that is most consumer laptops. The
+  joules-per-token figures this project treats as a differentiator existed
+  only for people who already owned an NVIDIA card.
+- **`npu_telemetry` had no callers**, so results said nothing about NPUs.
+  Silence is the worst option of three: a reader could not tell "this machine
+  has no NPU" from "this machine has one and nothing measured it".
+- **`diff_snapshots` had no callers** while `build_snapshot_manifest`
+  duplicated its set arithmetic inline — two implementations of "what changed
+  between two snapshots", each free to drift.
+- **`backends/capabilities.py` was imported by nothing at all** — not a
+  backend, not the CLI, not a test — and built a parallel capability report
+  competing with the `detect()` every backend already implements. Removed.
+- **`enrich_with_npu`** likewise, once the runner attached the block directly.
+
+### Fixed — advice drawn from noise
+
+- **`aihwbench cliff` named an optimum the measurements could not
+  distinguish.** On a real sweep at 3 iterations per point it reported 247.06
+  tok/s at 24 GPU layers against 222.8 at 99 and called 24 the best setting;
+  at 8 iterations the same sweep gave 272.4 and 371.9, and 99 won decisively.
+  `best_layers` was a bare `max()` over the means. It now reports which
+  settings it cannot tell apart, using confidence intervals where the sweep
+  measured them and a labelled 10% margin where it did not.
+- **Sweeps discarded the variance the runner had already computed.**
+  `DEFAULT_METRIC_KEYS` projected five metrics per point and dropped the rest,
+  so every consumer of a sweep compared means with no way to ask whether a
+  difference survived the noise.
+- **Sweeps recorded no model.** `params.model` was empty for every runtime
+  taking a `--model-path`, so a published offload curve arrived with nothing
+  attached — and where a cliff sits depends entirely on how big the model is.
+  Sweeps now carry their full environment.
+
+### Added — coverage, reach and provenance
+
+- **vLLM and SGLang backends.** The engines the closest academic competitor
+  measures, supported here for the opposite case: consumer hardware, published
+  beside llama.cpp and Ollama results, with the classifier saying which may be
+  ranked together. Both speak the same OpenAI-compatible protocol, so the
+  streaming client is written once. Neither launches a server — startup flags
+  decide what is measured, and a benchmark that chose them would be reporting
+  on a configuration the operator never saw.
+- **CPU-package power via Intel RAPL**, as a labelled fallback where no GPU
+  probe answers. Its scope travels with the reading, because publishing a
+  CPU-package figure as device power invites exactly the comparison this
+  project exists to prevent.
+- **Container and image identity in every result.** A tag is not an identity;
+  the digest is recorded where supplied and its absence explained where not,
+  and never inferred from a tag.
+- **A HuggingFace dataset export**, with the card that makes it a dataset
+  rather than a file — carrying the comparability caveat to readers who have
+  none of this repository's context.
+- **`aihwbench doctor --json`**, a conformance report someone on hardware the
+  maintainers cannot test can attach to an issue.
+- **`aihwbench snapshot --diff`**, which answers "what changed between the
+  release people cited and the one they have" without both directories.
+- **A GitHub Action contributors can run on their own hardware**, which
+  refuses to run on a shared runner and never publishes anything itself.
+- **A measured offload cliff**: 64 → 372 tok/s across 0 to 99 offloaded
+  layers, a 5.8x range on one machine with a 40% step between 18 and 24
+  layers, published with the environment that produced it.
+- **Four dashboard pages**: a task-first matchmaker that says when no measured
+  result meets the requirements, a measured offload-cliff explorer, embeddable
+  result cards that carry their own caveat, and browser-side submission whose
+  privacy scan uses the CLI's own generated patterns and uploads nothing.
+
 ### Fixed — measurements that described the machine rather than the workload
 
 Found by running the benchmark on real hardware, not by any test. Each one

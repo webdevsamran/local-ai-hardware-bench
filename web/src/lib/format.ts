@@ -9,6 +9,34 @@ export function fmtNum(value: number | null | undefined, digits = 1): string {
   })
 }
 
+/**
+ * Format a number at a precision its magnitude can carry.
+ *
+ * `fmtNum` fixes one decimal place, which is right for a throughput of 297.1
+ * and wrong for a per-token energy of 0.0703 — rendered as "0.1", a figure
+ * that has lost the information it existed to convey. Small measured
+ * quantities are common here: joules per token, coefficients of variation,
+ * fractions of gross power.
+ *
+ * Trailing zeros are trimmed, so 5 renders as "5" rather than "5.0000".
+ */
+export function fmtPrecise(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return '—'
+  const magnitude = Math.abs(value)
+  let digits: number
+  if (magnitude === 0) digits = 0
+  else if (magnitude >= 100) digits = 0
+  else if (magnitude >= 10) digits = 1
+  else if (magnitude >= 1) digits = 2
+  else if (magnitude >= 0.01) digits = 4
+  // Below 0.01, keep three significant figures rather than a fixed place,
+  // so 0.00091 does not become "0.0009".
+  else digits = Math.min(20, 2 - Math.floor(Math.log10(magnitude)))
+
+  return value
+    .toLocaleString('en-US', { maximumFractionDigits: digits })
+}
+
 export function fmtInt(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return '—'
   return value.toLocaleString('en-US')

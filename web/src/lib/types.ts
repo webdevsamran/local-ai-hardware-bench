@@ -60,6 +60,29 @@ export interface Metrics {
   itl_max_ms?: number | null
 }
 
+/** Machine load sampled immediately before a run began. */
+export interface MachineContention {
+  cpu_percent?: number | null
+  /** True when load was measured and exceeded the threshold. Null = unknown. */
+  busy?: boolean | null
+  threshold_percent?: number | null
+  reason?: string | null
+}
+
+/** Derived energy figures, with what bounds their precision. */
+export interface EnergyBlock {
+  energy_joules_per_token?: number | null
+  incremental_power_watts?: number | null
+  gross_average_power_watts?: number | null
+  idle_baseline_power_watts?: number | null
+  idle_power_spread_watts?: number | null
+  incremental_share_of_gross?: number | null
+  /** False when the figure is mostly baseline, or inside its noise. */
+  incremental_is_robust?: boolean | null
+  caveat?: string | null
+  telemetry_source?: string | null
+}
+
 export interface Reproducibility {
   prompt?: string
   max_tokens?: number
@@ -70,6 +93,7 @@ export interface Reproducibility {
   iterations?: number
   command?: string
   python_version?: string
+  machine_contention?: MachineContention | null
   power_profile?: string
 }
 
@@ -83,6 +107,8 @@ export interface BenchmarkResultDoc {
   model?: ModelBlock
   metrics?: Metrics
   reproducibility?: Reproducibility
+  /** Derived energy figures; see EnergyBlock for what bounds their precision. */
+  energy?: EnergyBlock | null
   _file?: string
 }
 

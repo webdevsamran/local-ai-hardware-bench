@@ -3,7 +3,7 @@ import { useDataset } from '../lib/useDataset'
 import { Loading, ErrorState } from '../components/States'
 import { TrustBadge, Tag } from '../components/Badge'
 import CopyCommand from '../components/CopyCommand'
-import { fmtDate, fmtNum } from '../lib/format'
+import { fmtDate, fmtNum, fmtPrecise } from '../lib/format'
 import { SITE_URL } from '../lib/seo'
 
 export default function ResultDetail() {
@@ -156,6 +156,80 @@ export default function ResultDetail() {
           </>
         )}
       </section>
+
+      {/* What bounds this result's trustworthiness.
+          Both of these were learned by getting them wrong: a benchmark taken
+          during a background scan measured 118x slow while passing every other
+          check, and an energy figure computed against an unstable baseline
+          swung by 84x between runs of the same workload. Neither is visible
+          from the metrics alone, so the page shows them next to the metrics. */}
+      {(rep.machine_contention || r.energy) && (
+        <section className="card">
+          <h2>What bounds these numbers</h2>
+
+          {rep.machine_contention && (
+            <>
+              <h3>The machine while measuring</h3>
+              {rep.machine_contention.busy === true ? (
+                <p className="verdict verdict-bad" role="status">
+                  {rep.machine_contention.reason}
+                </p>
+              ) : rep.machine_contention.busy === false ? (
+                <p className="muted">
+                  CPU at {fmtNum(rep.machine_contention.cpu_percent)}% before
+                  the run, under the{' '}
+                  {fmtNum(rep.machine_contention.threshold_percent)}% threshold
+                  — the hardware was free to be measured.
+                </p>
+              ) : (
+                <p className="muted">
+                  Machine load was not measured for this run, which is not the
+                  same as the machine having been quiet.
+                </p>
+              )}
+            </>
+          )}
+
+          {r.energy && (
+            <>
+              <h3>Energy</h3>
+              {r.energy.energy_joules_per_token == null ? (
+                <p className="muted">
+                  {r.energy.caveat ??
+                    'Per-token energy was not resolvable for this run.'}
+                </p>
+              ) : (
+                <>
+                  <dl className="kv-list">
+                    <dt>Per token</dt>
+                    <dd>
+                      {/* Not fmtNum: 0.0703 J rendered as "0.1" loses the
+                          figure entirely. */}
+                      {fmtPrecise(r.energy.energy_joules_per_token)} J
+                    </dd>
+                    <dt>Attributable to the workload</dt>
+                    <dd>
+                      {fmtNum(r.energy.incremental_power_watts)} W of{' '}
+                      {fmtNum(r.energy.gross_average_power_watts)} W measured
+                    </dd>
+                    <dt>Idle baseline</dt>
+                    <dd>
+                      {fmtNum(r.energy.idle_baseline_power_watts)} W
+                      {r.energy.idle_power_spread_watts != null &&
+                        `, itself varying by ${fmtNum(r.energy.idle_power_spread_watts)} W`}
+                    </dd>
+                  </dl>
+                  {r.energy.incremental_is_robust === false && (
+                    <p className="notice" role="note">
+                      {r.energy.caveat}
+                    </p>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </section>
+      )}
 
       <section className="card">
         <h2>Embed this result</h2>

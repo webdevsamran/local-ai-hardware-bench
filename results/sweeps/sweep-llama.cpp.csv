@@ -1,0 +1,7 @@
+param_gpu_layers,param_iterations,param_model,param_runtime,generation_tokens_per_second,ttft_ms,total_latency_ms,peak_vram_mb,average_power_watts,generation_tps_cv,gen_tps_ci95,gen_tps_min,gen_tps_max,run_id,error
+0,8,qwen2.5-0.5b-instruct-q4_k_m.gguf,llama.cpp,64.42,30.86,531.73,232.0,28.59,0.1018,"[59.87, 68.96]",51.74,73.44,llamacpp-1789021237-766f0916,
+6,8,qwen2.5-0.5b-instruct-q4_k_m.gguf,llama.cpp,98.3,25.95,340.52,426.0,30.68,0.094,"[91.89, 104.71]",87.3,112.95,llamacpp-1789021258-0db5c546,
+12,8,qwen2.5-0.5b-instruct-q4_k_m.gguf,llama.cpp,134.49,20.8,241.18,494.0,32.47,0.1124,"[124.01, 144.96]",106.21,162.14,llamacpp-1789021277-2ea5bc88,
+18,8,qwen2.5-0.5b-instruct-q4_k_m.gguf,llama.cpp,164.58,19.57,220.76,560.0,34.42,0.1322,"[149.5, 179.66]",120.9,192.6,llamacpp-1789021297-310d5cbd,
+24,8,qwen2.5-0.5b-instruct-q4_k_m.gguf,llama.cpp,272.36,16.44,124.88,626.0,37.36,0.0363,"[265.51, 279.21]",259.27,287.47,llamacpp-1789021315-022d5dbe,
+99,8,qwen2.5-0.5b-instruct-q4_k_m.gguf,llama.cpp,371.85,10.07,90.44,632.0,34.82,0.0472,"[359.68, 384.03]",335.54,389.79,llamacpp-1789021332-f6079e4b,

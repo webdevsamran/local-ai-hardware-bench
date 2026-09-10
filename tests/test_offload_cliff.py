@@ -254,3 +254,40 @@ def test_a_clearly_slower_point_is_not_called_a_tie():
     report = find_offload_cliff([_point(0, 35.0), _point(99, 350.0)])
     assert report["best_layers"] == 99
     assert report["best_is_tied_with"] == []
+
+
+# --- The published sweep ----------------------------------------------------
+
+
+def test_the_published_sweep_still_shows_its_cliff():
+    """Guards the artifact docs/results/offload-cliff-rtx3080ti.md describes.
+
+    A published measurement that silently stops parsing, or whose analysis
+    stops finding what the write-up claims, is a citation pointing at nothing.
+    """
+    import json
+    import pathlib
+
+    path = (
+        pathlib.Path(__file__).resolve().parent.parent
+        / "results"
+        / "sweeps"
+        / "sweep-llama.cpp.json"
+    )
+    sweep = json.loads(path.read_text(encoding="utf-8"))
+
+    # The environment is what makes the curve interpretable elsewhere: an
+    # offload cliff is a property of this GPU's memory and link as much as of
+    # the model.
+    environment = sweep["environment"]
+    assert environment["model"], "a cliff curve with no model attached says nothing"
+    assert environment["system"]["gpu"]
+    assert environment["runtime"] == "llama.cpp"
+
+    report = find_offload_cliff(sweep["matrix"])
+    assert report["cliff_detected"] is True
+    assert report["excluded_missing_data"] == 0
+    assert report["cliff_between_layers"] == [18.0, 24.0]
+    # Every point carries the interval the tie check needs.
+    assert report["tie_basis"] == "overlapping 95% confidence intervals"
+    assert report["best_layers"] == 99.0

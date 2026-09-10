@@ -1,0 +1,229 @@
+# Run a benchmark on a contributor's own hardware (#116).
+#
+# The dataset is only as broad as the machines people run it on, and the
+# maintainers own one. This action lets anyone with a self-hosted runner
+# measure their hardware with the same code, the same gates and the same
+# refusals as the reference machine, and get back an artifact they can attach
+# to a submission.
+#
+#   jobs:
+#     bench:
+#       runs-on: self-hosted          # your machine, with the runtime installed
+#       steps:
+#         - uses: webdevsamran/local-ai-hardware-bench/.github/actions/run-benchmark@main
+#           with:
+#             runtime: ollama
+#             model: qwen2.5:0.5b-instruct-q4_K_M
+#             workload: sustained_generation
+#
+# What this deliberately does NOT do
+# ----------------------------------
+# It does not publish, commit, or open a pull request. Publishing sets a
+# result's trust state, and a machine cannot review its own measurement. The
+# artifact is the output; submitting it is a person's decision.
+#
+# It also refuses to run on a GitHub-hosted runner by default. A shared
+# virtual machine has no stable thermal behaviour, no power telemetry, and
+# neighbours competing for the same silicon; numbers from one describe the
+# datacentre's scheduling rather than hardware anyone owns. Refusing is
+# better than producing a plausible number nobody should trust.
+
+name: Run AIHWBench benchmark
+description: >-
+  Measure local AI inference on this runner's own hardware, validate the
+  result, and upload it as an artifact for submission.
+
+inputs:
+  runtime:
+    description: Runtime backend to benchmark (ollama, llama.cpp, vllm, ...)
+    required: true
+  model:
+    description: Model identifier for the runtime (e.g. an Ollama tag)
+    required: false
+    default: ""
+  model-path:
+    description: Local model file, for runtimes that take a path
+    required: false
+    default: ""
+  workload:
+    description: >-
+      Registered workload to run. sustained_generation measures decode
+      throughput at a steady state; the default chat prompt stops after about
+      29 tokens, which is too little work to measure a rate.
+    required: false
+    default: sustained_generation
+  iterations:
+    description: Measured iterations. Published results need at least 5.
+    required: false
+    default: "8"
+  warmup:
+    description: Warm-up runs before measurement begins.
+    required: false
+    default: "3"
+  python-version:
+    description: Python version used to install and run aihwbench.
+    required: false
+    default: "3.12"
+  allow-hosted-runner:
+    description: >-
+      Run even on a GitHub-hosted runner. Off by default. Only useful for
+      testing the pipeline itself, never for a number anyone should read.
+    required: false
+    default: "false"
+  fail-on-quality-gate:
+    description: >-
+      Fail the job when the result does not pass every data-quality check.
+      On by default: an unstable measurement is worth catching on the machine
+      that produced it, while the contributor can still re-run it.
+    required: false
+    default: "true"
+
+outputs:
+  result-path:
+    description: Path to the raw result document.
+    value: ${{ steps.bench.outputs.result-path }}
+  quality-summary:
+    description: How many data-quality checks passed, as "passed/total".
+    value: ${{ steps.quality.outputs.summary }}
+
+runs:
+  using: composite
+  steps:
+    - name: Refuse to measure shared infrastructure
+      shell: bash
+      run: |
+        if [ "${{ inputs.allow-hosted-runner }}" = "true" ]; then
+          echo "::warning::Running on a shared runner by request. This result describes the datacentre's scheduling, not hardware anyone owns, and must not be published."
+          exit 0
+        fi
+        if [ "$RUNNER_ENVIRONMENT" = "github-hosted" ]; then
+          echo "::error::This action measures hardware, and a GitHub-hosted runner is a shared virtual machine with no power telemetry and no stable thermal behaviour. Use a self-hosted runner, or set allow-hosted-runner to true to exercise the pipeline."
+          exit 1
+        fi
+
+    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install aihwbench
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install "${{ github.action_path }}/../../.."
+
+    - name: Report what this machine is
+      shell: bash
+      run: |
+        mkdir -p benchmark-output
+        # Detection only, and already sanitized: no serials, no MAC addresses,
+        # no home directory paths. Recorded so a reader of the artifact knows
+        # what produced it.
+        aihwbench doctor --json > benchmark-output/conformance.json || true
+        cat benchmark-output/conformance.json
+
+    - name: Run the benchmark
+      id: bench
+      shell: bash
+      run: |
+        set -e
+        args=(benchmark --runtime "${{ inputs.runtime }}")
+        if [ -n "${{ inputs.model }}" ]; then args+=(--model "${{ inputs.model }}"); fi
+        if [ -n "${{ inputs.model-path }}" ]; then args+=(--model-path "${{ inputs.model-path }}"); fi
+        if [ -n "${{ inputs.workload }}" ]; then args+=(--workload "${{ inputs.workload }}"); fi
+        args+=(--iterations "${{ inputs.iterations }}")
+        args+=(--warmup "${{ inputs.warmup }}")
+        args+=(--output benchmark-output)
+        aihwbench "${args[@]}"
+        # Exactly one result is produced per run, so globbing for it avoids
+        # parsing a human-readable report for a path.
+        result=$(ls benchmark-output/raw/*.json | head -n 1)
+        echo "result-path=$result" >> "$GITHUB_OUTPUT"
+        echo "Result: $result"
+
+    - name: Validate against the schema
+      shell: bash
+      run: |
+        # Formal and semantic. A document that does not validate is not a
+        # result, so this gate is never advisory.
+        aihwbench validate "${{ steps.bench.outputs.result-path }}" --formal
+
+    - name: Data-quality checks
+      id: quality
+      shell: bash
+      run: |
+        set -e
+        aihwbench quality "${{ steps.bench.outputs.result-path }}" > benchmark-output/quality.json
+        cat benchmark-output/quality.json
+        summary=$(python -c 'import json; d = json.load(open("benchmark-output/quality.json")); print(str(d["checks_passed"]) + "/" + str(d["checks_total"]))')
+        echo "summary=$summary" >> "$GITHUB_OUTPUT"
+        echo "Data-quality checks: $summary"
+
+    - name: Fail closed on the quality gate
+      if: ${{ inputs.fail-on-quality-gate == 'true' }}
+      shell: bash
+      run: |
+        python - <<'PY'
+        import json
+        import sys
+
+        report = json.load(open("benchmark-output/quality.json"))
+        checks = report["checks"]
+        if report["checks_passed"] == report["checks_total"]:
+            print("All data-quality checks passed.")
+            sys.exit(0)
+
+        print("::error::This result did not pass every data-quality check.")
+        for name in (
+            "schema_valid",
+            "privacy_clean",
+            "provenance_present",
+            "variance_acceptable",
+            "values_plausible",
+        ):
+            if not checks.get(name):
+                print("::error::failed: " + name)
+
+        # Variance is the check contributors hit most, and the cause is
+        # usually something the person at the machine can fix.
+        if not checks.get("variance_acceptable"):
+            print(
+                "::notice::Throughput varied too much across iterations for "
+                "the mean to be publishable. Close other GPU work and re-run. "
+                "If the decline is monotonic your machine is thermally or "
+                "power limited, which is a real finding worth stating in the "
+                "submission rather than a reason to hide the run."
+            )
+        sys.exit(1)
+        PY
+
+    - name: Scan for anything private
+      shell: bash
+      run: |
+        # Runs before the upload rather than after, because the upload is what
+        # would publish a leak. detect_system sanitizes as it collects; this is
+        # the independent check on that.
+        aihwbench redact "${{ steps.bench.outputs.result-path }}" --output benchmark-output/redacted.json
+        echo "Privacy scan complete; a redacted copy is included for comparison."
+
+    - name: Upload the result
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: aihwbench-result-${{ inputs.runtime }}-${{ github.run_id }}
+        path: benchmark-output/
+
+    - name: How to submit this
+      shell: bash
+      run: |
+        {
+          echo "## AIHWBench result"
+          echo ""
+          echo "- Runtime: ${{ inputs.runtime }}"
+          echo "- Workload: ${{ inputs.workload }}"
+          echo "- Data-quality checks: ${{ steps.quality.outputs.summary }}"
+          echo ""
+          echo "Download the aihwbench-result artifact and open a pull request"
+          echo "adding the JSON to results/published/, or attach it to a"
+          echo "benchmark-submission issue. It arrives with trust state"
+          echo "unreviewed: a measurement is not verified by the machine that"
+          echo "produced it."
+        } >> "$GITHUB_STEP_SUMMARY"

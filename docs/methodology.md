@@ -48,6 +48,25 @@ Every benchmark run records and fixes:
 - **p50/p95** — linear-interpolated percentiles across measured iterations.
 - **Peak RAM/VRAM, utilization, temperature, power** — sampled every 0.5 s
   by a background telemetry thread (`psutil`, `nvidia-smi`).
+- **Energy per token** — measured against an idle baseline sampled
+  immediately before load, never a nameplate TDP. Two conditions must hold
+  before a figure is published. The baseline must come from a quiet GPU: if
+  utilization during the baseline window shows the card working, the baseline
+  is refused rather than subtracted, because subtracting another process's
+  draw makes the benchmark look more efficient than it is. And the workload's
+  draw must exceed the baseline: when it does not, the difference is below
+  the sensor's resolution and the figure is null with a reason, because
+  reporting zero would claim that generating tokens is free.
+
+  Each result also states what share of gross power the workload accounted
+  for. Below 10%, the per-token figure is dominated by the baseline rather
+  than the work, and the result carries a caveat saying so. This is not a
+  hypothetical: the same workload on one machine measured 0.0777 J/token
+  against a 14.9 W baseline and 0.0009 J/token against a 31.4 W one, because
+  the second run began with a model still resident and the card at raised
+  clocks. Both power readings were correct; only one of the two per-token
+  figures described the workload. Results record the resident VRAM at
+  baseline time so that difference is visible rather than mysterious.
 - **Performance per watt** — mean throughput ÷ mean power draw. The unit
   depends on the workload: generative runtimes yield **tok/s/W**, graph and
   vision runtimes (ONNX Runtime, OpenVINO) yield **inf/s/W**, because those
@@ -72,17 +91,42 @@ Every benchmark run records and fixes:
   until we parse server timing logs.
 - Power draw via `nvidia-smi` is GPU package power, not whole-system power.
 - WDDM GPU memory reporting can lag actual allocation slightly.
-- Thermal state (laptop cooling, ambient temperature) is recorded only as
-  max temperature. Sustained-throttling analysis exists in
-  `aihwbench/analysis/thermal.py` but is not yet wired to a benchmark run:
-  nothing persists the telemetry trace it needs, so no published result
-  carries a throttling verdict.
+- Thermal analysis reads a persisted telemetry trace, so published results
+  carry a throttling verdict: max and final temperature, the temperature
+  slope, and time-to-throttle against an 85 C threshold. What it cannot yet
+  report is peak-versus-steady-state *throughput* degradation, because the
+  trace records temperature per sample and not throughput. That needs the
+  sustained-load protocol (`aihwbench suite --profile sustained`), and every
+  result says so in `thermal.reason` rather than leaving the fields
+  unexplained.
 
 ## Statistical policy
 
 - Report means plus p50/p95; never report a single best iteration.
 - Minimum 5 measured iterations after 2 warm-ups for published results.
 - Do not rank results across different model tiers or hardware classes.
+- **Variance is checked on the headline metric, not only on latency.** A run
+  whose generation throughput varies by more than a 0.5 coefficient of
+  variation fails the data-quality gate. Latency alone was not sufficient: in
+  a short-generation workload, total latency is dominated by
+  time-to-first-token, so throughput can swing four-fold while latency
+  variance stays under 7%.
+- **A sustained decline is reported separately from noise.** Comparing the
+  means of a run's two halves distinguishes a machine settling into a thermal
+  or power limit -- a property worth publishing -- from a run that is simply
+  noisy. It does not fail the gate: a throttling machine is a legitimate
+  subject of measurement, and refusing to publish it would hide exactly the
+  behaviour a buyer wants to know about.
+- **Ranks within a group carry their confidence intervals.** When two results
+  in one comparison group have overlapping 95% intervals, they are not
+  distinguishable at that sample size and the leaderboard marks the tie. The
+  rank remains as a sort order; the lead it would otherwise imply does not.
+- **A prompt that stops early cannot measure a rate.** Generation throughput
+  needs enough generated tokens to reach a steady state. The
+  `sustained_generation` workload exists for this: `default_chat` asks for a
+  two-sentence answer, which on the reference machine measured mostly the
+  GPU's clock ramp (a 0.56 coefficient of variation, against 0.019 for the
+  sustained workload).
 
 ## Adding a platform result
 

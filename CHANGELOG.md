@@ -5,6 +5,70 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Fixed — measurements that described the machine rather than the workload
+
+Found by running the benchmark on real hardware, not by any test. Each one
+produced a number that looked reasonable and was wrong.
+
+- **GPU detection fell back to the integrated GPU on a machine with a discrete
+  one.** `get_nvidia_gpus()` asked nvidia-smi for identity and PCIe link in a
+  single query, using two field names nvidia-smi does not accept. It fails a
+  whole query on one unrecognised field, so detection returned nothing and the
+  Windows WMI fallback answered instead — a published result recorded NVIDIA
+  power and VRAM telemetry against an "Intel(R) Iris(R) Xe Graphics".
+  `system.gpu` is a strict comparison key, so a wrong value there makes runs
+  from two machines look like runs from one. Identity is now queried alone,
+  and the link separately using verified field names.
+- **Per-token energy was published against baselines that could not support
+  it.** The same workload on one machine gave 0.0777 J/token and then
+  0.0009 J/token — an 84x swing caused by nothing but a model still being
+  resident from an earlier run, which held the card at raised clocks and made
+  almost the entire measured draw baseline. The idle sample now records the
+  state it was taken in (utilization and resident VRAM), refuses a baseline
+  taken while the GPU is busy, and every figure states what share of gross
+  power the workload actually accounted for.
+- **`energy_joules_per_token: 0.0` claimed that generating tokens is free.** A
+  `max(0.0, gross - idle)` clamp turned "the workload's draw is below this
+  sensor's resolution" into a measurement of zero. Measured case: a 0.5B model
+  held an RTX 3080 Ti at ~6% utilization and the card's idle draw drifted by
+  more than the workload added. Unresolvable is now null with a reason.
+- **A cold-start penalty was reported when nothing loaded cold.** `cold - warm`
+  went negative when the model was already resident, publishing
+  `-1.172 ms`. Clamping to zero would assert that loading is free, so the
+  penalty is absent unless a cold load was genuinely slower, and
+  `cold_start_measured` says which happened.
+- **The variance gate never checked the headline metric.** It measured
+  `total_latency_ms` only, which in a short-generation workload is dominated
+  by time-to-first-token. A run whose throughput fell 327 -> 84 tok/s across
+  five iterations (CV 0.56) showed a latency CV of 0.06 and passed 5/5.
+  Throughput variance was already computed on every run and read by nothing.
+
+### Added
+
+- **`sustained_generation` workload, and `--prompt` / `--workload` on
+  `aihwbench benchmark`.** `BenchmarkConfig.prompt` had always existed and the
+  CLI never passed it, so the prompt — a strict comparison key — was the one
+  parameter no user could set. It mattered: the only workload with a concrete
+  prompt was `default_chat`, which asks for a two-sentence answer and so
+  generates ~29 tokens however high `--max-tokens` goes, measuring mostly the
+  GPU's clock ramp. The new workload sustains generation to a steady state
+  (CV 0.019 against 0.56 on the same machine). It is additive rather than a
+  change to `default_chat`, which would have silently redefined what every
+  existing published result measured. Results now record which workload ran.
+- **Confidence intervals on leaderboard ranks.** Two results in one comparison
+  group were ranked 281.65 over 261.31 tok/s with overlapping 95% intervals —
+  a sort order printed as a 20 tok/s lead. Rows now carry the interval and the
+  coefficient of variation, and a tie with rank 1 is marked in the rank column
+  and read out to screen readers.
+- **A sustained throughput decline is reported separately from noise.**
+  Comparing the means of a run's halves distinguishes a machine settling into
+  a thermal or power limit from one that is merely noisy. It does not fail the
+  quality gate: a throttling machine is a legitimate subject of measurement.
+- **First published results at schema 2.0**, and the dataset's first
+  comparison group with more than one member. Both agree within their
+  confidence intervals and their per-token energy agrees to 0.3%.
+
+
 ### Fixed — the trust layer now fails closed
 
 - **`aihwbench regression` no longer passes a gate that ran no checks.** When

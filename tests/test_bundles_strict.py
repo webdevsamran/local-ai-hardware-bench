@@ -257,3 +257,69 @@ def test_a_failed_signature_check_invalidates_the_bundle(tmp_path, monkeypatch):
         },
     )
     assert main(["verify-bundle", str(bundle), "--verify-signature"]) == 1
+
+
+# --- What a passing verification actually establishes ------------------------
+#
+# The manifest ships *inside* the bundle, so anyone who edits a member can
+# recompute it. `valid: true` therefore means the contents match the checksums
+# that travelled with them — not that either is authentic. That is inherent to
+# any unsigned checksum scheme; what matters is that the report says so
+# rather than leaving `valid: true` to be read as "this is genuine".
+
+
+def test_a_rebuilt_manifest_verifies_clean(tmp_path):
+    """The limit of unsigned integrity, demonstrated rather than assumed."""
+    import hashlib
+
+    path = create_bundle(tmp_path / "b.aihwbench", _result())
+
+    with zipfile.ZipFile(path) as zf:
+        names = zf.namelist()
+        members = {name: zf.read(name) for name in names}
+
+    doc = json.loads(members["result.json"].decode("utf-8"))
+    doc["metrics"]["generation_tokens_per_second"] = 9999.0
+    forged = json.dumps(doc, indent=2).encode("utf-8")
+    digest = hashlib.sha256(forged).hexdigest()
+
+    forged_path = tmp_path / "forged.aihwbench"
+    with zipfile.ZipFile(forged_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("result.json", forged)
+        zf.writestr("MANIFEST.sha256", f"{digest}  result.json\n")
+
+    report = verify_bundle(forged_path)
+    assert report["valid"] is True  # checksums match, because they were rewritten
+    assert report["signature_checked"] is False
+    # ...and the report does not let that pass for authenticity.
+    assert "not a deliberately rebuilt bundle" in report["attests"]
+    assert "--verify-signature" in report["attests"]
+
+
+def test_an_untouched_bundle_says_what_it_checked(tmp_path):
+    path = create_bundle(tmp_path / "b.aihwbench", _result())
+
+    report = verify_bundle(path)
+    assert report["valid"] is True
+    assert report["signature_checked"] is False
+    assert "corruption" in report["attests"]
+
+
+def test_editing_a_member_without_the_manifest_is_caught(tmp_path):
+    """The case unsigned checksums do catch, and the common one."""
+    path = create_bundle(tmp_path / "b.aihwbench", _result())
+
+    with zipfile.ZipFile(path) as zf:
+        members = {name: zf.read(name) for name in zf.namelist()}
+
+    doc = json.loads(members["result.json"].decode("utf-8"))
+    doc["metrics"]["generation_tokens_per_second"] = 9999.0
+
+    tampered = tmp_path / "tampered.aihwbench"
+    with zipfile.ZipFile(tampered, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("result.json", json.dumps(doc, indent=2))
+        zf.writestr("MANIFEST.sha256", members["MANIFEST.sha256"])
+
+    report = verify_bundle(tampered)
+    assert report["valid"] is False
+    assert "result.json" in report["mismatches"]

@@ -140,6 +140,21 @@ def verify_bundle(bundle_path: Path, *, allow_extra_members: bool = False) -> di
         "extra_members": [],
         "manifest_errors": [],
         "violations": [],
+        # What a pass here does and does not establish.
+        #
+        # The manifest ships inside the bundle, so anyone who edits a member
+        # can recompute it: `valid: true` means the contents match the
+        # checksums that travelled with them, not that either is authentic.
+        # Demonstrated by editing a result and rewriting MANIFEST.sha256 to
+        # match -- the bundle then verifies clean, as any unsigned checksum
+        # scheme must. `--verify-signature` is what turns this into a claim
+        # about origin, and the CLI overwrites these two fields when it runs.
+        "signature_checked": False,
+        "attests": (
+            "contents match the manifest inside the bundle; this detects "
+            "corruption and accidental edits, not a deliberately rebuilt "
+            "bundle. Use --verify-signature to check origin"
+        ),
     }
     if not bundle_path.exists():
         report["reason"] = "bundle not found"

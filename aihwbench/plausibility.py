@@ -203,19 +203,29 @@ def check_plausibility(result: dict[str, Any]) -> list[PlausibilityFinding]:
                 )
             )
 
-    # Energy per token should follow from power and throughput.
-    energy = _number(metrics.get("energy_joules_per_token"))
+    # Energy per token must follow from the power it claims to be derived from.
+    #
+    # This read `metrics.energy_joules_per_token`, which is null in every
+    # result ever published -- the field was computed before power was
+    # measured -- so the check has never once run. It reads the `energy`
+    # block now, where the figure actually lives, and against the same
+    # incremental power the block used to compute it. Checking it against
+    # *gross* power, as the old code did, would have flagged every correct
+    # result the moment the field started carrying a value.
+    energy_block = result.get("energy") or {}
+    energy = _number(energy_block.get("energy_joules_per_token"))
+    incremental = _number(energy_block.get("incremental_power_watts"))
     throughput = _number(metrics.get("generation_tokens_per_second"))
-    if energy is not None and average is not None and throughput and throughput > 0:
-        expected = average / throughput
+    if energy is not None and incremental is not None and throughput and throughput > 0:
+        expected = incremental / throughput
         if expected > 0 and abs(energy - expected) / expected > _ENERGY_TOLERANCE:
             findings.append(
                 _finding(
-                    "metrics.energy_joules_per_token",
+                    "energy.energy_joules_per_token",
                     energy,
                     (
-                        f"does not follow from {average} W at {throughput} tok/s "
-                        f"(expected about {expected:.4f})"
+                        f"does not follow from {incremental} W incremental at "
+                        f"{throughput} tok/s (expected about {expected:.4f})"
                     ),
                     "inconsistent",
                 )

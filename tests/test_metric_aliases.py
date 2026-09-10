@@ -87,7 +87,13 @@ def test_aggregator_emits_canonical_names():
     assert "max_latency_ms" in out
     assert "ci95_latency_ms" in out
     assert "itl_ms" in out
-    assert "energy_joules_per_token" in out
+    # `energy_joules_per_token` is deliberately absent: it belongs to the
+    # `energy` block, computed against incremental power net of idle draw.
+    # The aggregator used to emit it from a per-iteration power key that no
+    # backend sets -- which the fixture below supplies and reality does not,
+    # so this assertion passed while the field was null in every published
+    # result.
+    assert "energy_joules_per_token" not in out
     # No legacy names are emitted.
     for legacy in (
         "latency_stddev_ms",
@@ -103,7 +109,32 @@ def test_aggregator_emits_canonical_names():
 
 def test_aggregator_values_match_under_resolver():
     out = aggregate_iteration_metrics(_iterations())
-    assert resolve_metric(out, "energy_joules_per_token") == out["energy_joules_per_token"]
+    # A canonical name the aggregator does emit, resolved through the alias
+    # layer. `energy_joules_per_token` is no longer a candidate: it is
+    # published in the `energy` block rather than under `metrics`.
+    assert resolve_metric(out, "itl_ms") == out["itl_ms"]
+    assert resolve_metric(out, "stddev_latency_ms") == out["stddev_latency_ms"]
+    assert resolve_metric(out, "ttft_ms") == out["ttft_ms"]
+
+
+def test_the_aggregator_fixture_matches_what_backends_actually_emit():
+    """Guards the gap that hid the defect above.
+
+    The fixture supplies a per-iteration `average_power_watts`. No backend
+    sets one -- power comes from the telemetry sampler and is merged after
+    aggregation -- so a test built on it exercises a shape production never
+    produces, and can keep passing while the real path is broken.
+    """
+    import inspect
+
+    from aihwbench.backends import llama_cpp, lmstudio, ollama
+
+    for module in (ollama, llama_cpp, lmstudio):
+        source = inspect.getsource(module)
+        iteration_return = source.split("return {")
+        assert not any(
+            '"average_power_watts"' in chunk.split("}")[0] for chunk in iteration_return[1:]
+        ), f"{module.__name__} now emits per-iteration power; revisit the aggregator"
 
 
 # ---------------------------------------------------------------------------

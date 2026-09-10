@@ -104,8 +104,94 @@ def test_sdk_workload_defaults():
 
 def test_all_builtin_exporters_registered():
     names = list_exporters()
-    for expected in ("csv", "json", "markdown", "sqlite"):
+    for expected in ("csv", "json", "markdown", "sqlite", "huggingface"):
         assert expected in names
+
+
+def test_every_exported_exporter_is_reachable():
+    """A class in `__all__` that `get_exporter` cannot return is not shipped.
+
+    `ParquetExporter` was defined, exported, and never added to the registry,
+    so `get_exporter("parquet")` raised KeyError -- and because nothing could
+    reach it, nobody noticed that its `export` also called `pq.Table`, which
+    does not exist. Two defects hidden behind one missing registration.
+    """
+    import aihwbench.exporters as module
+
+    exported = [name for name in module.__all__ if name.endswith("Exporter") and name != "Exporter"]
+    registered = set(list_exporters())
+    for class_name in exported:
+        cls = getattr(module, class_name)
+        try:
+            instance = cls()
+        except RuntimeError:
+            continue  # optional extra not installed on this machine
+        assert instance.name in registered, (
+            f"{class_name} is exported but not registered; "
+            f"get_exporter({instance.name!r}) would fail"
+        )
+
+
+def test_parquet_exporter_actually_writes_a_readable_file(tmp_path):
+    pytest.importorskip("pyarrow")
+    import pyarrow.parquet as pq
+
+    out = tmp_path / "out.parquet"
+    get_exporter("parquet").export([_result("r1"), _result("r2")], out)
+
+    table = pq.read_table(out)
+    assert table.num_rows == 2
+    assert table.column("run_id").to_pylist() == ["r1", "r2"]
+
+
+def test_huggingface_export_is_loadable_layout(tmp_path):
+    """The card is the point: data without one is a file, not a dataset."""
+    out = tmp_path / "hf"
+    get_exporter("huggingface").export([_result("r1"), _result("r2")], out)
+
+    data = out / "data" / "train.jsonl"
+    assert data.is_file()
+    rows = [json.loads(line) for line in data.read_text(encoding="utf-8").splitlines()]
+    assert [r["run_id"] for r in rows] == ["r1", "r2"]
+
+    card = (out / "README.md").read_text(encoding="utf-8")
+    assert card.startswith("---")
+    assert "license: apache-2.0" in card
+    # The loader needs the path in the front-matter to match what was written.
+    assert "path: data/train.jsonl" in card
+
+
+def test_huggingface_card_warns_against_ranking_across_groups(tmp_path):
+    """The dataset travels away from this repository; the caveat must travel too.
+
+    Someone loading it from the Hub has none of the project's context, and a
+    flat table sorted by throughput is exactly the false comparison the
+    classifier exists to prevent.
+    """
+    out = tmp_path / "hf"
+    get_exporter("huggingface").export([_result("r1")], out)
+    card = (out / "README.md").read_text(encoding="utf-8")
+
+    assert "not necessarily comparable" in card
+    assert "comparability" in card
+    assert "Missing values are missing, not zero" in card
+
+
+def test_huggingface_export_needs_no_optional_dependency(tmp_path, monkeypatch):
+    """It must work on the minimal machines most likely to want it."""
+    import builtins
+
+    real_import = builtins.__import__
+
+    def no_pyarrow(name, *args, **kwargs):
+        if name.startswith("pyarrow"):
+            raise ImportError("pyarrow is unavailable in this test")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", no_pyarrow)
+    out = tmp_path / "hf"
+    get_exporter("huggingface").export([_result("r1")], out)
+    assert (out / "data" / "train.jsonl").is_file()
 
 
 def test_json_exporter_writes_results(tmp_path):

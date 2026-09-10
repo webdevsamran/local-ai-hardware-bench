@@ -105,7 +105,26 @@ export default function Leaderboard() {
   const rankable = groups.filter((g) => g.rows.length > 1)
 
   const columns: Column<LeaderboardRow>[] = [
-    { key: 'rank', label: '#', numeric: true },
+    {
+      key: 'rank',
+      label: '#',
+      numeric: true,
+      // A rank whose interval overlaps rank 1's is a sort order, not a
+      // result. Saying so here is the same discipline as grouping: the
+      // number stays, the claim it implies does not.
+      render: (row) =>
+        row.indistinguishable_from_rank_1 ? (
+          <span className="rank-tied" title="Statistically tied with rank 1">
+            {row.rank}
+            <span aria-hidden="true">=</span>
+            <span className="visually-hidden">
+              , statistically tied with rank 1
+            </span>
+          </span>
+        ) : (
+          row.rank
+        ),
+    },
     {
       key: 'run_id',
       label: 'Result',
@@ -117,8 +136,23 @@ export default function Leaderboard() {
       key: 'value',
       label: VIEWS[view].unit,
       numeric: true,
-      render: (row) =>
-        row.unit ? `${fmtNum(row.value)} ${row.unit}` : fmtNum(row.value),
+      render: (row) => {
+        const value = row.unit
+          ? `${fmtNum(row.value)} ${row.unit}`
+          : fmtNum(row.value)
+        // The interval sits with the number it qualifies. A mean printed
+        // alone invites a comparison its spread does not support.
+        return (
+          <>
+            {value}
+            {row.ci95 && (
+              <span className="ci-range">
+                95% CI {fmtNum(row.ci95[0])}–{fmtNum(row.ci95[1])}
+              </span>
+            )}
+          </>
+        )
+      },
     },
   ]
 

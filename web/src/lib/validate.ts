@@ -179,6 +179,26 @@ export function validateLeaderboardRow(d: unknown): Issue[] {
   optionalString('leaderboard[].cpu', d.cpu, issues)
   optionalString('leaderboard[].gpu', d.gpu, issues)
   metricNumber('leaderboard[].value', d.value, issues)
+  // The interval is what separates a real lead from a sort order, so a
+  // malformed one must fail rather than render as a plausible range.
+  if (d.ci95 !== undefined && d.ci95 !== null) {
+    if (
+      !Array.isArray(d.ci95) ||
+      d.ci95.length !== 2 ||
+      !d.ci95.every((n) => typeof n === 'number' && Number.isFinite(n))
+    ) {
+      issues.push('leaderboard[].ci95: expected [number, number]')
+    } else if (d.ci95[0] > d.ci95[1]) {
+      issues.push('leaderboard[].ci95: lower bound above upper bound')
+    }
+  }
+  if (
+    d.indistinguishable_from_rank_1 !== undefined &&
+    d.indistinguishable_from_rank_1 !== null &&
+    typeof d.indistinguishable_from_rank_1 !== 'boolean'
+  ) {
+    issues.push('leaderboard[].indistinguishable_from_rank_1: expected boolean')
+  }
   return issues
 }
 

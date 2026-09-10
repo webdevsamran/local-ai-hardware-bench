@@ -436,14 +436,56 @@ def build(results: list[dict]) -> dict[str, object]:
         for member in group:
             group_of[member["run_id"]] = gi
 
+    # Where each ranked metric's spread lives, when it was measured. A rank
+    # with no interval behind it cannot distinguish a real gap from a tie.
+    _SPREAD_KEYS = {
+        "generation_tokens_per_second": ("gen_tps_ci95", "generation_tps_cv"),
+        "total_latency_ms": ("ci95_latency_ms", None),
+    }
+
+    def _spread(r: dict, metric_key: str) -> tuple[list | None, float | None]:
+        ci_key, cv_key = _SPREAD_KEYS.get(metric_key, (None, None))
+        metrics = r.get("metrics") or {}
+        ci = metrics.get(ci_key) if ci_key else None
+        if not (isinstance(ci, (list, tuple)) and len(ci) == 2):
+            ci = None
+        cv = metrics.get(cv_key) if cv_key else None
+        return (list(ci) if ci else None, cv)
+
     def view(rows: list[dict], metric_key: str) -> list[dict]:
         out: list[dict] = []
         seen_in_group: dict[int, int] = defaultdict(int)
+        # The interval of whatever sorted first in each group, to say whether
+        # the rows beneath it are actually behind or merely sorted lower.
+        leader_ci: dict[int, list | None] = {}
         for r in rows:
             gi = group_of[r["run_id"]]
             seen_in_group[gi] += 1
+            ci, cv = _spread(r, metric_key)
+            if seen_in_group[gi] == 1:
+                leader_ci[gi] = ci
+
+            # Two measurements whose 95% intervals overlap are not
+            # distinguishable at this sample size, so presenting one as
+            # beating the other is a claim the data does not support. Rank is
+            # kept -- it is the sort order -- but the tie is published
+            # alongside it. Observed here: 281.65 tok/s [277.9, 285.4] over
+            # 261.31 tok/s [240.6, 282.1], which is a tie printed as a
+            # 20 tok/s lead.
+            tied: bool | None = None
+            top = leader_ci.get(gi)
+            if seen_in_group[gi] == 1:
+                tied = False if ci else None
+            elif ci and top:
+                tied = ci[0] <= top[1] and top[0] <= ci[1]
+
             out.append(
                 {
+                    "ci95": ci,
+                    "cv": cv,
+                    # None where the metric carries no measured interval:
+                    # unknown, never "distinguishable".
+                    "indistinguishable_from_rank_1": tied,
                     # Rank is per group and restarts at 1 in each; `group_size`
                     # lets the UI say "1 of 1", which is not a ranking.
                     "rank": seen_in_group[gi],

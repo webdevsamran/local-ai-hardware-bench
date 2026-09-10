@@ -72,18 +72,46 @@ class RequestRecord:
 
     request_id: int
     submit_time: float
-    start_time: float
+    #: When a worker began the request. None under closed loop, where the
+    #: worker submits and begins in the same breath -- see `queue_latency_ms`.
+    start_time: float | None
     end_time: float
     success: bool
     result: dict[str, Any] = field(default_factory=dict)
 
     @property
-    def queue_latency_ms(self) -> float:
+    def queue_latency_ms(self) -> float | None:
+        """Time the request waited before a worker picked it up.
+
+        None under a closed loop, where it is not a measurement.
+
+        A closed-loop worker submits a request and starts it immediately, so
+        this arithmetic returned exactly 0.0 for every request ever run that
+        way -- reported as `mean_queue_latency_ms: 0.0`, which reads as "we
+        measured queueing and there was none". There was queueing: a capacity
+        ladder at concurrency 8 showed a 20-second p95 on 64-token requests.
+        It happens inside the *server*, and a client that considers a request
+        started the moment it is sent cannot see it; that wait is folded into
+        `request_latency_ms` instead.
+
+        Open-loop arrivals do queue on the client, between the schedule
+        putting a request on the pending list and a worker taking it, and
+        there this is a real measurement.
+        """
+        if self.start_time is None:
+            return None
         return (self.start_time - self.submit_time) * 1000.0
 
     @property
     def request_latency_ms(self) -> float:
-        return (self.end_time - self.start_time) * 1000.0
+        """Time spent in the request itself, from start (or submit) to end.
+
+        Under a closed loop there is no separate start, so this spans the
+        whole request -- which is the honest reading, since server-side
+        queueing is inside it and cannot be separated out.
+        """
+        began = self.submit_time if self.start_time is None else self.start_time
+        return (self.end_time - began) * 1000.0
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -181,7 +209,10 @@ def run_load(
                 next_id += 1
                 submitted[0] += 1
             submit = time.perf_counter()
-            start = submit  # closed-loop workers start immediately
+            # None, not `submit`: a closed-loop worker has no queue to wait
+            # in, so there is nothing here to measure. Recording equality
+            # produced a confident 0.0 that hid real server-side queueing.
+            start = None
             try:
                 detail = execute(request_id)
                 end = time.perf_counter()

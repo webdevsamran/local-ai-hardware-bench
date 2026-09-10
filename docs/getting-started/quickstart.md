@@ -39,7 +39,7 @@ With [Ollama](https://ollama.com) installed and a model pulled:
 
 ```bash
 ollama pull qwen2.5:0.5b-instruct-q4_K_M
-aihwbench benchmark --backend ollama --model qwen2.5:0.5b-instruct-q4_K_M --iterations 3
+aihwbench benchmark --runtime ollama --model qwen2.5:0.5b-instruct-q4_K_M --iterations 3
 ```
 
 The result is written to `results/raw/` as schema-valid JSON with real,

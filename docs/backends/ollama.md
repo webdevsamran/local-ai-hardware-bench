@@ -8,7 +8,7 @@
 ## Usage
 
 ```bash
-aihwbench benchmark --backend ollama --model qwen2.5:0.5b-instruct-q4_K_M --iterations 3
+aihwbench benchmark --runtime ollama --model qwen2.5:0.5b-instruct-q4_K_M --iterations 3
 ```
 
 ## What is measured

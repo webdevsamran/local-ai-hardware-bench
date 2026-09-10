@@ -8,7 +8,7 @@
 ## Usage
 
 ```bash
-aihwbench benchmark --backend llamacpp --model path/to/model.gguf --iterations 3
+aihwbench benchmark --runtime llama.cpp --model-path path/to/model.gguf --iterations 3
 ```
 
 ## What is measured

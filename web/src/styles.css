@@ -967,7 +967,11 @@ button:focus-visible,
 
 .chip-hint {
   font-size: 0.82em;
-  opacity: 0.75;
+  /* 0.85, not 0.75. On a selected chip the hint sits on the accent colour,
+     where 0.75 left it at 4.92:1 — over the 4.5:1 bar but with almost no
+     margin, and this is small text on the one control the page is built
+     around. */
+  opacity: 0.85;
 }
 
 .quiz-ram {

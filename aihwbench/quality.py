@@ -169,6 +169,21 @@ def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:
     )
     decline = throughput_decline(throughput)
 
+    # Whether the machine was available to be measured.
+    #
+    # A benchmark taken under contention describes the contention. Measured
+    # here: an ONNX Runtime CPU run reported 2.53 inferences per second where
+    # the same model on the same machine had done 299.92, because an antivirus
+    # scan held the CPU at 68%. It passed every other check — consistent, so
+    # variance was low; internally coherent, so plausibility was clean — and a
+    # 118x error went to publication looking like a measurement.
+    #
+    # Unknown load is not a failure. `busy: None` means psutil was absent, and
+    # refusing to publish for want of an optional dependency would be a worse
+    # rule than the one it replaced.
+    contention = (result.get("reproducibility") or {}).get("machine_contention") or {}
+    measured_idle = contention.get("busy") is not True
+
     trust = effective_trust(result)
     confidence = statistical_confidence(result)
     # Impossible and self-contradictory values. Findings are review requests,
@@ -195,6 +210,9 @@ def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:
         "statistical_confidence_detail": confidence["detail"],
         "values_plausible": not implausible,
         "implausible_values": implausible,
+        # False only when load was measured and was above the threshold.
+        "measured_on_an_idle_machine": measured_idle,
+        "machine_contention": contention or None,
     }
     scored = (
         "schema_valid",
@@ -202,6 +220,7 @@ def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:
         "provenance_present",
         "variance_acceptable",
         "values_plausible",
+        "measured_on_an_idle_machine",
     )
     passed = sum(1 for key in scored if checks[key])
     return {"checks": checks, "checks_passed": passed, "checks_total": len(scored)}

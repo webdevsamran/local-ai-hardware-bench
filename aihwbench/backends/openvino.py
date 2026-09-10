@@ -23,6 +23,7 @@ from .base import (
     file_sha256,
     new_run_id,
     resolve_input_specs,
+    resolved_device,
 )
 
 
@@ -185,7 +186,9 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "name": "openvino",
             "version": info.version,
             "backend": f"device:{target_device}",
-            "device": config.device,
+            # The OpenVINO device that was compiled for, not the flag typed.
+            "device": resolved_device(target_device) or config.device,
+            "device_requested": config.device,
         },
         "model": {
             "name": Path(model_path).name,

@@ -530,8 +530,25 @@ def sample_idle_power(seconds: float = 2.0, interval: float = 0.5) -> dict[str, 
 
     util_mean = round(sum(utils) / len(utils), 2) if utils else None
     util_max = round(max(utils), 2) if utils else None
+    mean_watts = sum(readings) / len(readings)
+    # The baseline's own variation.
+    #
+    # A card at rest is not at a constant draw. Measured on the reference
+    # machine within one session: 14.9 W, 29.3 W, 30.3 W and 31.4 W, all
+    # honestly sampled as "idle" -- and with a model resident it oscillated
+    # between 14 W and 21 W at 0% utilization, a 50% swing across which a
+    # two-second window can land anywhere.
+    #
+    # Published without this, `incremental_power_watts` looks equally precise
+    # whether the thing subtracted was steady or swinging, and a workload
+    # drawing less than the baseline's own spread produces a difference that
+    # is not a measurement.
+    spread = max(readings) - min(readings)
     baseline: dict[str, Any] = {
-        "watts": round(sum(readings) / len(readings), 3),
+        "watts": round(mean_watts, 3),
+        "watts_min": round(min(readings), 3),
+        "watts_max": round(max(readings), 3),
+        "watts_spread": round(spread, 3),
         "samples": len(readings),
         "source": source,
         "gpu_util_mean_percent": util_mean,

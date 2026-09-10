@@ -34,6 +34,7 @@ def compute_energy_metrics(
     generation_tokens_per_second: float | None,
     requests_per_second: float | None,
     telemetry_source: str | None = None,
+    idle_power_spread_watts: float | None = None,
 ) -> dict[str, Any]:
     """Derive energy-per-unit metrics from measured power.
 
@@ -81,9 +82,30 @@ def compute_energy_metrics(
     ):
         share = round(incremental_watts / average_power_watts, 4)
 
+    # A difference smaller than the spread of the thing subtracted is not a
+    # measurement of the difference. Measured on the reference machine: idle
+    # oscillated between 14 W and 21 W at 0% utilization, so a workload adding
+    # 3 W produces an "incremental" figure the baseline could have accounted
+    # for on its own.
+    within_baseline_noise = (
+        incremental_watts is not None
+        and idle_power_spread_watts is not None
+        and idle_power_spread_watts > 0
+        and incremental_watts <= idle_power_spread_watts
+    )
+
     robust: bool | None = None
     caveat: str | None = unresolved
-    if share is not None:
+    if within_baseline_noise:
+        robust = False
+        caveat = (
+            f"the workload added {incremental_watts:.2f} W, within the "
+            f"{idle_power_spread_watts:.2f} W the idle baseline varied by on "
+            "its own. The difference is inside the noise of what was "
+            "subtracted, so per-token energy here is not a measurement of the "
+            "workload"
+        )
+    elif share is not None:
         robust = share >= MIN_ROBUST_INCREMENTAL_SHARE
         if not robust:
             caveat = (
@@ -106,6 +128,9 @@ def compute_energy_metrics(
             round(j_per_token * 1000.0, 4) if j_per_token is not None else None
         ),
         "incremental_share_of_gross": share,
+        # How much the idle baseline moved while being measured. Published
+        # because it bounds how precise the incremental figure can be.
+        "idle_power_spread_watts": idle_power_spread_watts,
         # False does not mean the measurement is wrong -- it means the figure
         # is mostly baseline and will not survive comparison across runs.
         "incremental_is_robust": robust,

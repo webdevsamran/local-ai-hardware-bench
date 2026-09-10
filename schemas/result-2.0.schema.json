@@ -146,6 +146,13 @@
             "string",
             "null"
           ]
+        },
+        "device_requested": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The device the caller asked for. `device` records the one that actually ran: `auto` and `cpu` naming the same silicon must not make two results incomparable."
         }
       },
       "required": [
@@ -485,6 +492,41 @@
               ]
             }
           }
+        },
+        "machine_contention": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "CPU load sampled immediately before the run. A benchmark measures hardware only when the hardware is available to it: a result taken under contention describes the contention. `busy: null` means load could not be measured, which is not the same as the machine being quiet.",
+          "properties": {
+            "cpu_percent": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "busy": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "threshold_percent": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
         }
       }
     },
@@ -589,6 +631,14 @@
           ],
           "additionalProperties": true,
           "description": "The idle power sample and the machine state it was taken in (utilization, resident VRAM). Resident VRAM matters: a card still holding a model from an earlier run idles far higher than the same card after eviction, which changes per-token energy by orders of magnitude without any hardware difference."
+        },
+        "idle_power_spread_watts": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Range the idle baseline moved across while being sampled. A card at rest is not at a constant draw, and an incremental figure smaller than this is inside the noise of what was subtracted."
         }
       }
     },

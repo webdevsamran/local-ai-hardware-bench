@@ -5,6 +5,57 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Fixed — a benchmark that did not check the machine was free to be measured
+
+The costliest defect of the batch, found by nearly publishing it.
+
+Re-measuring ONNX Runtime on CPU during a background antivirus scan produced
+**2.53 inferences per second** where the same model on the same machine had
+measured **299.92** — a 118x error. OpenVINO on CPU was 78x slow in the same
+window, and both GPU paths 2.3x slow because they still need the CPU to feed
+them. All four results passed the entire data-quality gate: consistent, so
+variance was low; internally coherent, so plausibility was clean; and nothing
+in the corpus gave them anything to be implausible against.
+
+`aihwbench self-test` had warned about background load above 20% CPU since
+long before any of this. Nothing called it — it was reachable only by someone
+who chose to run `self-test` first, which a benchmark in CI or a contributor's
+script never does. The same pattern as `rapl_power_sample`, `npu_telemetry`
+and the rest, but the one that produces a wrong number rather than a missing
+one.
+
+Every run now records the load sampled immediately before it starts, and the
+quality gate refuses a result measured above the threshold. Sampled before,
+for the same reason as the idle power baseline: during the run the benchmark
+is itself the load. Unknown load stays unknown rather than being read as
+quiet.
+
+The four contaminated results were discarded and the originals restored. They
+score 5/6 rather than 6/6, because they predate the provenance field — a
+missing derived hash being a metadata gap, where a 118x wrong number is not.
+
+### Changed — the idle power baseline reports its own spread
+
+A card at rest is not at a constant draw. Measured on the reference machine
+within one session: 14.9 W, 29.3 W, 30.3 W and 31.4 W, all honestly sampled as
+"idle" — and with a model resident it oscillated between 14 W and 21 W at 0%
+GPU utilization, a 50% swing a two-second window can land anywhere in.
+
+`incremental_power_watts` looked equally precise whether the thing subtracted
+was steady or swinging. The baseline now publishes its range, and a workload
+adding less than the baseline's own variation is marked not robust: a
+difference inside the noise of what was subtracted is not a measurement of the
+difference.
+
+### Fixed — `runtime.device` recorded what was typed, not what ran
+
+Two ONNX Runtime runs on the same silicon, both landing on
+`CPUExecutionProvider`, were NOT_COMPARABLE because one passed `--device cpu`
+and the other took the `auto` default. `runtime.device` is in the classifier's
+strict set, so a split created by how someone spelled a flag became a claim
+that two identical configurations could not be compared. The device that ran
+is now recorded, with the requested one kept beside it.
+
 ### Fixed — model identity that was available and recorded as null
 
 - **Every result ever published carried `model.quantization: null`.** Ollama's

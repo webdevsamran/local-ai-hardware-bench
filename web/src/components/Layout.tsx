@@ -8,6 +8,7 @@ const NAV = [
   { to: '/leaderboard', label: 'Leaderboard' },
   { to: '/will-it-run', label: 'Will it run?' },
   { to: '/recommend', label: 'Recommend' },
+  { to: '/matchmaker', label: 'Matchmaker' },
   { to: '/local-vs-cloud', label: 'Local vs cloud' },
   { to: '/frontiers', label: 'Frontiers' },
   { to: '/hardware', label: 'Hardware' },

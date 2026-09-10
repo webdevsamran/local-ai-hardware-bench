@@ -97,3 +97,28 @@ def test_mlx_run_raises_cleanly(monkeypatch):
         assert "not available" in str(exc) or "planned" in str(exc).lower()
     else:
         raise AssertionError("expected BackendError")
+
+
+def test_every_registered_backend_is_documented():
+    """A runtime absent from the compatibility matrix is one nobody tries.
+
+    The matrix is hand-written because the status of each cell is a judgement
+    about hardware, not something a generator can decide. What a test can
+    enforce is that the judgement was made at all -- adding a backend to the
+    registry and forgetting the row is silent, and the result is a working
+    runtime no reader knows exists.
+    """
+    import pathlib
+    import re
+
+    from aihwbench.backends import BACKENDS
+
+    doc = pathlib.Path(__file__).resolve().parent.parent / "docs" / "compatibility-matrix.md"
+    text = doc.read_text(encoding="utf-8")
+    # Backticked in the table, so a passing mention in prose does not count.
+    documented = set(re.findall(r"`([a-z0-9_.]+)`", text))
+    missing = sorted(name for name in BACKENDS if name not in documented)
+    assert not missing, (
+        f"backends missing from docs/compatibility-matrix.md: {missing}. "
+        "Add a row stating this runtime's status and why."
+    )

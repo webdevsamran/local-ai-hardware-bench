@@ -74,6 +74,8 @@ validated result file exists in [`results/published/`](results/published).
 | Qualcomm QNN | Yes | Hardware needed (no Snapdragon NPU available) |
 | Hailo HailoRT | Yes | Hardware needed (no Hailo device available) |
 | LM Studio (OpenAI-compatible server) | Yes | **Yes — experimental** (HTTP API backend) |
+| vLLM (OpenAI-compatible server) | Yes | Supported (Linux + NVIDIA/ROCm; not runnable on the reference machine) |
+| SGLang (OpenAI-compatible server) | Yes | Supported (Linux + NVIDIA/ROCm; not runnable on the reference machine) |
 | Apple MLX | Yes | Hardware needed (requires Apple Silicon; benchmarking planned) |
 | Windows ML / DirectML | Yes | **Yes — tested** (ONNX Runtime DML EP) |
 

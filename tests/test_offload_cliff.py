@@ -291,3 +291,77 @@ def test_the_published_sweep_still_shows_its_cliff():
     # Every point carries the interval the tie check needs.
     assert report["tie_basis"] == "overlapping 95% confidence intervals"
     assert report["best_layers"] == 99.0
+
+
+# --- Memory saturation must persist to count ---------------------------------
+#
+# The check fired on the first adjacent pair whose VRAM grew under 2%, which
+# for any model whose weights dominate its VRAM is the second measured depth.
+# Measured on the reference machine at 512 to 8192 tokens: 614, 620, 632, 658,
+# 710 MB — growing the whole way — reported as saturating at 1024, with a note
+# offering spilling as the likely cause. The card had 15 GB free.
+
+
+def test_memory_still_growing_is_not_saturation():
+    """The measured curve that exposed this."""
+    from aihwbench.analysis.context import analyze_context_scaling
+
+    report = analyze_context_scaling(
+        [
+            _ctx(512, tps=352.0, vram=614.0),
+            _ctx(1024, tps=325.6, vram=620.0),  # +1%, but it keeps climbing
+            _ctx(2048, tps=362.0, vram=632.0),
+            _ctx(4096, tps=368.2, vram=658.0),
+            _ctx(8192, tps=244.4, vram=710.0),
+        ]
+    )
+    assert report["memory_saturation_tokens"] is None
+    assert "still growing" in report["memory_saturation_note"]
+
+
+def test_memory_that_flattens_and_stays_flat_is_saturation():
+    from aihwbench.analysis.context import analyze_context_scaling
+
+    report = analyze_context_scaling(
+        [
+            _ctx(512, vram=4000.0),
+            _ctx(1024, vram=6000.0),
+            _ctx(2048, vram=7900.0),
+            _ctx(4096, vram=7920.0),  # flat from here...
+            _ctx(8192, vram=7930.0),  # ...and stays flat
+        ]
+    )
+    assert report["memory_saturation_tokens"] == 4096
+
+
+def test_saturation_note_does_not_assert_spilling():
+    """Two readings fit a flat curve and the data cannot choose between them.
+
+    On a card near its limit, flat VRAM means spilling. On one with headroom
+    it means the KV cache is small next to the weights. Naming only the
+    alarming one turns a measurement into a diagnosis the curve cannot
+    support.
+    """
+    from aihwbench.analysis.context import analyze_context_scaling
+
+    report = analyze_context_scaling(
+        [_ctx(512, vram=4000.0), _ctx(1024, vram=4010.0), _ctx(2048, vram=4020.0)]
+    )
+    note = report["memory_saturation_note"]
+    assert report["memory_saturation_tokens"] == 1024
+    assert "near its limit" in note and "headroom" in note
+
+
+def test_a_single_dip_does_not_end_the_climb():
+    """One flat step followed by more growth is not saturation."""
+    from aihwbench.analysis.context import analyze_context_scaling
+
+    report = analyze_context_scaling(
+        [
+            _ctx(512, vram=4000.0),
+            _ctx(1024, vram=4010.0),  # flat...
+            _ctx(2048, vram=5200.0),  # ...then climbs again
+            _ctx(4096, vram=6400.0),
+        ]
+    )
+    assert report["memory_saturation_tokens"] is None

@@ -184,7 +184,16 @@ shipped-but-unreachable is not done.
 - [x] Public Python SDK (benchmark/sdk.py) with typed domain objects
 - [x] Exporter plugin architecture (JSON/CSV/Markdown/SQLite built-in;
       Parquet behind extra) with aihwbench.exporters entry points
-- [x] Evaluator framework + aihwbench.evaluators entry points
+- [x] Evaluator framework + aihwbench.evaluators entry points. Built in:
+      exact match, JSON validity, cosine similarity over caller-supplied
+      vectors, ROUGE-L (longest-common-subsequence overlap, order-sensitive)
+      and SQuAD-style token F1 (order-insensitive). The last two are pure
+      algorithms, so no dataset is bundled and nothing depends on a licence
+      this repository cannot grant -- references come from the caller's JSONL.
+- [~] Task-accuracy evaluators needing a corpus: perplexity, MMLU-subset,
+      Spider execution accuracy. The framework and the plugin group are in
+      place; each needs a dataset with a licence to redistribute, which is a
+      decision about what this repository ships rather than about code.
 - [x] Performance-quality Pareto frontier analysis
 - [x] Quantization comparison, model-fit estimator, recommendation engine,
       bottleneck analyzer, auto-tuner

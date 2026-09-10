@@ -33,6 +33,40 @@
     },
     {
       "a": "llamacpp-1787391945",
+      "b": "ollama-1789011548-20e39a8f",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.name",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.warmup_runs",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "llamacpp-1787391945",
+      "b": "ollama-1789011650-7a65eecd",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.name",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.warmup_runs",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "llamacpp-1787391945",
       "b": "onnxruntime-1787391388",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
@@ -132,6 +166,28 @@
     },
     {
       "a": "ollama-1787388930",
+      "b": "ollama-1789011548-20e39a8f",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.warmup_runs"
+      ]
+    },
+    {
+      "a": "ollama-1787388930",
+      "b": "ollama-1789011650-7a65eecd",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.warmup_runs"
+      ]
+    },
+    {
+      "a": "ollama-1787388930",
       "b": "onnxruntime-1787391388",
       "classification": "NOT_COMPARABLE",
       "machine_reasons": [
@@ -211,6 +267,262 @@
       ]
     },
     {
+      "a": "ollama-1789011548-20e39a8f",
+      "b": "llamacpp-1787391945",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.name",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.warmup_runs",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1789011548-20e39a8f",
+      "b": "ollama-1787388930",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.warmup_runs"
+      ]
+    },
+    {
+      "a": "ollama-1789011548-20e39a8f",
+      "b": "ollama-1789011548-20e39a8f",
+      "classification": "STRICTLY_COMPARABLE",
+      "machine_reasons": []
+    },
+    {
+      "a": "ollama-1789011548-20e39a8f",
+      "b": "ollama-1789011650-7a65eecd",
+      "classification": "STRICTLY_COMPARABLE",
+      "machine_reasons": []
+    },
+    {
+      "a": "ollama-1789011548-20e39a8f",
+      "b": "onnxruntime-1787391388",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1789011548-20e39a8f",
+      "b": "onnxruntime-1787391455",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1789011548-20e39a8f",
+      "b": "openvino-1787391625",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1789011548-20e39a8f",
+      "b": "openvino-1787391710",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1789011650-7a65eecd",
+      "b": "llamacpp-1787391945",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.name",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.warmup_runs",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1789011650-7a65eecd",
+      "b": "ollama-1787388930",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.warmup_runs"
+      ]
+    },
+    {
+      "a": "ollama-1789011650-7a65eecd",
+      "b": "ollama-1789011548-20e39a8f",
+      "classification": "STRICTLY_COMPARABLE",
+      "machine_reasons": []
+    },
+    {
+      "a": "ollama-1789011650-7a65eecd",
+      "b": "ollama-1789011650-7a65eecd",
+      "classification": "STRICTLY_COMPARABLE",
+      "machine_reasons": []
+    },
+    {
+      "a": "ollama-1789011650-7a65eecd",
+      "b": "onnxruntime-1787391388",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1789011650-7a65eecd",
+      "b": "onnxruntime-1787391455",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1789011650-7a65eecd",
+      "b": "openvino-1787391625",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "ollama-1789011650-7a65eecd",
+      "b": "openvino-1787391710",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
       "a": "onnxruntime-1787391388",
       "b": "llamacpp-1787391945",
       "classification": "NOT_COMPARABLE",
@@ -243,6 +555,50 @@
         "reproducibility.prompt",
         "reproducibility.seed",
         "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391388",
+      "b": "ollama-1789011548-20e39a8f",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391388",
+      "b": "ollama-1789011650-7a65eecd",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
         "reproducibility.workload_type",
         "runtime.backend",
         "runtime.device",
@@ -320,6 +676,50 @@
         "reproducibility.prompt",
         "reproducibility.seed",
         "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391455",
+      "b": "ollama-1789011548-20e39a8f",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "onnxruntime-1787391455",
+      "b": "ollama-1789011650-7a65eecd",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
         "reproducibility.workload_type",
         "runtime.backend",
         "runtime.device",
@@ -398,6 +798,50 @@
         "reproducibility.prompt",
         "reproducibility.seed",
         "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "openvino-1787391625",
+      "b": "ollama-1789011548-20e39a8f",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "openvino-1787391625",
+      "b": "ollama-1789011650-7a65eecd",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
         "reproducibility.workload_type",
         "runtime.backend",
         "runtime.device",
@@ -474,6 +918,50 @@
         "reproducibility.prompt",
         "reproducibility.seed",
         "reproducibility.temperature",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "openvino-1787391710",
+      "b": "ollama-1789011548-20e39a8f",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
+        "reproducibility.workload_type",
+        "runtime.backend",
+        "runtime.device",
+        "runtime.name",
+        "runtime.version"
+      ]
+    },
+    {
+      "a": "openvino-1787391710",
+      "b": "ollama-1789011650-7a65eecd",
+      "classification": "NOT_COMPARABLE",
+      "machine_reasons": [
+        "model.checksum",
+        "model.format",
+        "model.name",
+        "reproducibility.context_length",
+        "reproducibility.iterations",
+        "reproducibility.max_tokens",
+        "reproducibility.prompt",
+        "reproducibility.seed",
+        "reproducibility.temperature",
+        "reproducibility.warmup_runs",
         "reproducibility.workload_type",
         "runtime.backend",
         "runtime.device",

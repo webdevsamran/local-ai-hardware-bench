@@ -13,6 +13,18 @@
       "timestamp": "2026-08-22T08:55:30Z",
       "ttft_ms": 2069.71,
       "version": "0.32.15"
+    },
+    {
+      "throughput": 281.65,
+      "timestamp": "2026-09-10T03:39:08Z",
+      "ttft_ms": 2064.14,
+      "version": "0.32.15"
+    },
+    {
+      "throughput": 261.31,
+      "timestamp": "2026-09-10T03:40:50Z",
+      "ttft_ms": 2081.13,
+      "version": "0.32.15"
     }
   ],
   "onnxruntime": [

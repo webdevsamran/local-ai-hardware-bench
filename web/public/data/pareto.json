@@ -19,6 +19,24 @@
         "runtime": "ollama",
         "x": 110.93,
         "y": 2069.71
+      },
+      {
+        "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "model": "qwen2.5:0.5b-instruct-q4_K_M",
+        "optimal": false,
+        "run_id": "ollama-1789011548-20e39a8f",
+        "runtime": "ollama",
+        "x": 281.65,
+        "y": 2064.14
+      },
+      {
+        "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "model": "qwen2.5:0.5b-instruct-q4_K_M",
+        "optimal": false,
+        "run_id": "ollama-1789011650-7a65eecd",
+        "runtime": "ollama",
+        "x": 261.31,
+        "y": 2081.13
       }
     ],
     "x_higher_is_better": true,
@@ -46,6 +64,24 @@
         "runtime": "ollama",
         "x": 110.93,
         "y": 26.16
+      },
+      {
+        "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "model": "qwen2.5:0.5b-instruct-q4_K_M",
+        "optimal": false,
+        "run_id": "ollama-1789011548-20e39a8f",
+        "runtime": "ollama",
+        "x": 281.65,
+        "y": 52.14
+      },
+      {
+        "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "model": "qwen2.5:0.5b-instruct-q4_K_M",
+        "optimal": false,
+        "run_id": "ollama-1789011650-7a65eecd",
+        "runtime": "ollama",
+        "x": 261.31,
+        "y": 52.98
       }
     ],
     "x_higher_is_better": true,
@@ -73,6 +109,24 @@
         "runtime": "ollama",
         "x": 110.93,
         "y": 1192.0
+      },
+      {
+        "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "model": "qwen2.5:0.5b-instruct-q4_K_M",
+        "optimal": true,
+        "run_id": "ollama-1789011548-20e39a8f",
+        "runtime": "ollama",
+        "x": 281.65,
+        "y": 634.0
+      },
+      {
+        "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "model": "qwen2.5:0.5b-instruct-q4_K_M",
+        "optimal": false,
+        "run_id": "ollama-1789011650-7a65eecd",
+        "runtime": "ollama",
+        "x": 261.31,
+        "y": 640.0
       }
     ],
     "x_higher_is_better": true,

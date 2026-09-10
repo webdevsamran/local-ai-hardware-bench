@@ -52,16 +52,7 @@ def build_snapshot_manifest(
         by_runtime[runtime] = by_runtime.get(runtime, 0) + 1
         by_model[model] = by_model.get(model, 0) + 1
 
-    changes: dict[str, Any] | None = None
-    if previous_manifest:
-        prev_members = previous_manifest.get("members", {})
-        added = sorted(set(members) - set(prev_members))
-        removed = sorted(set(prev_members) - set(members))
-        changed = sorted(
-            name for name in set(members) & set(prev_members) if members[name] != prev_members[name]
-        )
-        changes = {"added": added, "removed": removed, "changed": changed, "invalidated": []}
-    return {
+    manifest = {
         "schema_version": SCHEMA_VERSION,
         "version": version,
         "results_count": len(run_ids),
@@ -69,12 +60,38 @@ def build_snapshot_manifest(
         "counts_by_runtime": by_runtime,
         "counts_by_model": by_model,
         "members": members,
-        "changes_vs_previous": changes,
+        "changes_vs_previous": None,
     }
+
+    # The same comparison `diff_snapshots` performs. It used to be written
+    # twice -- once here and once there -- so the two could drift into
+    # disagreeing about what changed between the same pair of snapshots.
+    if previous_manifest:
+        diff = diff_snapshots(previous_manifest, manifest)
+        manifest["changes_vs_previous"] = {
+            "added": diff["added"],
+            "removed": diff["removed"],
+            "changed": diff["changed"],
+            # Reserved for results superseded through `aihwbench invalidate`,
+            # which is a deliberate act rather than a file-level difference.
+            "invalidated": [],
+        }
+    return manifest
 
 
 def diff_snapshots(old: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
-    """Compare two snapshot manifests."""
+    """Compare two snapshot manifests.
+
+    The single implementation of "what changed between two snapshots":
+    `build_snapshot_manifest` calls this rather than repeating the set
+    arithmetic, and `aihwbench snapshot --diff` calls it to compare two
+    manifests that already exist -- which the builder cannot do, since it
+    needs a results directory to walk.
+
+    `changed` compares content hashes, so a result edited in place is a change
+    even though its filename did not move. That is the case worth catching: a
+    published result that quietly differs from the one people cited.
+    """
     old_members = old.get("members", {})
     new_members = new.get("members", {})
     return {

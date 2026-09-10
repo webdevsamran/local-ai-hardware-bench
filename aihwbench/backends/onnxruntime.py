@@ -22,6 +22,7 @@ from .base import (
     file_sha256,
     new_run_id,
     resolve_input_specs,
+    resolved_device,
 )
 
 
@@ -194,7 +195,13 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "name": "onnxruntime",
             "version": info.version,
             "backend": f"execution-providers:{','.join(active_providers)}",
-            "device": config.device,
+            # The provider that actually ran, not the flag that was typed.
+            # `active_providers` is ordered by preference, so the first is the
+            # one ONNX Runtime chose.
+            "device": (
+                resolved_device(active_providers[0] if active_providers else None) or config.device
+            ),
+            "device_requested": config.device,
         },
         "model": {
             "name": Path(model_path).name,

@@ -578,3 +578,113 @@ def test_two_nulls_would_still_have_agreed() -> None:
     a = {"model": {"name": "qwen2.5-0.5b", "quantization": None}, **shared}
     b = {"model": {"name": "qwen2.5-0.5b", "quantization": None}, **shared}
     assert compare_classification(a, b)["classification"] == "STRICTLY_COMPARABLE"
+
+
+# ---------------------------------------------------------------------------
+# runtime.device records what ran, not what was typed
+# ---------------------------------------------------------------------------
+#
+# `runtime.device` held `config.device` verbatim, and it is in the
+# comparison-safety classifier's strict set. Two ONNX Runtime runs on the same
+# silicon — both landing on CPUExecutionProvider — were NOT_COMPARABLE because
+# one passed `--device cpu` and the other took the `auto` default. A split
+# created by how someone spelled a flag is exactly the false distinction the
+# classifier exists to avoid making.
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("CPUExecutionProvider", "cpu"),
+        ("DmlExecutionProvider", "dml"),
+        ("CUDAExecutionProvider", "cuda"),
+        ("TensorrtExecutionProvider", "cuda"),
+        ("CPU", "cpu"),
+        ("AUTO", "auto"),
+        ("NPU", "npu"),
+    ],
+)
+def test_resolved_device_maps_what_ran_to_the_recorded_vocabulary(name: str, expected: str) -> None:
+    from aihwbench.backends.base import resolved_device
+
+    assert resolved_device(name) == expected
+
+
+def test_openvino_device_ordinals_do_not_split_one_machine() -> None:
+    """`GPU.0` and `GPU.1` identify which card; `system.gpu` already says.
+
+    Keeping the ordinal in `runtime.device` would make two runs on a
+    machine's only GPU incomparable if OpenVINO enumerated it differently.
+    """
+    from aihwbench.backends.base import resolved_device
+
+    assert resolved_device("GPU.0") == "gpu"
+    assert resolved_device("GPU.1") == "gpu"
+
+
+def test_an_unmappable_device_name_yields_none() -> None:
+    """So the caller falls back to the requested value instead of guessing."""
+    from aihwbench.backends.base import resolved_device
+
+    assert resolved_device("SomeFutureExecutionProvider") is None
+    assert resolved_device("") is None
+    assert resolved_device(None) is None
+
+
+def test_auto_and_explicit_cpu_are_comparable_once_resolved() -> None:
+    """The defect, stated as the comparison it used to break."""
+    from aihwbench.comparability import compare_classification
+
+    shared = {
+        "model": {"name": "m.onnx", "quantization": None},
+        "reproducibility": {"iterations": 8, "warmup_runs": 3},
+    }
+    took_default = {
+        "runtime": {
+            "name": "onnxruntime",
+            "backend": "execution-providers:CPUExecutionProvider",
+            "device": "cpu",
+            "device_requested": "auto",
+        },
+        **shared,
+    }
+    asked_explicitly = {
+        "runtime": {
+            "name": "onnxruntime",
+            "backend": "execution-providers:CPUExecutionProvider",
+            "device": "cpu",
+            "device_requested": "cpu",
+        },
+        **shared,
+    }
+    assert (
+        compare_classification(took_default, asked_explicitly)["classification"]
+        == "STRICTLY_COMPARABLE"
+    )
+
+
+def test_genuinely_different_devices_still_split() -> None:
+    """Resolving must not collapse a real difference."""
+    from aihwbench.comparability import compare_classification
+
+    shared = {
+        "model": {"name": "m.onnx", "quantization": None},
+        "reproducibility": {"iterations": 8, "warmup_runs": 3},
+    }
+    on_cpu = {
+        "runtime": {
+            "name": "onnxruntime",
+            "backend": "execution-providers:CPUExecutionProvider",
+            "device": "cpu",
+        },
+        **shared,
+    }
+    on_dml = {
+        "runtime": {
+            "name": "onnxruntime",
+            "backend": "execution-providers:DmlExecutionProvider,CPUExecutionProvider",
+            "device": "dml",
+        },
+        **shared,
+    }
+    assert compare_classification(on_cpu, on_dml)["classification"] == "NOT_COMPARABLE"

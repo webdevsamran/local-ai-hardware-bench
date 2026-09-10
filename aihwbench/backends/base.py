@@ -80,6 +80,46 @@ class BenchmarkConfig:
     extra: dict[str, Any] = field(default_factory=dict)
 
 
+#: Execution-provider and OpenVINO device names, mapped to the device
+#: vocabulary `runtime.device` uses.
+_RESOLVED_DEVICE_NAMES = {
+    "cpuexecutionprovider": "cpu",
+    "cudaexecutionprovider": "cuda",
+    "dmlexecutionprovider": "dml",
+    "tensorrtexecutionprovider": "cuda",
+    "openvinoexecutionprovider": "cpu",
+    "cpu": "cpu",
+    "gpu": "gpu",
+    "npu": "npu",
+    "auto": "auto",
+}
+
+
+def resolved_device(name: str | None) -> str | None:
+    """Map what actually ran to the device vocabulary results record.
+
+    `runtime.device` is in the comparison-safety classifier's strict set, and
+    it used to hold whatever the caller typed. Two runs on the same silicon
+    were therefore NOT_COMPARABLE when one passed `--device cpu` and the other
+    took the `auto` default -- a split created by how someone spelled a flag,
+    which is exactly the false distinction the classifier exists to avoid
+    making.
+
+    Returns None for a name this cannot map, so the caller falls back to the
+    requested value rather than recording a guess.
+    """
+    if not name:
+        return None
+    key = name.strip().lower()
+    if key in _RESOLVED_DEVICE_NAMES:
+        return _RESOLVED_DEVICE_NAMES[key]
+    # OpenVINO enumerates devices as GPU.0, GPU.1, NPU.0 and so on. The
+    # ordinal identifies which card, and `system.gpu` already records that;
+    # keeping it here would split two runs on one machine's only GPU.
+    head = key.split(".", 1)[0]
+    return _RESOLVED_DEVICE_NAMES.get(head)
+
+
 def new_run_id(prefix: str) -> str:
     """Collision-resistant run id: <prefix>-<epoch>-<uuid8>."""
     import time

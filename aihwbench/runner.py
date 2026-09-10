@@ -64,6 +64,7 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     from .analysis.thermal import thermal_from_trace
     from .backends import resolve
     from .container import container_info
+    from .contention import sample_contention
     from .fidelity import output_fidelity
     from .metrics import streaming_latency_metrics
     from .npu import npu_telemetry
@@ -84,6 +85,11 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
         else {"watts": None, "samples": 0, "source": None}
     )
 
+    # What else the machine was doing, sampled here for the same reason as the
+    # idle power baseline: both describe the conditions the measurement was
+    # taken under, and neither can be reconstructed afterwards.
+    contention = sample_contention()
+
     result: dict[str, Any] = backend.run(config, system)
 
     # Enrich with environment/reproducibility metadata.
@@ -99,6 +105,7 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     # Recorded when a digest is available and recorded as absent when it is
     # not, which is a more useful statement than silence.
     repro.setdefault("container", container_info())
+    repro.setdefault("machine_contention", contention)
 
     # Which workload produced this. `reproducibility.prompt` already carries
     # the text and is part of the comparison key, but the text alone does not
@@ -149,6 +156,7 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
         generation_tokens_per_second=metrics.get("generation_tokens_per_second"),
         requests_per_second=None,
         telemetry_source=power_source if isinstance(power_source, str) else None,
+        idle_power_spread_watts=idle.get("watts_spread"),
     )
     result["energy"]["idle_baseline"] = idle
 

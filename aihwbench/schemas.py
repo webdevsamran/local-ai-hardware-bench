@@ -141,6 +141,9 @@ _ENERGY_FIELDS = {
     # runs. Declared so the flag is type-checked rather than merely tolerated:
     # a consumer that reads it must be able to trust it is a bool.
     "incremental_share_of_gross": (int, float),
+    # How much the idle baseline moved while being measured; bounds how
+    # precise the incremental figure can be.
+    "idle_power_spread_watts": (int, float),
     "incremental_is_robust": bool,
     "caveat": str,
     # The raw baseline sample, including the machine state it was taken in.
@@ -211,6 +214,8 @@ _RUNTIME_FIELDS = {
     "version": str,
     "backend": str,
     "device": str,
+    # What the caller asked for, kept beside the device that ran.
+    "device_requested": str,
 }
 
 _MODEL_FIELDS = {
@@ -240,6 +245,8 @@ _REPRO_FIELDS = {
     "power_profile": (str, type(None)),
     # Container and image identity; see aihwbench/container.py.
     "container": (dict, type(None)),
+    # Machine load immediately before the run; see aihwbench/contention.py.
+    "machine_contention": (dict, type(None)),
     "workload_type": (str, type(None)),
     "batch_size": (int, type(None)),
     "concurrency": (int, type(None)),

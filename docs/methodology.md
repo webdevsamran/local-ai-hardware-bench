@@ -106,6 +106,30 @@ Every benchmark run records and fixes:
   result says so in `thermal.reason` rather than leaving the fields
   unexplained.
 
+## The machine has to be available to be measured
+
+Every run records the CPU load sampled immediately before it starts, and a
+result taken above 20% is not publishable. This is not a hypothetical
+precaution.
+
+Re-measuring ONNX Runtime on CPU during a background antivirus scan produced
+**2.53 inferences per second** where the same model on the same machine had
+measured **299.92** — a 118x error. OpenVINO on CPU was 78x slow in the same
+window; both GPU paths were 2.3x slow, because they still need the CPU to feed
+them.
+
+All four passed every other quality check. They were consistent, so variance
+was low. They were internally coherent, so plausibility was clean. Nothing in
+the dataset gave them anything to be implausible against — which is exactly
+the situation a contributor benchmarking new hardware is in, since there is by
+definition no prior measurement to compare with.
+
+Load is sampled *before* the run, for the same reason as the idle power
+baseline: during the run the benchmark is itself the load, and the reading
+would say nothing. Load that could not be measured is recorded as unknown
+rather than as quiet; refusing to publish for want of an optional dependency
+would be a worse rule than none.
+
 ## Statistical policy
 
 - Report means plus p50/p95; never report a single best iteration.

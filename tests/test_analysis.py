@@ -778,3 +778,49 @@ def test_quality_gate_accepts_a_stable_run():
     checks = data_quality_report(result)["checks"]
     assert checks["variance_acceptable"] is True
     assert checks["sustained_decline"] is None
+
+
+# --- A difference smaller than the baseline's own wobble is not a measurement -
+#
+# A card at rest is not at a constant draw. Measured on the reference machine
+# within one session: 14.9 W, 29.3 W, 30.3 W and 31.4 W, all honestly sampled
+# as "idle" — and with a model resident it oscillated between 14 W and 21 W at
+# 0% GPU utilization, a 50% swing a two-second window can land anywhere in.
+
+
+def test_incremental_inside_the_baseline_spread_is_not_robust():
+    out = compute_energy_metrics(
+        average_power_watts=20.0,
+        idle_power_watts=17.0,  # workload added 3 W
+        generation_tokens_per_second=100.0,
+        requests_per_second=None,
+        idle_power_spread_watts=7.0,  # the baseline itself moved 7 W
+    )
+    assert out["incremental_is_robust"] is False
+    assert "inside the noise of what was subtracted" in out["caveat"]
+    # The figure is still reported; only the confidence is withheld.
+    assert out["energy_joules_per_token"] is not None
+
+
+def test_incremental_clear_of_the_spread_stays_robust():
+    out = compute_energy_metrics(
+        average_power_watts=53.3,
+        idle_power_watts=31.2,  # workload added 22 W
+        generation_tokens_per_second=280.0,
+        requests_per_second=None,
+        idle_power_spread_watts=1.5,
+    )
+    assert out["incremental_is_robust"] is True
+    assert out["caveat"] is None
+
+
+def test_an_unmeasured_spread_does_not_change_the_verdict():
+    """Older baselines carry no spread; absence must not imply instability."""
+    with_spread = compute_energy_metrics(53.3, 31.2, 280.0, None, idle_power_spread_watts=None)
+    assert with_spread["incremental_is_robust"] is True
+    assert with_spread["idle_power_spread_watts"] is None
+
+
+def test_the_spread_is_published_so_a_reader_can_judge():
+    out = compute_energy_metrics(53.3, 31.2, 280.0, None, idle_power_spread_watts=2.25)
+    assert out["idle_power_spread_watts"] == 2.25

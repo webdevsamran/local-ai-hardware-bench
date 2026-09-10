@@ -149,3 +149,96 @@ def test_windows_ram_fallback_works_on_windows(monkeypatch):
     value, source = tlm._system_ram_sample()
     assert source == "windows-globalmemorystatus"
     assert value is None or value > 0.0
+
+
+# --- The idle baseline must describe an idle machine -------------------------
+#
+# `sample_idle_power` used to average whatever the power sensor reported in the
+# window before load, with no check that the machine was idle. A busy GPU then
+# became the "baseline", and subtracting it made the benchmark look more
+# efficient than it was. Separately, a card still holding a model from an
+# earlier run idles far higher than the same card after eviction -- so the
+# state the baseline was taken in has to travel with it.
+
+
+def _idle_sampler(monkeypatch, *, watts, util, vram=0.0):
+    """Patch the GPU sampler to report fixed readings, and skip the sleeps."""
+    import aihwbench.telemetry as tlm
+
+    monkeypatch.setattr(
+        tlm,
+        "_nvidia_smi_sample",
+        lambda: {
+            "power_watts": watts,
+            "gpu_util_percent": util,
+            "vram_mb": vram,
+            "temperature_c": 40.0,
+            "gpu_device_index": "0",
+            "gpu_device_name": "Test GPU",
+        },
+    )
+    monkeypatch.setattr(tlm.time, "sleep", lambda _seconds: None)
+    return tlm
+
+
+def test_idle_baseline_is_refused_when_the_gpu_is_busy(monkeypatch):
+    tlm = _idle_sampler(monkeypatch, watts=210.0, util=94.0)
+    baseline = tlm.sample_idle_power(seconds=0.01, interval=0.0)
+
+    assert baseline["quiescent"] is False
+    # Fail closed: no baseline beats one that flatters the benchmark.
+    assert baseline["watts"] is None
+    # Kept for diagnosis under its own name, where nothing will subtract it.
+    assert baseline["observed_watts"] == 210.0
+    assert "utilization" in baseline["reason"]
+
+
+def test_a_refused_baseline_yields_no_incremental_figure(monkeypatch):
+    """The guard is only worth having if it reaches the published numbers."""
+    from aihwbench.analysis.energy import compute_energy_metrics
+
+    tlm = _idle_sampler(monkeypatch, watts=210.0, util=94.0)
+    baseline = tlm.sample_idle_power(seconds=0.01, interval=0.0)
+    out = compute_energy_metrics(
+        average_power_watts=220.0,
+        idle_power_watts=baseline["watts"],
+        generation_tokens_per_second=40.0,
+        requests_per_second=None,
+    )
+    assert out["incremental_power_watts"] is None
+    assert out["energy_joules_per_token"] is None
+    assert out["incremental_is_robust"] is None
+
+
+def test_idle_baseline_is_kept_when_the_gpu_is_quiet(monkeypatch):
+    tlm = _idle_sampler(monkeypatch, watts=14.9, util=1.0)
+    baseline = tlm.sample_idle_power(seconds=0.01, interval=0.0)
+
+    assert baseline["quiescent"] is True
+    assert baseline["watts"] == 14.9
+    assert baseline["reason"] is None
+    assert "observed_watts" not in baseline
+
+
+def test_idle_baseline_records_resident_vram(monkeypatch):
+    """What explains two honest baselines disagreeing by 2x on one machine."""
+    tlm = _idle_sampler(monkeypatch, watts=31.41, util=2.0, vram=632.0)
+    baseline = tlm.sample_idle_power(seconds=0.01, interval=0.0)
+
+    assert baseline["quiescent"] is True  # low utilization: genuinely at rest
+    assert baseline["watts"] == 31.41
+    # ...but not at rest in the same *state*, and the result says so.
+    assert baseline["resident_vram_mb"] == 632.0
+
+
+def test_no_power_sensor_reports_why(monkeypatch):
+    import aihwbench.telemetry as tlm
+
+    monkeypatch.setattr(tlm, "_nvidia_smi_sample", lambda: None)
+    monkeypatch.setattr(tlm.time, "sleep", lambda _seconds: None)
+    baseline = tlm.sample_idle_power(seconds=0.01, interval=0.0)
+
+    assert baseline["watts"] is None
+    assert baseline["samples"] == 0
+    assert baseline["quiescent"] is None  # unknown, not "not idle"
+    assert baseline["reason"]

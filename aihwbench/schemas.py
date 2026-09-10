@@ -136,6 +136,15 @@ _ENERGY_FIELDS = {
     "energy_joules_per_token": (int, float),
     "energy_joules_per_request": (int, float),
     "energy_joules_per_1k_tokens": (int, float),
+    # Share of gross power attributable to the workload, and whether that share
+    # is large enough for the per-token figure to survive comparison across
+    # runs. Declared so the flag is type-checked rather than merely tolerated:
+    # a consumer that reads it must be able to trust it is a bool.
+    "incremental_share_of_gross": (int, float),
+    "incremental_is_robust": bool,
+    "caveat": str,
+    # The raw baseline sample, including the machine state it was taken in.
+    "idle_baseline": dict,
     "telemetry_source": str,
 }
 

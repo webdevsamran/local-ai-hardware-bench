@@ -64,6 +64,22 @@ _MAX_TEMPERATURE_C = 150.0
 #: is treated as inconsistent rather than rounded.
 _ENERGY_TOLERANCE = 0.10
 
+#: How far idle power may exceed average power under load before it counts as
+#: inconsistent rather than as sensor drift.
+#:
+#: A workload that barely touches the GPU makes "average under load" almost
+#: another idle sample, and two idle samples on a laptop dGPU differ by a few
+#: percent as fans, clocks and temperature move. Measured case: a 0.5B model
+#: held an RTX 3080 Ti at ~6% utilization, giving 28.26 W under load against a
+#: 29.62 W baseline -- a 4.6% excess that this check called inconsistent.
+#:
+#: The condition worth flagging is the structural one the check was written
+#: for: readings taken against different things, or swapped. Those are not off
+#: by a few percent. Nothing is hidden by tolerating drift here -- the energy
+#: block already withholds per-token energy and states why whenever the
+#: workload's draw cannot be resolved above the baseline.
+_IDLE_EXCESS_TOLERANCE = 0.10
+
 
 class PlausibilityFinding(dict[str, Any]):
     """One finding: a field, what is wrong, and why that is impossible."""
@@ -166,19 +182,26 @@ def check_plausibility(result: dict[str, Any]) -> list[PlausibilityFinding]:
             )
         previous_name, previous_value = name, value
 
-    # Idle power above average power under load means the two were measured
-    # against different things, or swapped.
+    # Idle power well above average power under load means the two were
+    # measured against different things, or swapped. A few percent is drift;
+    # see _IDLE_EXCESS_TOLERANCE.
     idle = _number(metrics.get("idle_power_watts"))
     average = _number(metrics.get("average_power_watts"))
-    if idle is not None and average is not None and idle > average:
-        findings.append(
-            _finding(
-                "metrics.idle_power_watts",
-                idle,
-                f"idle draw exceeds the {average} W average under load",
-                "inconsistent",
+    if idle is not None and average is not None and average > 0:
+        excess = (idle - average) / average
+        if excess > _IDLE_EXCESS_TOLERANCE:
+            findings.append(
+                _finding(
+                    "metrics.idle_power_watts",
+                    idle,
+                    (
+                        f"idle draw exceeds the {average} W average under load by "
+                        f"{excess:.0%}, beyond the {_IDLE_EXCESS_TOLERANCE:.0%} "
+                        "attributable to sensor drift"
+                    ),
+                    "inconsistent",
+                )
             )
-        )
 
     # Energy per token should follow from power and throughput.
     energy = _number(metrics.get("energy_joules_per_token"))

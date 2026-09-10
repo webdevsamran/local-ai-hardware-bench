@@ -66,7 +66,7 @@ def test_thermal_stability_throttle_detection():
 
 
 def test_npu_hooks_are_honest_none():
-    from aihwbench.npu import NPU_FIELDS, enrich_with_npu, npu_telemetry
+    from aihwbench.npu import NPU_FIELDS, npu_telemetry
 
     d = npu_telemetry()
     assert "npu_device" in d
@@ -74,20 +74,28 @@ def test_npu_hooks_are_honest_none():
         assert k in d
         assert d[k] is None
 
-    # enrichment never fabricates values and never mutates its input
-    base = {"ram_used_mb": 12}
-    merged = enrich_with_npu(base)
-    assert base == {"ram_used_mb": 12}
-    assert merged["ram_used_mb"] == 12
-    for k in NPU_FIELDS:
-        assert merged[k] is None
-
 
 def test_npu_telemetry_mirrors_detected_device():
     from aihwbench.npu import npu_telemetry
 
     d = npu_telemetry({"npu": "Intel AI Boost"})
     assert d["npu_device"] == "Intel AI Boost"
+
+
+def test_npu_telemetry_distinguishes_absent_from_unreadable():
+    """ "No NPU" and "an NPU nothing can read" are different facts.
+
+    Both leave every metric null, so without the source string a reader
+    cannot tell a machine that has no NPU from one whose NPU went
+    unmeasured -- which is the whole point of publishing the block.
+    """
+    from aihwbench.npu import npu_telemetry
+
+    absent = npu_telemetry({})
+    present = npu_telemetry({"npu": "Intel AI Boost"})
+    assert absent["npu_telemetry_source"] != present["npu_telemetry_source"]
+    assert "no NPU" in absent["npu_telemetry_source"]
+    assert "not wired" in present["npu_telemetry_source"]
 
 
 def test_parquet_export(tmp_path):

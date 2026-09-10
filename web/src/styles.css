@@ -900,3 +900,78 @@ button:focus-visible,
   color: var(--text-muted);
   white-space: nowrap;
 }
+
+/* --- Matchmaker quiz ---------------------------------------------------
+   Chips rather than a <select>: the options carry a hint line each, and the
+   choice is worth showing all of at once on a page whose whole purpose is
+   making a judgement visible. */
+.quiz-group {
+  border: none;
+  margin: 0 0 20px;
+  padding: 0;
+}
+
+.quiz-group > .field-label {
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  /* 44px minimum touch target. */
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.chip:hover {
+  border-color: var(--accent);
+}
+
+.chip:active {
+  transform: translateY(1px);
+}
+
+.chip-on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.chip-label {
+  font-weight: 600;
+}
+
+.chip-hint {
+  font-size: 0.82em;
+  opacity: 0.75;
+}
+
+.quiz-ram {
+  max-width: 220px;
+  margin-bottom: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip { transition: none; }
+  .chip:active { transform: none; }
+}

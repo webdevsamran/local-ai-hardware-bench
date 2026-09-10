@@ -47,6 +47,11 @@ const STATIC_META: Record<string, Omit<PageMeta, 'path'>> = {
     description:
       'Which local AI configurations are not beaten on both axes at once: throughput against power draw, peak VRAM and time to first token. A card that is slower but far more efficient is still on the frontier, which a single ranked leaderboard cannot show.',
   },
+  '/matchmaker': {
+    title: 'Which local AI model should I run? — AIHWBench',
+    description:
+      'Four questions about what you want to do — chat, code completion, long documents or agents — answered from published benchmark measurements. Task requirements become throughput floors and latency ceilings, and the page says whether any measured result actually meets them.',
+  },
   '/recommend': {
     title: 'What local LLM should I run on my hardware? — AIHWBench',
     description:

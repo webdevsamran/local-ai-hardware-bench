@@ -18,6 +18,7 @@ installed:
 from __future__ import annotations
 
 import hashlib
+import importlib
 import json
 import pathlib
 from typing import Any
@@ -29,6 +30,7 @@ from aihwbench.backends import llama_cpp, lmstudio, onnxruntime
 from aihwbench.backends.base import (
     BackendError,
     BenchmarkConfig,
+    RuntimeStatus,
     file_sha256,
     resolve_input_specs,
 )
@@ -328,3 +330,146 @@ def test_ollama_load_time_aggregates_into_metrics() -> None:
         [{"load_time_ms": 250.0, "completion_tokens": 42, "eval_seconds": 1.0}]
     )
     assert metrics["load_time_ms"] == 250.0
+
+
+# ---------------------------------------------------------------------------
+# vLLM / SGLang — the serving engines Bench360 measures, on consumer hardware
+# ---------------------------------------------------------------------------
+#
+# Neither engine runs on Windows, so nothing here can be exercised against a
+# real server on the reference machine. What these tests pin is the part that
+# would go quietly wrong rather than fail: tokens taken from the wrong place,
+# a rate presented as an engine counter, or a version invented for a server
+# that does not report one.
+
+
+def _openai_chunks(content_chunks: int, usage: dict[str, Any] | None) -> list[dict[str, Any]]:
+    chunks: list[dict[str, Any]] = [
+        {"choices": [{"delta": {"content": "tok"}}]} for _ in range(content_chunks)
+    ]
+    if usage is not None:
+        chunks.append({"choices": [], "usage": usage})
+    return chunks
+
+
+@pytest.mark.parametrize("name", ["vllm", "sglang"])
+def test_openai_backends_take_tokens_only_from_usage(
+    monkeypatch: pytest.MonkeyPatch, name: str
+) -> None:
+    """Chunks are transport artifacts; a chunk is not a token.
+
+    These servers emit multi-token chunks under load, so counting deltas
+    inflates throughput exactly when the machine is busiest.
+    """
+    from aihwbench.backends import openai_server
+
+    module = importlib.import_module(f"aihwbench.backends.{name}")
+    chunks = _openai_chunks(11, {"completion_tokens": 6, "prompt_tokens": 4})
+    monkeypatch.setattr(
+        openai_server.urllib.request, "urlopen", lambda *a, **k: _FakeSseResponse(chunks)
+    )
+
+    detail = openai_server.chat_stream(module.SERVER, "m", "p", BenchmarkConfig(model="m"))
+    assert detail["completion_tokens"] == 6
+    assert detail["prompt_tokens"] == 4
+    # One arrival time per content chunk, for the inter-token distribution.
+    assert len(detail["chunk_times_ms"]) == 11
+    # Both describe the first content chunk; they are rounded to different
+    # precisions (2dp and 3dp), matching the Ollama backend's convention.
+    assert detail["ttft_ms"] == pytest.approx(detail["chunk_times_ms"][0], abs=0.01)
+
+
+@pytest.mark.parametrize("name", ["vllm", "sglang"])
+def test_openai_backends_leave_tokens_null_without_usage(
+    monkeypatch: pytest.MonkeyPatch, name: str
+) -> None:
+    from aihwbench.backends import openai_server
+
+    module = importlib.import_module(f"aihwbench.backends.{name}")
+    monkeypatch.setattr(
+        openai_server.urllib.request,
+        "urlopen",
+        lambda *a, **k: _FakeSseResponse(_openai_chunks(4, None)),
+    )
+
+    detail = openai_server.chat_stream(module.SERVER, "m", "p", BenchmarkConfig(model="m"))
+    assert detail["completion_tokens"] is None
+    # No numerator means no rate: the decode window is withheld rather than
+    # divided into an unknown token count.
+    assert detail["eval_seconds"] is None
+
+
+@pytest.mark.parametrize("name", ["vllm", "sglang"])
+def test_openai_backends_label_the_rate_as_wall_clock(name: str) -> None:
+    from aihwbench.backends import openai_server
+
+    module = importlib.import_module(f"aihwbench.backends.{name}")
+    block = openai_server.metric_source_block(module.SERVER)
+    assert block["generation_tokens_per_second"] == "client_wall_clock"
+    assert block["completion_tokens"] == "engine_usage"
+    # It includes the HTTP stack, so it is not llama-bench's number.
+    assert "not comparable" in block["note"]
+
+
+@pytest.mark.parametrize("name", ["vllm", "sglang"])
+def test_openai_backends_report_unavailable_when_no_server_runs(
+    monkeypatch: pytest.MonkeyPatch, name: str
+) -> None:
+    from aihwbench.backends import openai_server
+
+    module = importlib.import_module(f"aihwbench.backends.{name}")
+    monkeypatch.setattr(openai_server, "_api_get", lambda *a, **k: None)
+
+    info = module.detect()
+    assert info.status is not RuntimeStatus.AVAILABLE
+    assert info.version is None
+    # The hint must say how to start one, not merely that it is absent.
+    assert "server" in info.detail.lower()
+
+
+def test_openai_backend_version_is_null_when_unreported(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """SGLang serves no /version. Inventing one would hide a real difference.
+
+    `runtime.version` moves a pair from strictly to conditionally comparable,
+    so a fabricated value would let two runs on different builds pass as one.
+    """
+    from aihwbench.backends import openai_server, sglang
+
+    def fake_get(server: Any, path: str, timeout: float = 5.0) -> Any:
+        if path == "/v1/models":
+            return {"data": [{"id": "m"}]}
+        return None  # no /version endpoint
+
+    monkeypatch.setattr(openai_server, "_api_get", fake_get)
+    info = sglang.detect()
+    assert info.status is RuntimeStatus.AVAILABLE
+    assert info.version is None
+
+
+def test_openai_backends_do_not_launch_a_server() -> None:
+    """Startup flags decide what is measured, so the operator chooses them.
+
+    Tensor parallelism, GPU memory fraction, quantization and KV-cache dtype
+    are all set at launch. A benchmark that started the server itself would be
+    reporting on a configuration nobody chose.
+    """
+    for name in ("vllm", "sglang"):
+        src = pathlib.Path(
+            importlib.import_module(f"aihwbench.backends.{name}").__file__
+        ).read_text(encoding="utf-8")
+        assert "subprocess" not in src
+        assert "Popen" not in src
+
+
+@pytest.mark.parametrize("name", ["vllm", "sglang"])
+def test_openai_backends_honour_a_host_override(monkeypatch: pytest.MonkeyPatch, name: str) -> None:
+    """A machine serving two engines cannot give both the same port."""
+    monkeypatch.setenv(f"AIHWBENCH_{name.upper()}_HOST", "http://example.invalid:9999")
+    module = importlib.reload(importlib.import_module(f"aihwbench.backends.{name}"))
+    try:
+        assert module.SERVER.host == "http://example.invalid:9999"
+    finally:
+        monkeypatch.delenv(f"AIHWBENCH_{name.upper()}_HOST")
+        importlib.reload(module)

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { AppRoutes } from '../src/App'
+import { AppRoutes, AppShell } from '../src/App'
 import Layout from '../src/components/Layout'
 
 // Static dataset fetch mock — mirrors the generated data files.
@@ -79,6 +79,7 @@ const dataset = {
   pareto: {},
   recommend: { note: '', reference_cases: [] },
   privacy: { patterns: [], reference_cases: [], note: '' },
+  cliff: { curves: [], note: '' },
 }
 
 beforeEach(() => {
@@ -98,6 +99,7 @@ beforeEach(() => {
         'data/pareto.json': dataset.pareto,
         'data/recommend.json': dataset.recommend,
         'data/privacy.json': dataset.privacy,
+        'data/cliff.json': dataset.cliff,
       }
       // The app requests base-anchored URLs (`/data/x.json`, or
       // `/local-ai-hardware-bench/data/x.json` in production) because a
@@ -120,6 +122,22 @@ function renderAt(path: string) {
       <Layout>
         <AppRoutes />
       </Layout>
+    </MemoryRouter>,
+  )
+}
+
+/**
+ * Render through `AppShell` rather than `AppRoutes`.
+ *
+ * `AppShell` is where the decision to drop the site chrome for `/embed/`
+ * lives, so an embed route rendered through `AppRoutes` alone falls through to
+ * NotFound. The browser and the prerenderer both go through `AppShell`; the
+ * test has to as well, or it is exercising a path nothing uses.
+ */
+function renderShellAt(path: string) {
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <AppShell />
     </MemoryRouter>,
   )
 }
@@ -188,5 +206,53 @@ describe('App routes (smoke)', () => {
   it('renders not-found page for unknown routes', async () => {
     renderAt('/nope/nope')
     expect(await screen.findByText(/404/)).toBeTruthy()
+  })
+})
+// --- Pages added after the initial route set --------------------------------
+//
+// Each of these can render an empty state that looks like a working page, so
+// the assertions check for content the page can only produce from data — the
+// failure being guarded against is a route that silently renders nothing.
+
+describe('later routes (smoke)', () => {
+  it('renders the matchmaker with a verdict', async () => {
+    renderAt('/matchmaker')
+    expect(await screen.findByText(/Which model should I run/)).toBeTruthy()
+    // The thresholds it applied must be visible, since they are judgements
+    // rather than measurements.
+    expect(await screen.findByText(/Why these thresholds/)).toBeTruthy()
+  })
+
+  it('renders the submission page and promises no upload', async () => {
+    renderAt('/submit')
+    expect(await screen.findByText(/Submit a result/)).toBeTruthy()
+    expect(await screen.findByText(/Nothing is uploaded/)).toBeTruthy()
+  })
+
+  it('tells the offload-cliff page when no sweep has been published', async () => {
+    // The fixture carries no curves, so the page must say so rather than
+    // rendering an empty chart that reads as "no cliff".
+    renderAt('/offload-cliff')
+    expect(await screen.findByText(/No offload sweep has been published/)).toBeTruthy()
+  })
+
+  it('renders an embed card for a known run', async () => {
+    renderShellAt('/embed/result/test-run-1')
+    // The caveat is the reason the card can be embedded at all.
+    expect(await screen.findByText(/Comparable only with results/)).toBeTruthy()
+  })
+
+  it('says so when an embed names a run that does not exist', async () => {
+    renderShellAt('/embed/result/no-such-run')
+    expect(await screen.findByText(/No published result with id/)).toBeTruthy()
+  })
+
+  it('renders an embed without the site chrome', async () => {
+    // The card sits inside someone else's page, where this site's navigation
+    // and footer would be noise wrapped around a small card.
+    const { container } = renderShellAt('/embed/result/test-run-1')
+    await screen.findByText(/Comparable only with results/)
+    expect(container.querySelector('nav')).toBeNull()
+    expect(container.querySelector('footer')).toBeNull()
   })
 })

@@ -251,4 +251,51 @@ export interface Dataset {
   recommend: { note: string; reference_cases: unknown[] }
   /** The privacy scanner's patterns, generated from aihwbench/sanitize.py. */
   privacy: PrivacyRules
+  /** Measured offload sweeps with the cliff analysis applied. */
+  cliff: OffloadCliffData
+}
+
+/** One measured point on an offload sweep. */
+export interface OffloadCliffPoint {
+  gpu_layers: number
+  tokens_per_second: number | null
+  ci95?: [number, number] | null
+  cv?: number | null
+  peak_vram_mb?: number | null
+}
+
+export interface OffloadCliffAnalysis {
+  axis: string
+  points: number
+  excluded_missing_data: number
+  cliff_detected: boolean | null
+  threshold?: number
+  largest_drop_fraction?: number
+  cliff_between_layers?: [number, number] | null
+  best_layers?: number
+  best_tokens_per_second?: number
+  /**
+   * Settings the best one cannot be told apart from. Non-empty means the
+   * "fastest" is a sort order rather than a measured lead.
+   */
+  best_is_tied_with?: number[]
+  tie_basis?: string | null
+  reason?: string
+}
+
+export interface OffloadCliffCurve {
+  source: string
+  runtime?: string | null
+  model?: string | null
+  gpu?: string | null
+  gpu_vram_mb?: number | null
+  cpu?: string | null
+  timestamp?: string | null
+  analysis: OffloadCliffAnalysis
+  points: OffloadCliffPoint[]
+}
+
+export interface OffloadCliffData {
+  curves: OffloadCliffCurve[]
+  note: string
 }

@@ -29,6 +29,7 @@ import About from './pages/About'
 import NotFound from './pages/NotFound'
 import EmbedResult from './pages/EmbedResult'
 import Submit from './pages/Submit'
+import OffloadCliff from './pages/OffloadCliff'
 
 export function AppRoutes() {
   return (
@@ -38,6 +39,7 @@ export function AppRoutes() {
           <Route path="/will-it-run" element={<WillItRun />} />
           <Route path="/local-vs-cloud" element={<Tco />} />
           <Route path="/frontiers" element={<Pareto />} />
+          <Route path="/offload-cliff" element={<OffloadCliff />} />
           <Route path="/recommend" element={<Recommend />} />
           <Route path="/matchmaker" element={<Matchmaker />} />
           <Route path="/submit" element={<Submit />} />

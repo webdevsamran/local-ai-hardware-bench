@@ -31,6 +31,7 @@ REPO = Path(__file__).resolve().parent.parent
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 RESULTS_DIR = REPO / "results" / "published"
+SWEEPS_DIR = REPO / "results" / "sweeps"
 OUT_DIR = REPO / "web" / "public" / "data"
 
 from aihwbench.analysis.cost import compare_local_vs_cloud  # noqa: E402
@@ -223,6 +224,69 @@ def _recommendation_constants(results: list[dict]) -> dict:
             "quantization density; measured results upgrade the evidence tier"
         ),
         "reference_cases": cases,
+    }
+
+
+def _offload_cliffs() -> dict:
+    """Measured offload sweeps, with the cliff analysis applied.
+
+    The dashboard already draws an offload curve on the fit page, but that one
+    is computed from a memory estimate: it shows what share of a model would
+    spill, not what that costs. This is the other half, and the half nobody
+    publishes -- measured throughput at each offload setting, on real hardware.
+
+    Curves are served with the environment they were measured in, because the
+    cliff is a property of a particular GPU's memory and PCIe link as much as
+    of the model. A curve without that is a shape with no subject.
+    """
+    from aihwbench.analysis.cliff import find_offload_cliff
+
+    curves = []
+    if SWEEPS_DIR.is_dir():
+        for path in sorted(SWEEPS_DIR.glob("sweep-*.json")):
+            sweep = json.loads(path.read_text(encoding="utf-8"))
+            matrix = sweep.get("matrix") or []
+            environment = sweep.get("environment") or {}
+            analysis = find_offload_cliff(matrix)
+            # A sweep over some other axis has no cliff to show; skipping it
+            # is not a failure, and pretending otherwise would put an empty
+            # chart on the page.
+            if analysis.get("cliff_detected") is None:
+                continue
+            curves.append(
+                {
+                    "source": path.name,
+                    "runtime": environment.get("runtime"),
+                    "model": environment.get("model"),
+                    "gpu": (environment.get("system") or {}).get("gpu"),
+                    "gpu_vram_mb": (environment.get("system") or {}).get("gpu_vram_mb"),
+                    "cpu": (environment.get("system") or {}).get("cpu"),
+                    "timestamp": environment.get("timestamp"),
+                    "analysis": analysis,
+                    "points": [
+                        {
+                            "gpu_layers": row["params"].get("gpu_layers"),
+                            "tokens_per_second": (row.get("metrics") or {}).get(
+                                "generation_tokens_per_second"
+                            ),
+                            "ci95": (row.get("metrics") or {}).get("gen_tps_ci95"),
+                            "cv": (row.get("metrics") or {}).get("generation_tps_cv"),
+                            "peak_vram_mb": (row.get("metrics") or {}).get("peak_vram_mb"),
+                        }
+                        for row in matrix
+                        if (row.get("params") or {}).get("gpu_layers") is not None
+                    ],
+                }
+            )
+    return {
+        "curves": curves,
+        "note": (
+            "Measured throughput at each offload setting, not an estimate. "
+            "Each curve is one machine with one model: where the cliff sits "
+            "depends on PCIe generation and width, memory bandwidth, and how "
+            "much VRAM the rest of the desktop is using, so these are for "
+            "comparison against your own measurement rather than for citing."
+        ),
     }
 
 
@@ -624,6 +688,7 @@ def build(results: list[dict]) -> dict[str, object]:
         "constants": _fit_constants(),
         "comparability": _comparability_rules(results),
         "privacy": _privacy_patterns(),
+        "cliff": _offload_cliffs(),
         "tco": _tco_constants(),
         "pareto": _pareto_views(results),
         "recommend": _recommendation_constants(results),

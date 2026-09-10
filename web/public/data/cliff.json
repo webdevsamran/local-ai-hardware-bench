@@ -1,0 +1,161 @@
+{
+  "curves": [
+    {
+      "analysis": {
+        "axis": "gpu_layers",
+        "best_is_tied_with": [],
+        "best_layers": 99.0,
+        "best_tokens_per_second": 371.85,
+        "cliff_between_layers": [
+          18.0,
+          24.0
+        ],
+        "cliff_detected": true,
+        "curve": [
+          {
+            "layers": 0.0,
+            "tokens_per_second": 64.42
+          },
+          {
+            "layers": 6.0,
+            "tokens_per_second": 98.3
+          },
+          {
+            "layers": 12.0,
+            "tokens_per_second": 134.49
+          },
+          {
+            "layers": 18.0,
+            "tokens_per_second": 164.58
+          },
+          {
+            "layers": 24.0,
+            "tokens_per_second": 272.36
+          },
+          {
+            "layers": 99.0,
+            "tokens_per_second": 371.85
+          }
+        ],
+        "drops": [
+          {
+            "drop_fraction": 0.3447,
+            "from_layers": 6.0,
+            "from_tps": 98.3,
+            "slowdown_factor": 1.526,
+            "to_layers": 0.0,
+            "to_tps": 64.42
+          },
+          {
+            "drop_fraction": 0.2691,
+            "from_layers": 12.0,
+            "from_tps": 134.49,
+            "slowdown_factor": 1.368,
+            "to_layers": 6.0,
+            "to_tps": 98.3
+          },
+          {
+            "drop_fraction": 0.1828,
+            "from_layers": 18.0,
+            "from_tps": 164.58,
+            "slowdown_factor": 1.224,
+            "to_layers": 12.0,
+            "to_tps": 134.49
+          },
+          {
+            "drop_fraction": 0.3957,
+            "from_layers": 24.0,
+            "from_tps": 272.36,
+            "slowdown_factor": 1.655,
+            "to_layers": 18.0,
+            "to_tps": 164.58
+          },
+          {
+            "drop_fraction": 0.2676,
+            "from_layers": 99.0,
+            "from_tps": 371.85,
+            "slowdown_factor": 1.365,
+            "to_layers": 24.0,
+            "to_tps": 272.36
+          }
+        ],
+        "excluded_missing_data": 0,
+        "largest_drop_fraction": 0.3957,
+        "note": "measured points only; the cliff is the largest throughput drop between adjacent configurations, not a fitted or predicted knee",
+        "points": 6,
+        "threshold": 0.25,
+        "tie_basis": "overlapping 95% confidence intervals"
+      },
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "gpu_vram_mb": 16384,
+      "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "points": [
+        {
+          "ci95": [
+            59.87,
+            68.96
+          ],
+          "cv": 0.1018,
+          "gpu_layers": 0,
+          "peak_vram_mb": 232.0,
+          "tokens_per_second": 64.42
+        },
+        {
+          "ci95": [
+            91.89,
+            104.71
+          ],
+          "cv": 0.094,
+          "gpu_layers": 6,
+          "peak_vram_mb": 426.0,
+          "tokens_per_second": 98.3
+        },
+        {
+          "ci95": [
+            124.01,
+            144.96
+          ],
+          "cv": 0.1124,
+          "gpu_layers": 12,
+          "peak_vram_mb": 494.0,
+          "tokens_per_second": 134.49
+        },
+        {
+          "ci95": [
+            149.5,
+            179.66
+          ],
+          "cv": 0.1322,
+          "gpu_layers": 18,
+          "peak_vram_mb": 560.0,
+          "tokens_per_second": 164.58
+        },
+        {
+          "ci95": [
+            265.51,
+            279.21
+          ],
+          "cv": 0.0363,
+          "gpu_layers": 24,
+          "peak_vram_mb": 626.0,
+          "tokens_per_second": 272.36
+        },
+        {
+          "ci95": [
+            359.68,
+            384.03
+          ],
+          "cv": 0.0472,
+          "gpu_layers": 99,
+          "peak_vram_mb": 632.0,
+          "tokens_per_second": 371.85
+        }
+      ],
+      "runtime": "llama.cpp",
+      "source": "sweep-llama.cpp.json",
+      "timestamp": "2026-09-10T06:22:23Z"
+    }
+  ],
+  "note": "Measured throughput at each offload setting, not an estimate. Each curve is one machine with one model: where the cliff sits depends on PCIe generation and width, memory bandwidth, and how much VRAM the rest of the desktop is using, so these are for comparison against your own measurement rather than for citing."
+}

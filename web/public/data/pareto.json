@@ -24,19 +24,19 @@
         "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
         "model": "qwen2.5:0.5b-instruct-q4_K_M",
         "optimal": false,
-        "run_id": "ollama-1789011548-20e39a8f",
+        "run_id": "ollama-1789023368-72264449",
         "runtime": "ollama",
-        "x": 281.65,
-        "y": 2064.14
+        "x": 295.31,
+        "y": 2076.72
       },
       {
         "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
         "model": "qwen2.5:0.5b-instruct-q4_K_M",
         "optimal": false,
-        "run_id": "ollama-1789011650-7a65eecd",
+        "run_id": "ollama-1789023447-6e15718a",
         "runtime": "ollama",
-        "x": 261.31,
-        "y": 2081.13
+        "x": 299.55,
+        "y": 2073.53
       }
     ],
     "x_higher_is_better": true,
@@ -69,19 +69,19 @@
         "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
         "model": "qwen2.5:0.5b-instruct-q4_K_M",
         "optimal": false,
-        "run_id": "ollama-1789011548-20e39a8f",
+        "run_id": "ollama-1789023368-72264449",
         "runtime": "ollama",
-        "x": 281.65,
-        "y": 52.14
+        "x": 295.31,
+        "y": 50.73
       },
       {
         "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
         "model": "qwen2.5:0.5b-instruct-q4_K_M",
         "optimal": false,
-        "run_id": "ollama-1789011650-7a65eecd",
+        "run_id": "ollama-1789023447-6e15718a",
         "runtime": "ollama",
-        "x": 261.31,
-        "y": 52.98
+        "x": 299.55,
+        "y": 52.63
       }
     ],
     "x_higher_is_better": true,
@@ -113,20 +113,20 @@
       {
         "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
         "model": "qwen2.5:0.5b-instruct-q4_K_M",
-        "optimal": true,
-        "run_id": "ollama-1789011548-20e39a8f",
+        "optimal": false,
+        "run_id": "ollama-1789023368-72264449",
         "runtime": "ollama",
-        "x": 281.65,
+        "x": 295.31,
         "y": 634.0
       },
       {
         "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
         "model": "qwen2.5:0.5b-instruct-q4_K_M",
-        "optimal": false,
-        "run_id": "ollama-1789011650-7a65eecd",
+        "optimal": true,
+        "run_id": "ollama-1789023447-6e15718a",
         "runtime": "ollama",
-        "x": 261.31,
-        "y": 640.0
+        "x": 299.55,
+        "y": 634.0
       }
     ],
     "x_higher_is_better": true,

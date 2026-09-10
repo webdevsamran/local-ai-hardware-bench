@@ -15,15 +15,15 @@
       "version": "0.32.15"
     },
     {
-      "throughput": 281.65,
-      "timestamp": "2026-09-10T03:39:08Z",
-      "ttft_ms": 2064.14,
+      "throughput": 295.31,
+      "timestamp": "2026-09-10T06:56:08Z",
+      "ttft_ms": 2076.72,
       "version": "0.32.15"
     },
     {
-      "throughput": 261.31,
-      "timestamp": "2026-09-10T03:40:50Z",
-      "ttft_ms": 2081.13,
+      "throughput": 299.55,
+      "timestamp": "2026-09-10T06:57:27Z",
+      "ttft_ms": 2073.53,
       "version": "0.32.15"
     }
   ],

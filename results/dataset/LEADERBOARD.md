@@ -26,8 +26,8 @@ Results are grouped by the comparison-safety classifier (`aihwbench/comparabilit
 
 | Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| ollama-1789011548-20e39a8f | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 281.65 | 2,064.14 | 5.402 | tok/s/W | 8 | verified |
-| ollama-1789011650-7a65eecd | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 261.31 | 2,081.13 | 4.932 | tok/s/W | 8 | verified |
+| ollama-1789023447-6e15718a | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 299.55 | 2,073.53 | 5.692 | tok/s/W | 8 | verified |
+| ollama-1789023368-72264449 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 295.31 | 2,076.72 | 5.821 | tok/s/W | 8 | verified |
 
 ## mobilenetv2-12.onnx on onnxruntime (execution-providers:CPUExecutionProvider/cpu)
 

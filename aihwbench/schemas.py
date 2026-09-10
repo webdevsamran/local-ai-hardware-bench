@@ -234,6 +234,8 @@ _REPRO_FIELDS = {
     "command": (str, type(None)),
     "python_version": (str, type(None)),
     "power_profile": (str, type(None)),
+    # Container and image identity; see aihwbench/container.py.
+    "container": (dict, type(None)),
     "workload_type": (str, type(None)),
     "batch_size": (int, type(None)),
     "concurrency": (int, type(None)),

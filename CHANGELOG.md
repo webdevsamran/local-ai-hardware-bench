@@ -5,6 +5,58 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Fixed — guards that could not fire, and verdicts that could not discriminate
+
+Found by running each command against real data and reading the numbers,
+rather than checking it exited zero.
+
+- **The energy-consistency plausibility check had never run.** It read
+  `metrics.energy_joules_per_token`, which is null in every result ever
+  published: the field was computed inside `aggregate_iteration_metrics` from
+  a per-iteration power key no backend sets, while real power arrives from the
+  telemetry sampler afterwards. The field is removed rather than moved, since
+  the `energy` block already publishes per-token energy against incremental
+  power with its basis attached; the check reads that instead. Two tests
+  covered this and passed throughout, because their fixture supplied the power
+  key production never emits.
+- **`aihwbench cliff` named an optimum the data could not distinguish**, and
+  **`context-scaling` called a still-climbing memory curve saturated** —
+  reporting saturation at the second measured depth for any model whose
+  weights dominate its VRAM, with a note offering spilling as the cause, on a
+  card with 15 GB free.
+- **The sweep projection dropped two metrics its own consumers read.**
+  `most_efficient` was null for every `aihwbench tune` run ever, and the
+  context analyser lost the prompt-throughput series its whole subject depends
+  on. The projection is now pinned against the code that reads it.
+- **The regression gate failed on system-wide memory.** Two runs of the *same
+  configuration* minutes apart failed CI over a 1.3 GB swing in
+  `psutil.virtual_memory` — which every result already publishes as
+  `scope: system`. System-scoped metrics are now reported, not gated.
+- **The load generator reported `mean_queue_latency_ms: 0.0`** on a capacity
+  ladder showing 20-second p95 latencies. A closed-loop worker submits and
+  starts in the same breath, so the subtraction was zero by construction; the
+  queueing was inside the server, where a client cannot see it.
+- **Five documented commands the CLI has never accepted.** The quickstart and
+  all four backend guides told readers to pass `--backend`; the flag is
+  `--runtime`. Every `aihwbench` line in every markdown file is now parsed
+  against the real argument parser.
+
+### Changed — numbers that were saying less than they appeared to
+
+- **`aihwbench score` now says when a component hit its ceiling.** Every
+  component clamps at 100, so a result at 2x its reference and one at 10x
+  score identically. A published result scored exactly 100.0 on two of three
+  components — throughput was really 599% of its reference — leaving the
+  composite driven by the third. The score is unchanged; what it hides is now
+  visible.
+- **`aihwbench verify-bundle` now states what a pass establishes.** The
+  manifest ships inside the bundle, so editing a result and recomputing the
+  manifest verifies clean — as any unsigned checksum scheme must. The report
+  no longer lets `valid: true` be read as a claim about origin.
+- **`--output` says whether it wants a file or a directory** on every command
+  that has one. Passing a file path where a directory is expected silently
+  creates a folder with that name.
+
 ### Fixed — capabilities that were built, exported, and never called
 
 The dominant defect class in this repository. Each of these was written,

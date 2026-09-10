@@ -5,6 +5,40 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Fixed — workloads that could not be run, and one that measured a third of itself
+
+- **Thirteen of seventeen registered workloads could not be run by
+  `benchmark`.** Eight describe an input length rather than carrying a prompt,
+  and `synthesize_prompt` — which turns a length into a deterministic prompt —
+  had no callers. Twelve are runnable now; the remaining five need a driver
+  issuing more than one request, and offering those would let someone run
+  `multi_turn_8` and measure a single turn believing they measured eight.
+- **`long_prompt` measured a third of its declared input.** It declares 4096
+  input tokens and ran at the 2048-token default context, so the server
+  truncated a 3331-token prompt to 1026. `workload.isl_tokens` said 4096,
+  `metrics.prompt_tokens` said 1026, and nothing compared them. The context
+  now follows the workload unless the caller set it, as `--max-tokens` did.
+- **Prompt-processing throughput may be measuring a cache.** `long_prompt`
+  reported 338,103 prompt tokens per second for a 3331-token prompt, because
+  prompt evaluation took four milliseconds once the warm-ups had loaded it.
+  Every iteration sends the same request — which is what makes a benchmark
+  reproducible and what lets a prefix cache answer all but the first without
+  prefilling. Results now label the figure `possibly_cached` and say why. It
+  is kept rather than discarded: cache-hit prefill is a real thing to want to
+  know about, and a reader after prefill needs telling this is not it.
+
+### Added — two quality evaluators that need no corpus
+
+ROUGE-L (longest-common-subsequence overlap, order-sensitive) and SQuAD-style
+token F1 (order-insensitive) join exact match, JSON validity and cosine
+similarity. They exist as a pair because they disagree: reversing "the cat sat
+on the mat" scores 0.5 and 1.0 respectively, and that difference is what
+separates a summary from a short factual answer.
+
+Both refuse rather than guess — no reference means no score, and an empty side
+returns None rather than 0.0, which would read as "scored badly". No dataset
+is bundled, so nothing depends on a licence this repository cannot grant.
+
 ### Fixed — a benchmark that did not check the machine was free to be measured
 
 The costliest defect of the batch, found by nearly publishing it.

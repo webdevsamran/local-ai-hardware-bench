@@ -360,6 +360,14 @@ class TelemetrySampler:
             time.sleep(self.interval)
 
 
+#: GPU utilization above which a "baseline" sample is not an idle reading at
+#: all but a measurement of someone else's work. Subtracting it would
+#: understate the benchmark's own consumption, so the baseline is refused
+#: instead. A genuinely idle card reads 0-3%; desktop compositing adds a few
+#: points, so the threshold sits above that and well below real compute.
+IDLE_MAX_GPU_UTIL_PERCENT = 15.0
+
+
 def sample_idle_power(seconds: float = 2.0, interval: float = 0.5) -> dict[str, Any]:
     """Measure GPU power while the benchmark's own load is not running.
 
@@ -372,8 +380,27 @@ def sample_idle_power(seconds: float = 2.0, interval: float = 0.5) -> dict[str, 
     This is the machine's idle draw immediately before load, not a
     manufacturer figure. Returns ``watts: None`` when no power sensor is
     readable, which is honest -- it never substitutes a nominal TDP.
+
+    Two things beyond the wattage are recorded, both learned from a reading
+    taken on real hardware that produced 0.0009 J/token where a previous run of
+    the same workload on the same machine produced 0.0777 J/token:
+
+    * **Utilization**, because a card that is busy is not idle. Above
+      ``IDLE_MAX_GPU_UTIL_PERCENT`` the baseline is refused rather than
+      returned, since subtracting another process's draw makes the benchmark
+      look more efficient than it is. Refusing costs the incremental figures;
+      returning a wrong one corrupts them.
+    * **Resident VRAM**, because it is what explains the 84x swing above. A
+      card holding a model from an earlier run sits at high clocks and draws
+      far more at rest than the same card after the model is evicted. Both
+      readings are honest measurements of different machine states -- and two
+      energy figures measured in different states are not comparable. Stating
+      the state is what lets a consumer see that, rather than reading the gap
+      as a hardware difference.
     """
     readings: list[float] = []
+    utils: list[float] = []
+    vram: list[float] = []
     deadline = time.time() + max(0.0, seconds)
     source: str | None = None
     while time.time() < deadline:
@@ -381,14 +408,50 @@ def sample_idle_power(seconds: float = 2.0, interval: float = 0.5) -> dict[str, 
         if sample is not None and sample.get("power_watts") is not None:
             readings.append(float(sample["power_watts"]))
             source = "nvidia-smi"
+            if sample.get("gpu_util_percent") is not None:
+                utils.append(float(sample["gpu_util_percent"]))
+            if sample.get("vram_mb") is not None:
+                vram.append(float(sample["vram_mb"]))
         time.sleep(interval)
     if not readings:
-        return {"watts": None, "samples": 0, "source": None}
-    return {
+        return {
+            "watts": None,
+            "samples": 0,
+            "source": None,
+            "quiescent": None,
+            "reason": "no readable power sensor",
+        }
+
+    util_mean = round(sum(utils) / len(utils), 2) if utils else None
+    util_max = round(max(utils), 2) if utils else None
+    baseline: dict[str, Any] = {
         "watts": round(sum(readings) / len(readings), 3),
         "samples": len(readings),
         "source": source,
+        "gpu_util_mean_percent": util_mean,
+        "gpu_util_max_percent": util_max,
+        # Resident VRAM at rest. Non-zero means something was already loaded,
+        # which raises the idle draw and makes this baseline specific to that
+        # state.
+        "resident_vram_mb": round(sum(vram) / len(vram), 1) if vram else None,
+        "quiescent": True,
+        "reason": None,
     }
+
+    if util_mean is not None and util_mean > IDLE_MAX_GPU_UTIL_PERCENT:
+        baseline["quiescent"] = False
+        baseline["reason"] = (
+            f"GPU averaged {util_mean}% utilization during the baseline window, "
+            f"above the {IDLE_MAX_GPU_UTIL_PERCENT}% idle threshold: this "
+            "measures other work, not an idle machine"
+        )
+        # The measurement is kept under its own key for diagnosis, but it is
+        # not offered as a baseline. Fail closed: no incremental figure is
+        # better than one that flatters the benchmark.
+        baseline["observed_watts"] = baseline["watts"]
+        baseline["watts"] = None
+
+    return baseline
 
 
 def trace_series(result: dict[str, Any]) -> list[dict[str, Any]]:

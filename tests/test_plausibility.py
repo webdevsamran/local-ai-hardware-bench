@@ -134,3 +134,23 @@ def test_no_performance_ceiling_is_asserted():
     comparison in quality.flag_anomalies, not by a guessed bound.
     """
     assert check_plausibility(_result(generation_tokens_per_second=5000.0)) == []
+
+
+def test_small_idle_excess_is_drift_not_a_finding():
+    """Measured: 29.62 W idle against 28.26 W under load, a 4.6% excess.
+
+    A 0.5B model held the GPU at ~6% utilization, so "average under load" was
+    effectively a second idle sample -- and two idle samples on a laptop dGPU
+    differ by a few percent as clocks and fans move. Calling that inconsistent
+    put a manual-review flag on every result whose workload is not GPU-bound.
+    """
+    findings = check_plausibility(_result(idle_power_watts=29.62, average_power_watts=28.26))
+    assert not any(f["field"] == "metrics.idle_power_watts" for f in findings)
+
+
+def test_large_idle_excess_is_still_a_finding():
+    """The structural case the check exists for is untouched."""
+    findings = check_plausibility(_result(idle_power_watts=200.0, average_power_watts=50.0))
+    flagged = [f for f in findings if f["field"] == "metrics.idle_power_watts"]
+    assert flagged
+    assert "300%" in flagged[0]["detail"]

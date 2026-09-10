@@ -509,6 +509,37 @@
             "string",
             "null"
           ]
+        },
+        "incremental_share_of_gross": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Fraction of gross average power attributable to the workload rather than the machine's idle draw."
+        },
+        "incremental_is_robust": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "False when the incremental figure is mostly baseline, so per-token energy is dominated by the machine state the baseline was measured in and is not comparable across runs. Not a claim that the measurement is wrong."
+        },
+        "caveat": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Human-readable reason the energy figures need qualifying, if any."
+        },
+        "idle_baseline": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "The idle power sample and the machine state it was taken in (utilization, resident VRAM). Resident VRAM matters: a card still holding a model from an earlier run idles far higher than the same card after eviction, which changes per-token energy by orders of magnitude without any hardware difference."
         }
       }
     },
@@ -696,6 +727,39 @@
             "string",
             "null"
           ]
+        }
+      }
+    },
+    "workload": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "The registered workload this run executed, when the caller named one. Absent for runs driven by a bare prompt. Identity matters because two runs can share hardware, runtime and model and still measure different things: a long-form generation workload reaches a steady decode rate, while a short chat prompt measures mostly ramp-up.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "osl_tokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "isl_tokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
         }
       }
     }

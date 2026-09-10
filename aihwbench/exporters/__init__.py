@@ -27,6 +27,7 @@ __all__ = [
     "MarkdownExporter",
     "SqliteExporter",
     "ParquetExporter",
+    "HuggingFaceExporter",
     "get_exporter",
     "list_exporters",
     "discover_exporter_plugins",
@@ -180,19 +181,143 @@ class ParquetExporter:
 
     def __init__(self) -> None:
         try:
-            import pyarrow  # noqa: F401
+            import pyarrow
             import pyarrow.parquet as pq
         except ImportError as exc:
             raise RuntimeError(
                 "parquet exporter requires the 'parquet' extra: pip install aihwbench[parquet]"
             ) from exc
+        # `Table` lives in `pyarrow`, not `pyarrow.parquet`. Holding both is
+        # what the export actually needs; reaching for `pq.Table` raised
+        # AttributeError on every call, which nothing noticed because this
+        # exporter was never added to the registry and so was never called.
+        self._pa = pyarrow
         self._pq = pq
 
     def export(self, results: list[dict[str, Any]], out_path: Path) -> Path:
         rows = [_flat_row(r) for r in results]
-        table = self._pq.Table.from_pylist(rows)
+        table = self._pa.Table.from_pylist(rows)
         self._pq.write_table(table, out_path)
         return out_path
+
+
+class HuggingFaceExporter:
+    """A directory `datasets.load_dataset()` can open, plus its dataset card.
+
+    Unlike the other exporters this writes a *directory*, because a
+    HuggingFace dataset is not one file: it is data plus a card whose YAML
+    front-matter declares the licence, the column types and the configs. A
+    bare parquet file uploaded without that card loads as an untyped table
+    with no stated licence, which is the difference between publishing a
+    dataset and dropping a file somewhere.
+
+    Nothing is uploaded and no network call is made. This produces the files;
+    pushing them is the maintainer's deliberate act, with their credentials.
+
+    Data lands as JSON Lines rather than parquet so the export works with no
+    optional dependency at all -- `datasets` reads both, and an export that
+    silently needs pyarrow would be unavailable exactly on the minimal
+    machines most likely to want it.
+    """
+
+    name = "huggingface"
+
+    #: What each column means. Written into the card so a consumer who never
+    #: reads this repository still learns that the rate is wall-clock and that
+    #: rank is meaningless across comparison groups.
+    FIELD_NOTES = {
+        "generation_tokens_per_second": (
+            "Tokens generated per second. For HTTP-server runtimes this is "
+            "measured over the client wall-clock decode window and includes "
+            "the HTTP stack; it is not an in-process engine counter."
+        ),
+        "ttft_ms": "Time to first token, in milliseconds, including queueing.",
+        "average_power_watts": (
+            "Mean power draw during the run. GPU package power where a GPU "
+            "probe answered, CPU package power (RAPL) otherwise."
+        ),
+        "peak_vram_mb": "Peak GPU memory in use, as reported by the vendor tool.",
+        "quantization": "Model quantization, where the runtime reports one; null otherwise.",
+    }
+
+    def export(self, results: list[dict[str, Any]], out_path: Path) -> Path:
+        out_path.mkdir(parents=True, exist_ok=True)
+        data_dir = out_path / "data"
+        data_dir.mkdir(exist_ok=True)
+
+        rows = [_flat_row(r) for r in results]
+        data_file = data_dir / "train.jsonl"
+        with open(data_file, "w", encoding="utf-8") as fh:
+            for row in rows:
+                fh.write(json.dumps(row, ensure_ascii=False) + chr(10))
+
+        (out_path / "README.md").write_text(self._card(rows), encoding="utf-8")
+        return out_path
+
+    def _card(self, rows: list[dict[str, Any]]) -> str:
+        runtimes = sorted({r["runtime"] for r in rows if r.get("runtime")})
+        models = sorted({r["model"] for r in rows if r.get("model")})
+
+        # Front-matter drives what HuggingFace shows and how the data loads.
+        lines = [
+            "---",
+            "license: apache-2.0",
+            "pretty_name: AIHWBench local AI hardware benchmarks",
+            "tags:",
+            "- benchmark",
+            "- local-inference",
+            "- hardware",
+            "configs:",
+            "- config_name: default",
+            "  data_files:",
+            "  - split: train",
+            "    path: data/train.jsonl",
+            "---",
+            "",
+            "# AIHWBench results",
+            "",
+            "Measured local AI inference benchmarks: throughput, latency, memory,",
+            "power and thermals, on consumer hardware, with the raw result",
+            "documents published alongside.",
+            "",
+            f"- Rows: {len(rows)}",
+            f"- Runtimes: {', '.join(runtimes) if runtimes else 'none'}",
+            f"- Models: {', '.join(models) if models else 'none'}",
+            "",
+            "## Reading this data honestly",
+            "",
+            "**Two rows are not necessarily comparable.** Results are comparable",
+            "only when the model, quantization, runtime, backend, device and the",
+            "whole measurement protocol match. Sorting this table by",
+            '`generation_tokens_per_second` and reading the top row as "fastest"',
+            "compares different experiments and reports the difference as a",
+            "performance gap. The rules are published and machine-readable at",
+            "`data/comparability.json` in the project's dataset API, and the",
+            "classifier that applies them is `aihwbench/comparability.py`.",
+            "",
+            "**Missing values are missing, not zero.** A null means the figure",
+            "could not be measured on that platform. Nothing here is estimated.",
+            "",
+            "## Columns",
+            "",
+        ]
+        for column in CSV_COLUMNS:
+            note = self.FIELD_NOTES.get(column)
+            lines.append(f"- `{column}`" + (f" — {note}" if note else ""))
+        lines += [
+            "",
+            "## Provenance",
+            "",
+            "Generated by `aihwbench export-as --format huggingface` from the",
+            "result documents in `results/published/`. Each row flattens one",
+            "result; the full document, including its telemetry trace, energy",
+            "block and provenance hashes, is in the source repository.",
+            "",
+            "## Licence",
+            "",
+            "Apache-2.0, same as the project.",
+        ]
+        return chr(10).join(lines) + chr(10)
 
 
 _BUILTIN_EXPORTER_CLASSES = (
@@ -200,7 +325,15 @@ _BUILTIN_EXPORTER_CLASSES = (
     CsvExporter,
     MarkdownExporter,
     SqliteExporter,
+    HuggingFaceExporter,
 )
+
+
+#: Exporters whose dependencies are optional. Constructing one raises
+#: RuntimeError when its extra is not installed, so it is offered only where
+#: it would actually work -- `list_exporters` then tells the truth about this
+#: machine rather than advertising a format that errors on use.
+_OPTIONAL_EXPORTER_CLASSES = (ParquetExporter,)
 
 
 def _build_registry() -> dict[str, Exporter]:
@@ -208,6 +341,12 @@ def _build_registry() -> dict[str, Exporter]:
     for cls in _BUILTIN_EXPORTER_CLASSES:
         instance = cls()
         registry[instance.name] = instance
+    for optional in _OPTIONAL_EXPORTER_CLASSES:
+        try:
+            extra: Exporter = optional()
+        except RuntimeError:
+            continue  # extra not installed; not offered rather than broken
+        registry[extra.name] = extra
     return registry
 
 

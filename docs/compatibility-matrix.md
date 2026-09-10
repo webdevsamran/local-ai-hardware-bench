@@ -41,6 +41,36 @@ Every "Tested" cell links to a committed result file with a reproducibility bloc
 | ARM SBC (Seeed/Khadas class) | Hardware Needed | Hardware Needed | Hardware Needed | n/a | n/a | n/a | n/a | Hardware Needed |
 | RISC-V | Unknown | Unknown | Unknown | n/a | n/a | n/a | n/a | n/a |
 
+## Every registered runtime
+
+The matrix above covers the runtimes with published results. This table covers
+*all* of them, so a backend cannot be added to the registry without appearing
+here — `tests/test_backends.py` fails if one is missing. That guard exists
+because the omission is silent otherwise: a runtime that works but is
+undocumented is one nobody knows to try.
+
+| Runtime | Backend kind | Status here | Why |
+| --- | --- | --- | --- |
+| `ollama` | HTTP API | **Tested** | Published results |
+| `llama.cpp` | Managed `llama-server` | **Tested** | Published results |
+| `onnxruntime` | In-process | **Tested** | Published results (CPU + DirectML) |
+| `openvino` | In-process | **Tested** | Published results (CPU + GPU) |
+| `openvino_genai` | In-process | Supported | LLM pipeline; not yet run here |
+| `lmstudio` | OpenAI-compatible HTTP | Experimental | Needs the LM Studio server running |
+| `vllm` | OpenAI-compatible HTTP | Supported | Linux + NVIDIA/ROCm only; not runnable on this machine |
+| `sglang` | OpenAI-compatible HTTP | Supported | Linux + NVIDIA/ROCm only; not runnable on this machine |
+| `lemonade` | HTTP API | Detection only | Needs Lemonade Server; Ryzen AI for acceleration |
+| `rocm` | Detection only | Hardware Needed | No AMD GPU |
+| `mlx` | Detection only | Hardware Needed | Apple silicon only |
+| `qnn` | Detection only | Hardware Needed | No Snapdragon NPU |
+| `tensorrt` | Detection only | Not tested | Needs per-GPU engine builds; CUDA toolkit absent |
+| `hailo` | Detection only | Hardware Needed | No Hailo device |
+| `windows_ml` | Detection only | Experimental | Windows ML runtime |
+
+"Detection only" means the backend reports honestly whether the runtime is
+present and refuses to benchmark, rather than pretending. `aihwbench doctor
+--json` prints this table's live equivalent for any machine.
+
 ## Rules for updating this matrix
 
 1. A cell may move to **Tested** only when a result file exists in

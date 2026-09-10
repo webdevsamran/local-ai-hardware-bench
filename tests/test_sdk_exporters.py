@@ -269,3 +269,81 @@ def test_self_test_returns_structured_report():
         + report["summary"]["fail"]
     )
     assert total == len(report["checks"])
+
+
+# --- The self-test's runtime check ------------------------------------------
+#
+# `_check_runtimes` compared each backend's status against the string "ready",
+# which no backend has ever returned. The check therefore failed on every
+# machine regardless of what was installed, and since a failing check is
+# blocking, `aihwbench self-test` reported `overall: fail` universally.
+#
+# The shape test above passed throughout, because the report was well-formed
+# and "fail" is a valid status. What it could not see was that the verdict was
+# unconditional -- and a precondition check that always fails is worse than
+# none, because it teaches people the tool's verdict means nothing.
+
+
+def test_runtime_check_passes_when_a_backend_is_available(monkeypatch):
+    import aihwbench.selftest as selftest
+    from aihwbench.backends.base import RuntimeStatus
+
+    monkeypatch.setattr(
+        "aihwbench.backends.detect_all",
+        lambda: [
+            {"name": "ollama", "status": RuntimeStatus.AVAILABLE.value},
+            {"name": "hailo", "status": RuntimeStatus.HARDWARE_REQUIRED.value},
+        ],
+    )
+    check = selftest._check_runtimes()
+    assert check["status"] == "pass"
+    assert "ollama" in check["detail"]
+    # A runtime that cannot run is not reported as though it could.
+    assert "hailo" not in check["detail"]
+
+
+def test_runtime_check_fails_when_nothing_is_available(monkeypatch):
+    import aihwbench.selftest as selftest
+    from aihwbench.backends.base import RuntimeStatus
+
+    monkeypatch.setattr(
+        "aihwbench.backends.detect_all",
+        lambda: [
+            {"name": "ollama", "status": RuntimeStatus.NOT_INSTALLED.value},
+            {"name": "mlx", "status": RuntimeStatus.HARDWARE_REQUIRED.value},
+        ],
+    )
+    check = selftest._check_runtimes()
+    assert check["status"] == "fail"
+    assert "install" in check["detail"].lower()
+
+
+def test_runtime_check_compares_against_a_real_status(monkeypatch):
+    """Guards the class of bug rather than the instance.
+
+    Any status string that is not a `RuntimeStatus` member makes this check
+    unconditional, and the failure is silent in both directions: compared
+    against a typo it always fails, and against the wrong member it always
+    passes.
+    """
+    import aihwbench.selftest as selftest
+    from aihwbench.backends.base import RuntimeStatus
+
+    seen: list[str] = []
+
+    def fake_detect_all():
+        # One entry per real status, so whichever the check looks for, it
+        # finds -- and the outcome tells us which one that was.
+        return [{"name": status.value.lower(), "status": status.value} for status in RuntimeStatus]
+
+    monkeypatch.setattr("aihwbench.backends.detect_all", fake_detect_all)
+    check = selftest._check_runtimes()
+    seen.append(check["status"])
+
+    # With every real status present, the check must pass -- and must name
+    # only the available one.
+    assert check["status"] == "pass"
+    assert RuntimeStatus.AVAILABLE.value.lower() in check["detail"]
+    for status in RuntimeStatus:
+        if status is not RuntimeStatus.AVAILABLE:
+            assert status.value.lower() not in check["detail"]

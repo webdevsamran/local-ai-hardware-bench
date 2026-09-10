@@ -437,7 +437,49 @@
         "object",
         "null"
       ],
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "container": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "Container and image identity. `image_digest` is null unless the digest was passed into the container, because Docker does not expose it to the running process. A tag is not an identity: two results naming the same tag may have measured different software.",
+          "properties": {
+            "in_container": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "detected_by": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "image": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "image_digest": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "digest_note": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
     },
     "iterations": {
       "type": [

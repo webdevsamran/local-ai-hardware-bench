@@ -63,6 +63,7 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     from .analysis.energy import compute_energy_metrics
     from .analysis.thermal import thermal_from_trace
     from .backends import resolve
+    from .container import container_info
     from .fidelity import output_fidelity
     from .metrics import streaming_latency_metrics
     from .npu import npu_telemetry
@@ -92,6 +93,12 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     repro = result.setdefault("reproducibility", {})
     repro.setdefault("python_version", platform.python_version())
     repro.setdefault("power_profile", power_profile())
+    # Container and image identity. A tag is not an identity --
+    # `ollama/ollama:latest` names something different every week -- so two
+    # results claiming the same image may have measured different software.
+    # Recorded when a digest is available and recorded as absent when it is
+    # not, which is a more useful statement than silence.
+    repro.setdefault("container", container_info())
 
     # Which workload produced this. `reproducibility.prompt` already carries
     # the text and is part of the comparison key, but the text alone does not

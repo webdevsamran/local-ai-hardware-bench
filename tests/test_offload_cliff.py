@@ -188,3 +188,69 @@ def test_nothing_is_extrapolated_to_unmeasured_depths():
     report = analyze_context_scaling([_ctx(4096, tps=40.0), _ctx(8192, tps=35.0)])
     measured = {p["context_tokens"] for p in report["curve"]}
     assert measured == {4096, 8192}
+
+
+# --- The "best" setting must be one the data can actually distinguish -------
+#
+# `best_layers` was a bare max() over the measured means, which names a winner
+# whenever one mean is highest, however marginally. Measured on the reference
+# machine at 3 iterations per point: 247.06 tok/s at 24 GPU layers and 222.8
+# at 99 — a 10% gap that vanished at 6 iterations, where 99 won decisively
+# with non-overlapping intervals. Advising someone to pin --gpu-layers 24 on
+# the strength of the first sweep would have been tuning against noise.
+
+
+def _point_ci(layers, tps, ci):
+    return {
+        "params": {"gpu_layers": layers},
+        "metrics": {"generation_tokens_per_second": tps, "gen_tps_ci95": list(ci)},
+    }
+
+
+def test_best_setting_reports_what_it_cannot_be_told_apart_from():
+    report = find_offload_cliff(
+        [
+            _point_ci(0, 42.0, (32.0, 52.0)),
+            _point_ci(24, 281.85, (268.7, 295.0)),
+            # Overlaps the 24-layer interval: not distinguishable.
+            _point_ci(99, 288.0, (270.0, 306.0)),
+        ]
+    )
+    assert report["best_layers"] == 99
+    assert report["best_is_tied_with"] == [24]
+    assert "confidence intervals" in report["tie_basis"]
+
+
+def test_a_decisive_best_reports_no_ties():
+    """The measured 6-iteration sweep: 99 layers beat 24 outright."""
+    report = find_offload_cliff(
+        [
+            _point_ci(18, 137.22, (125.11, 149.32)),
+            _point_ci(24, 281.85, (268.71, 294.98)),
+            _point_ci(99, 349.45, (331.06, 367.83)),
+        ]
+    )
+    assert report["best_layers"] == 99
+    assert report["best_is_tied_with"] == []
+
+
+def test_falls_back_to_a_margin_when_no_interval_was_measured():
+    """Older sweeps carry no intervals; silence would read as "nothing close"."""
+    report = find_offload_cliff(
+        [
+            _point(0, 35.01),
+            _point(24, 247.06),
+            _point(99, 222.8),  # within 10% of the best
+        ]
+    )
+    assert report["best_layers"] == 24
+    assert report["best_is_tied_with"] == [99]
+    # The weaker test is labelled as weaker rather than passed off as the same
+    # claim: "within 10%" and "statistically indistinguishable" differ.
+    assert "no interval measured" in report["tie_basis"]
+
+
+def test_a_clearly_slower_point_is_not_called_a_tie():
+    report = find_offload_cliff([_point(0, 35.0), _point(99, 350.0)])
+    assert report["best_layers"] == 99
+    assert report["best_is_tied_with"] == []

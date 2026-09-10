@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import Any
 
-__all__ = ["find_offload_cliff", "OFFLOAD_AXIS", "CLIFF_DROP_THRESHOLD"]
+__all__ = ["find_offload_cliff", "OFFLOAD_AXIS", "CLIFF_DROP_THRESHOLD", "TIE_MARGIN"]
 
 #: Sweep axis holding the number of layers placed on the GPU.
 OFFLOAD_AXIS = "gpu_layers"
@@ -30,10 +30,28 @@ OFFLOAD_AXIS = "gpu_layers"
 #: warmed-up benchmark, and far below the 3-5x collapses seen in practice.
 CLIFF_DROP_THRESHOLD = 0.25
 
+#: Fallback tie margin for sweeps that carry no confidence intervals.
+#:
+#: Only used when a sweep predates the variance fields. It is a cruder test
+#: than an overlapping interval and the report says which was applied, because
+#: "these are within 10% of each other" and "these are statistically
+#: indistinguishable" are different claims and should not be confused.
+TIE_MARGIN = 0.10
+
 
 def _throughput(row: dict[str, Any]) -> float | None:
     value = (row.get("metrics") or {}).get("generation_tokens_per_second")
     return float(value) if isinstance(value, (int, float)) else None
+
+
+def _interval(row: dict[str, Any]) -> tuple[float, float] | None:
+    """The row's 95% interval for throughput, when the sweep measured one."""
+    ci = (row.get("metrics") or {}).get("gen_tps_ci95")
+    if isinstance(ci, (list, tuple)) and len(ci) == 2:
+        low, high = ci
+        if isinstance(low, (int, float)) and isinstance(high, (int, float)):
+            return (float(low), float(high))
+    return None
 
 
 def find_offload_cliff(
@@ -53,6 +71,7 @@ def find_offload_cliff(
     result says so rather than inventing a knee.
     """
     points: list[tuple[float, float]] = []
+    intervals: dict[float, tuple[float, float]] = {}
     excluded = 0
     for row in matrix:
         params = row.get("params") or {}
@@ -62,6 +81,9 @@ def find_offload_cliff(
             excluded += 1
             continue
         points.append((float(layers), value))
+        interval = _interval(row)
+        if interval is not None:
+            intervals[float(layers)] = interval
 
     if len(points) < 2:
         return {
@@ -103,6 +125,35 @@ def find_offload_cliff(
             cliff_between = (low_layers, high_layers)
 
     best_layers, best_tps = max(points, key=lambda p: p[1])
+
+    # Which other settings this "best" cannot actually be told apart from.
+    #
+    # A bare max() names a winner whenever one mean is highest, however
+    # marginally. Measured on the reference machine: a 24-layer model swept
+    # over gpu_layers gave 247.06 tok/s at 24 and 222.8 at 99 -- the same
+    # configuration twice, 10% apart. Reporting 24 as the optimum there is
+    # advice to tune against the noise floor, and the person following it
+    # would be pinning a setting for no reason.
+    best_interval = intervals.get(best_layers)
+    tied: list[float] = []
+    tie_basis: str | None = None
+    if best_interval is not None:
+        tie_basis = "overlapping 95% confidence intervals"
+        for layers, _tps in points:
+            if layers == best_layers:
+                continue
+            other = intervals.get(layers)
+            if other is not None and other[0] <= best_interval[1] and best_interval[0] <= other[1]:
+                tied.append(layers)
+    else:
+        # An older sweep carries no intervals. A relative margin is a weaker
+        # test, so it is labelled as one rather than presented as the same
+        # claim -- but silence would be worse: it reads as "nothing is close".
+        tie_basis = f"within {TIE_MARGIN:.0%} of the best (no interval measured)"
+        for layers, tps in points:
+            if layers != best_layers and best_tps > 0 and (best_tps - tps) / best_tps <= TIE_MARGIN:
+                tied.append(layers)
+
     return {
         "axis": axis,
         "points": len(points),
@@ -113,6 +164,11 @@ def find_offload_cliff(
         "cliff_between_layers": list(cliff_between) if cliff_between else None,
         "best_layers": best_layers,
         "best_tokens_per_second": best_tps,
+        # Settings indistinguishable from the best. Non-empty means the
+        # "optimum" is a sort order, and the cheapest tied setting is as good
+        # a choice as the nominal winner.
+        "best_is_tied_with": sorted(tied),
+        "tie_basis": tie_basis,
         "curve": [{"layers": layers, "tokens_per_second": tps} for layers, tps in points],
         "drops": drops,
         "note": (

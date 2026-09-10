@@ -27,6 +27,19 @@ DEFAULT_METRIC_KEYS = (
     "total_latency_ms",
     "peak_vram_mb",
     "average_power_watts",
+    # The spread of the headline metric, which the runner already measured and
+    # this projection used to discard. Without it every consumer of a sweep --
+    # the cliff finder, the tuner, `best_by` -- has to treat two points as
+    # different because their means differ, with no way to ask whether the
+    # difference survives the noise. Measured on this machine: a 0.5B model
+    # swept over gpu_layers reported 247.06 tok/s at 24 layers and 222.8 at
+    # 99, which are the *same configuration* for a 24-layer model. A 10% gap
+    # between identical setups is the noise floor, and a sweep that cannot
+    # show that invites its reader to tune against it.
+    "generation_tps_cv",
+    "gen_tps_ci95",
+    "gen_tps_min",
+    "gen_tps_max",
 )
 
 

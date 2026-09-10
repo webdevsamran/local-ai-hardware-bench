@@ -2,17 +2,21 @@
 
 NPUs (Intel AI Boost, AMD XDNA, Qualcomm Hexagon) currently expose no
 portable, dependency-free utilization/power counters that this project
-can read. The hooks below provide the structured contract for NPU
+can read. The hook below provides the structured contract for NPU
 telemetry: fields always exist, values stay ``None`` until a real
 driver counter is wired per platform, and the source is declared
 honestly. Nothing is fabricated.
+
+``runner.run_benchmark`` attaches this to every result. Saying "this machine
+has an Intel AI Boost NPU and nothing could read it" is information; saying
+nothing leaves a reader unable to tell that from "this machine has no NPU".
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-__all__ = ["NPU_FIELDS", "npu_telemetry", "enrich_with_npu"]
+__all__ = ["NPU_FIELDS", "npu_telemetry"]
 
 NPU_FIELDS = ("npu_util_percent", "npu_power_watts", "npu_memory_used_mb")
 
@@ -35,17 +39,3 @@ def npu_telemetry(system: dict[str, Any] | None = None) -> dict[str, Any]:
     }
     out.update({field: None for field in NPU_FIELDS})
     return out
-
-
-def enrich_with_npu(
-    summary: dict[str, Any],
-    system: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """Return a copy of a telemetry/metrics mapping plus NPU hook fields.
-
-    The input mapping is never mutated; unknown NPU state can never
-    overwrite a measured value because all hook fields are ``None``.
-    """
-    merged = dict(summary)
-    merged.update(npu_telemetry(system))
-    return merged

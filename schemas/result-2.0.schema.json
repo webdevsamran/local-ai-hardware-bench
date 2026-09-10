@@ -762,6 +762,49 @@
           "minimum": 0
         }
       }
+    },
+    "npu": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "NPU presence and telemetry. Metric fields are null until a vendor exposes a portable counter; `npu_telemetry_source` says whether the machine has no NPU or has one nothing can read, so 'not measured' is never mistaken for 'measured zero'.",
+      "properties": {
+        "npu_device": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "npu_telemetry_source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "npu_util_percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "npu_power_watts": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "npu_memory_used_mb": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
     }
   },
   "additionalProperties": true

@@ -65,6 +65,7 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     from .backends import resolve
     from .fidelity import output_fidelity
     from .metrics import streaming_latency_metrics
+    from .npu import npu_telemetry
     from .provenance import compute_provenance
     from .system_info import detect_system
     from .telemetry import sample_idle_power, trace_series
@@ -143,6 +144,17 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
         telemetry_source=power_source if isinstance(power_source, str) else None,
     )
     result["energy"]["idle_baseline"] = idle
+
+    # Whether this machine has an NPU, and whether anything measured it.
+    #
+    # Copilot+ and Apple Intelligence are pushing NPUs into mainstream
+    # hardware, and no vendor yet exposes a portable utilization or power
+    # counter. Silence about that is worse than an honest null: a reader
+    # comparing a result from an NPU-equipped laptop against one without has
+    # no way to know the difference exists, and a reader seeing no NPU
+    # metrics cannot tell "this machine has none" from "nobody measured it".
+    # The block says which, and never invents a number.
+    result["npu"] = npu_telemetry(system)
 
     trace = trace_series(result)
     result["thermal"] = thermal_from_trace(trace)

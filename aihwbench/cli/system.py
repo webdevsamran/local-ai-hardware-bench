@@ -20,7 +20,7 @@ def cmd_detect(_args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
-def cmd_doctor(_args: argparse.Namespace) -> int:
+def cmd_doctor(args: argparse.Namespace) -> int:
     """Actionable hardware/runtime preconditions report."""
     system = detect_system()
     problems: list[str] = []
@@ -28,12 +28,34 @@ def cmd_doctor(_args: argparse.Namespace) -> int:
         problems.append("CPU detection failed")
     if not system.get("gpu"):
         problems.append("No GPU detected")
+
+    runtimes = detect_all()
+
+    # A conformance report someone on hardware we cannot test can attach to an
+    # issue or a pull request. It carries no measurements -- only what this
+    # machine is and which backends it can reach -- so it is safe to paste,
+    # and `detect_system` has already sanitized the hardware strings.
+    if getattr(args, "json", False):
+        echo_json(
+            {
+                "kind": "conformance-report",
+                "system": system,
+                "runtimes": runtimes,
+                "problems": problems,
+                "note": (
+                    "detection only: no benchmark was executed and no "
+                    "performance values are reported"
+                ),
+            }
+        )
+        return EXIT_CONFIGURATION_ERROR if problems else EXIT_OK
+
     print("== System ==")
     for key, value in system.items():
         print(f"  {key}: {value}")
     print()
     print("== Runtimes ==")
-    for info in detect_all():
+    for info in runtimes:
         status = info["status"]
         print(f"  {info['name']:<14} {status:<24} {info.get('version') or '-'}")
         if info.get("detail"):
@@ -62,9 +84,16 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     sub.add_parser("detect", help="Full system + runtime detection as JSON").set_defaults(
         func=cmd_detect
     )
-    sub.add_parser("doctor", help="Diagnose hardware/runtime preconditions").set_defaults(
-        func=cmd_doctor
+    doctor = sub.add_parser("doctor", help="Diagnose hardware/runtime preconditions")
+    doctor.add_argument(
+        "--json",
+        action="store_true",
+        help=(
+            "Emit the report as JSON, for attaching to an issue or pull "
+            "request from hardware the maintainers cannot test."
+        ),
     )
+    doctor.set_defaults(func=cmd_doctor)
     sub.add_parser("runtimes", help="List runtime backends and status").set_defaults(
         func=cmd_runtimes
     )

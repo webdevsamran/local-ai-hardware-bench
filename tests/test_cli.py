@@ -145,3 +145,48 @@ def test_quantization_override_is_available_but_explicit(tmp_path):
         )
         == 0
     )
+
+
+# --- Conformance report ------------------------------------------------------
+#
+# `doctor` printed a report only a human could read, so someone on hardware
+# the maintainers cannot test had no structured way to say what their machine
+# reaches. A second module (`backends/capabilities.py`) existed to build such a
+# report and was never called by anything; two sources of truth about backend
+# availability, able to disagree, is worse than one.
+
+
+def test_doctor_json_is_a_structured_conformance_report(capsys):
+    code = main(["doctor", "--json"])
+    assert code in (0, 4)  # 4 when this machine has a detection problem
+    report = json.loads(capsys.readouterr().out)
+
+    assert report["kind"] == "conformance-report"
+    assert "system" in report and "cpu" in report["system"]
+    assert report["runtimes"], "expected at least one backend"
+    for runtime in report["runtimes"]:
+        assert "name" in runtime
+        assert "status" in runtime
+    assert isinstance(report["problems"], list)
+
+
+def test_doctor_json_reports_no_measurements(capsys):
+    """It is pasted into public issues, so it must carry no performance claim."""
+    main(["doctor", "--json"])
+    report = json.loads(capsys.readouterr().out)
+
+    assert "no benchmark was executed" in report["note"]
+    serialized = json.dumps(report)
+    for metric in ("tokens_per_second", "latency_ms", "power_watts"):
+        assert metric not in serialized
+
+
+def test_doctor_text_and_json_agree_on_backends(capsys):
+    """One source of truth: the JSON view must not drift from the printed one."""
+    main(["doctor", "--json"])
+    report = json.loads(capsys.readouterr().out)
+    main(["doctor"])
+    text = capsys.readouterr().out
+
+    for runtime in report["runtimes"]:
+        assert runtime["name"] in text

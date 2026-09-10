@@ -294,7 +294,9 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
 def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     exp = sub.add_parser("export", help="Generate dataset views from published results")
     exp.add_argument("results_dir", nargs="?", default="results/published")
-    exp.add_argument("--output", default="results/dataset")
+    exp.add_argument(
+        "--output", default="results/dataset", help="Directory for the generated dataset views"
+    )
     exp.add_argument(
         "--strict",
         action="store_true",
@@ -341,14 +343,22 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
 
     red = sub.add_parser("redact", help="Write a privacy-scrubbed copy of a result")
     red.add_argument("result")
-    red.add_argument("--output", default=None, help="destination (default: <name>.redacted.json)")
+    red.add_argument(
+        "--output",
+        default=None,
+        help="File path for the redacted copy (default: <name>.redacted.json)",
+    )
     red.set_defaults(func=cmd_redact)
 
     inval = sub.add_parser("invalidate", help="Record an invalidation (history preserved)")
     inval.add_argument("result")
     inval.add_argument("--reason", required=True)
     inval.add_argument("--replacement", default=None, help="Replacement run id")
-    inval.add_argument("--output", default="results/invalidations/invalidation.json")
+    inval.add_argument(
+        "--output",
+        default="results/invalidations/invalidation.json",
+        help="File path for the invalidation record",
+    )
     inval.set_defaults(func=cmd_invalidate)
 
     anom = sub.add_parser("anomalies", help="Flag suspicious results for review")
@@ -372,7 +382,11 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     snap.add_argument("--version", default=None)
     snap.add_argument("--results-dir", default="results/published")
     snap.add_argument("--previous", default=None, help="Previous manifest JSON")
-    snap.add_argument("--output", default="results/snapshots/snapshot.json")
+    snap.add_argument(
+        "--output",
+        default="results/snapshots/snapshot.json",
+        help="File path for the snapshot manifest",
+    )
     snap.set_defaults(func=cmd_snapshot)
 
     sub.add_parser("exporters", help="List registered exporters").set_defaults(func=cmd_exporters)
@@ -380,5 +394,12 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     exp2 = sub.add_parser("export-as", help="Export results with a named exporter")
     exp2.add_argument("--format", required=True, help="json, csv, markdown, sqlite, ...")
     exp2.add_argument("--results-dir", default="results/published")
-    exp2.add_argument("--output", required=True)
+    exp2.add_argument(
+        "--output",
+        required=True,
+        help=(
+            "Destination. A file path for most formats; the huggingface "
+            "exporter writes a directory, because a dataset is data plus its card."
+        ),
+    )
     exp2.set_defaults(func=cmd_export_as)

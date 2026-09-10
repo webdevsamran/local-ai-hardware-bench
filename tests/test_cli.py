@@ -268,3 +268,37 @@ def test_manifest_changes_agree_with_the_differ(tmp_path):
         assert second["changes_vs_previous"][key] == standalone[key]
     assert standalone["added"] == ["two.json"]
     assert standalone["changed"] == ["one.json"]
+
+
+# --- `--output` semantics -----------------------------------------------------
+#
+# Some commands take a directory and some take a file path, and passing a file
+# path where a directory is expected silently creates a folder with that name:
+# `aihwbench tune --output tune.json` produces a directory called `tune.json`
+# and reports success. Seven of these flags carried no help text at all, so
+# there was no way to know which kind a command wanted short of reading the
+# source.
+
+
+def test_every_output_flag_says_whether_it_wants_a_file_or_a_directory():
+    from aihwbench.cli import build_parser
+
+    parser = build_parser()
+    subparsers = [
+        action for action in parser._actions if hasattr(action, "choices") and action.choices
+    ]
+    assert subparsers, "expected the CLI to have subcommands"
+
+    undocumented = []
+    for action in subparsers:
+        for name, sub in action.choices.items():
+            for arg in sub._actions:
+                if "--output" not in getattr(arg, "option_strings", []):
+                    continue
+                help_text = (arg.help or "").lower()
+                if not any(word in help_text for word in ("director", "file", "path", "bundle")):
+                    undocumented.append(name)
+    assert not undocumented, (
+        "these commands' --output does not say whether it takes a file or a "
+        f"directory: {sorted(set(undocumented))}"
+    )

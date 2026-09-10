@@ -1109,3 +1109,11 @@ body:has(.embed-card) {
   color: inherit;
   resize: vertical;
 }
+
+/* Measured offload curve: a point plus its confidence interval. */
+.cliff-marker {
+  fill: var(--accent);
+  stroke: var(--surface);
+  stroke-width: 0.3;
+  vector-effect: non-scaling-stroke;
+}

@@ -382,3 +382,128 @@ export function ScatterChart({
     </figure>
   )
 }
+
+export interface CliffMeasurement {
+  gpu_layers: number
+  tokens_per_second: number | null
+  ci95?: [number, number] | null
+}
+
+/**
+ * Measured throughput against offload setting, with confidence intervals.
+ *
+ * Distinct from `CliffChart`, which draws the *estimated* share of a model
+ * that would spill out of VRAM. This one draws what that actually costs, from
+ * a sweep someone ran.
+ *
+ * Two decisions carry the honesty of the picture. Points sit at their real
+ * layer counts rather than at even index positions: a sweep of 0, 6, 12, 18,
+ * 24, 99 is mostly empty space between 24 and 99, and spacing those evenly
+ * would draw a gentle slope across a gap where nothing was measured. And every
+ * point carries its interval as a whisker, so a reader can see for themselves
+ * whether two settings are actually different — which is the question a line
+ * through the means quietly answers for them.
+ */
+export function MeasuredCliffChart({
+  points,
+  height = 220,
+}: {
+  points: CliffMeasurement[]
+  height?: number
+}) {
+  const usable = points.filter(
+    (p): p is CliffMeasurement & { tokens_per_second: number } =>
+      p.tokens_per_second !== null && p.tokens_per_second !== undefined,
+  )
+  if (usable.length < 2) return null
+
+  const VIEW_W = 100
+  const VIEW_H = 60
+  const PAD_L = 10
+  const PAD_R = 3
+  const PAD_T = 4
+  const PAD_B = 8
+
+  const xs = usable.map((p) => p.gpu_layers)
+  const xMin = Math.min(...xs)
+  const xMax = Math.max(...xs)
+  const xSpan = xMax - xMin || 1
+
+  // The vertical range spans the intervals, not just the means, so a whisker
+  // is never clipped at the frame edge.
+  const lows = usable.map((p) => p.ci95?.[0] ?? p.tokens_per_second)
+  const highs = usable.map((p) => p.ci95?.[1] ?? p.tokens_per_second)
+  const yMin = Math.min(0, ...lows)
+  const yMax = Math.max(...highs)
+  const ySpan = yMax - yMin || 1
+
+  const px = (layers: number) =>
+    PAD_L + ((layers - xMin) / xSpan) * (VIEW_W - PAD_L - PAD_R)
+  const py = (tps: number) =>
+    VIEW_H - PAD_B - ((tps - yMin) / ySpan) * (VIEW_H - PAD_T - PAD_B)
+
+  const sorted = [...usable].sort((a, b) => a.gpu_layers - b.gpu_layers)
+  const line = sorted
+    .map((p) => `${px(p.gpu_layers)},${py(p.tokens_per_second)}`)
+    .join(' ')
+
+  return (
+    <figure className="chart">
+      <svg
+        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+        role="img"
+        aria-label="Measured generation throughput against the number of layers offloaded to the GPU"
+        style={{ width: '100%', height }}
+      >
+        {[0.25, 0.5, 0.75].map((f) => (
+          <line
+            key={f}
+            x1={PAD_L}
+            x2={VIEW_W - PAD_R}
+            y1={PAD_T + (VIEW_H - PAD_T - PAD_B) * f}
+            y2={PAD_T + (VIEW_H - PAD_T - PAD_B) * f}
+            className="gridline"
+          />
+        ))}
+        <polyline points={line} fill="none" strokeWidth={0.7} className="line line-0" />
+        {sorted.map((p) => {
+          const x = px(p.gpu_layers)
+          const y = py(p.tokens_per_second)
+          const ci = p.ci95
+          return (
+            <g key={p.gpu_layers}>
+              {ci && (
+                <line
+                  x1={x}
+                  x2={x}
+                  y1={py(ci[0])}
+                  y2={py(ci[1])}
+                  strokeWidth={0.5}
+                  className="line line-0"
+                />
+              )}
+              <circle cx={x} cy={y} r={1.1} className="cliff-marker" />
+            </g>
+          )
+        })}
+        <text x={PAD_L} y={VIEW_H - 1.5} className="chart-label">
+          {xMin} layers
+        </text>
+        <text x={VIEW_W - PAD_R} y={VIEW_H - 1.5} textAnchor="end" className="chart-label">
+          {xMax}
+        </text>
+        <text x={1} y={PAD_T + 2} className="chart-label">
+          {Math.round(yMax)}
+        </text>
+        <text x={1} y={VIEW_H - PAD_B} className="chart-label">
+          {Math.round(yMin)}
+        </text>
+      </svg>
+      <figcaption className="muted">
+        Generation tok/s against layers offloaded to the GPU. Whiskers are 95%
+        confidence intervals; overlapping ones mean the two settings were not
+        distinguishable.
+      </figcaption>
+    </figure>
+  )
+}

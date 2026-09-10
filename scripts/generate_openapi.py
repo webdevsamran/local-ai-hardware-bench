@@ -77,6 +77,16 @@ ENDPOINTS: dict[str, tuple[str, str, str]] = {
         "the classifier themselves should read the rules from here rather "
         "than hardcoding them.",
     ),
+    "cliff": (
+        "Measured offload sweeps, with the cliff analysis applied.",
+        "unstable",
+        "Throughput at each GPU-offload setting, measured rather than "
+        "estimated, with the environment each curve was measured in. A curve "
+        "is one machine with one model: where the cliff sits depends on PCIe "
+        "generation and width, memory bandwidth and what else is using the "
+        "card, so these are for comparison against your own measurement "
+        "rather than for citing.",
+    ),
     "privacy": (
         "The privacy scanner's pattern registry, with reference vectors.",
         "stable",

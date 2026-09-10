@@ -54,6 +54,11 @@ const STATIC_META: Record<string, Omit<PageMeta, 'path'>> = {
     description:
       'Which local AI configurations are not beaten on both axes at once: throughput against power draw, peak VRAM and time to first token. A card that is slower but far more efficient is still on the frontier, which a single ranked leaderboard cannot show.',
   },
+  '/offload-cliff': {
+    title: 'The VRAM offload cliff, measured — AIHWBench',
+    description:
+      'What moving layers off the GPU actually costs, measured rather than estimated. Throughput does not degrade smoothly when a model stops fitting in VRAM: it falls off a step, and where that step sits depends on PCIe generation, memory bandwidth and what else is using the card.',
+  },
   '/submit': {
     title: 'Submit a benchmark result — AIHWBench',
     description:

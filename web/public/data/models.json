@@ -30,7 +30,9 @@
     "name": "qwen2.5:0.5b-instruct-q4_K_M",
     "quantizations": [],
     "result_ids": [
-      "ollama-1787388930"
+      "ollama-1787388930",
+      "ollama-1789011548-20e39a8f",
+      "ollama-1789011650-7a65eecd"
     ]
   }
 ]

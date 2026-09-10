@@ -1,10 +1,10 @@
 # AIHWBench Leaderboard
 
-Generated from 6 validated result(s) in `results/published`.
+Generated from 8 validated result(s) in `results/published`.
 
 Results are grouped by the comparison-safety classifier (`aihwbench/comparability.py`), and **ranking is meaningful only within a group**. Putting every result in one table under a shared throughput column invites a comparison the classifier rejects for most pairs, and a footnote does not undo the claim the column makes.
 
-**No two published results are comparable yet**: 6 result(s) form 6 group(s) of one. Each is a single measurement, not a ranking. Comparable results arrive when the same model and runtime are benchmarked on other hardware — see [docs/hardware-needed.md](../../docs/hardware-needed.md).
+7 comparable group(s); 1 contain more than one result and can be ranked.
 
 ## qwen2.5-0.5b-instruct-q4_k_m.gguf on llama.cpp (llama-server/cuda)
 
@@ -21,6 +21,13 @@ Results are grouped by the comparison-safety classifier (`aihwbench/comparabilit
 | Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | ollama-1787388930 | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 110.93 | 2,069.71 | 4.24 | tok/s/W | 5 | verified |
+
+## qwen2.5:0.5b-instruct-q4_K_M on ollama (ollama-http-api/auto)
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| ollama-1789011548-20e39a8f | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 281.65 | 2,064.14 | 5.402 | tok/s/W | 8 | verified |
+| ollama-1789011650-7a65eecd | NVIDIA GeForce RTX 3080 Ti Laptop GPU | 261.31 | 2,081.13 | 4.932 | tok/s/W | 8 | verified |
 
 ## mobilenetv2-12.onnx on onnxruntime (execution-providers:CPUExecutionProvider/cpu)
 

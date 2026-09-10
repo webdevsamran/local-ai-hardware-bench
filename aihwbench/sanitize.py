@@ -26,6 +26,7 @@ from typing import Any
 
 __all__ = [
     "PATTERN_IDS",
+    "pattern_registry",
     "redact_match",
     "redact_object",
     "redact_text",
@@ -94,6 +95,35 @@ _PATTERNS: tuple[tuple[str, str, re.Pattern[str]], ...] = (
 )
 
 PATTERN_IDS: tuple[str, ...] = tuple(pattern_id for pattern_id, _, _ in _PATTERNS)
+
+
+def pattern_registry() -> list[dict[str, Any]]:
+    """The pattern registry in a serializable form.
+
+    Published so the dashboard can run the same privacy scan in the browser
+    rather than carrying a second, hand-written copy of these expressions.
+    A submission page that scanned with its own patterns would eventually
+    disagree with the CLI about whether a file is safe to share, and the
+    direction of that disagreement is not one anyone would notice until a
+    leak had already been published.
+
+    The expressions are deliberately kept within the syntax JavaScript's
+    RegExp also understands -- no lookbehind, no named groups, no possessive
+    quantifiers -- so this stays a transcription rather than a translation.
+    Reference vectors generated alongside pin that the two engines agree.
+    """
+    return [
+        {
+            "id": pattern_id,
+            "label": label,
+            "pattern": pattern.pattern,
+            # Only IGNORECASE is used, and it is the one flag whose meaning is
+            # identical in both engines.
+            "ignore_case": bool(pattern.flags & re.IGNORECASE),
+        }
+        for pattern_id, label, pattern in _PATTERNS
+    ]
+
 
 _REDACT_KEEP = 4
 

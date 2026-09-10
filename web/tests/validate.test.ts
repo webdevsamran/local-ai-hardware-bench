@@ -68,6 +68,7 @@ function makeDataset(): Dataset {
     },
     pareto: {},
     recommend: { note: '', reference_cases: [] },
+    privacy: { patterns: [], reference_cases: [], note: '' },
   }
 }
 

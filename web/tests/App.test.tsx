@@ -78,6 +78,7 @@ const dataset = {
   },
   pareto: {},
   recommend: { note: '', reference_cases: [] },
+  privacy: { patterns: [], reference_cases: [], note: '' },
 }
 
 beforeEach(() => {
@@ -96,6 +97,7 @@ beforeEach(() => {
         'data/comparability.json': dataset.comparability,
         'data/pareto.json': dataset.pareto,
         'data/recommend.json': dataset.recommend,
+        'data/privacy.json': dataset.privacy,
       }
       // The app requests base-anchored URLs (`/data/x.json`, or
       // `/local-ai-hardware-bench/data/x.json` in production) because a

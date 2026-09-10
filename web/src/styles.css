@@ -1083,3 +1083,29 @@ body:has(.embed-card) {
   padding: 0;
   background: transparent;
 }
+
+/* --- Submission page --------------------------------------------------- */
+.dropzone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 18px;
+  margin: 20px 0 12px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.submit-json {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: inherit;
+  resize: vertical;
+}

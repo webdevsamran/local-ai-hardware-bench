@@ -450,6 +450,45 @@
         ]
       }
     },
+    "/data/privacy.json": {
+      "get": {
+        "description": "The privacy scanner's pattern registry, with reference vectors.\n\nGenerated from `aihwbench/sanitize.py`. Consumers scanning results themselves should read these rather than writing their own: a second copy of the expressions eventually disagrees with the CLI about whether a file is safe to share, and nobody notices a scan that has quietly stopped catching something until a leak is published.\n\n**Stability: stable.**",
+        "operationId": "getPrivacy",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "note": {
+                      "type": "string"
+                    },
+                    "patterns": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "reference_cases": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The privacy scanner's pattern registry, with reference vectors."
+          }
+        },
+        "summary": "The privacy scanner's pattern registry, with reference vectors.",
+        "tags": [
+          "stable"
+        ]
+      }
+    },
     "/data/recommend.json": {
       "get": {
         "description": "Reference recommendations from the configuration engine.\n\nA convenience view for the dashboard's recommender, carrying reference cases that pin the browser implementation to the Python one. Recommendations themselves are computed per request, not served.\n\n**Stability: unstable.**",

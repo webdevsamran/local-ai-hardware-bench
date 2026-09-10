@@ -761,7 +761,11 @@ button:focus-visible,
   line-height: 1.6;
 }
 
-.verdict-headline {
+/* Title-casing a machine token like `strictly comparable`, which is the only
+   place it belongs. It used to sit on `.verdict-headline` itself, where it
+   reached every verdict on the site and turned sentences into headlines --
+   "Fits Entirely In VRAM", "Owning The Hardware Is Cheaper Over 3 Years". */
+.verdict-classification {
   text-transform: capitalize;
 }
 
@@ -1116,4 +1120,41 @@ body:has(.embed-card) {
   stroke: var(--surface);
   stroke-width: 0.3;
   vector-effect: non-scaling-stroke;
+}
+
+/* Measured offload curve. The SVG fills the width and the axis labels sit
+   outside it, because text inside a viewBox scales with the viewBox: a chart
+   wide enough to read renders its own labels at three times the body size. */
+.cliff-figure { margin: 16px 0; }
+
+.cliff-plot {
+  position: relative;
+}
+
+.cliff-plot svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.cliff-y-max,
+.cliff-y-min {
+  position: absolute;
+  left: 0;
+  font-size: 0.75em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  background: var(--surface);
+  padding-right: 4px;
+}
+
+.cliff-y-max { top: 0; }
+.cliff-y-min { bottom: 0; }
+
+.cliff-x-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75em;
+  color: var(--text-muted);
+  margin-top: 2px;
 }

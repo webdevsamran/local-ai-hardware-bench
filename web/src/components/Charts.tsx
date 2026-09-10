@@ -406,10 +406,8 @@ export interface CliffMeasurement {
  */
 export function MeasuredCliffChart({
   points,
-  height = 220,
 }: {
   points: CliffMeasurement[]
-  height?: number
 }) {
   const usable = points.filter(
     (p): p is CliffMeasurement & { tokens_per_second: number } =>
@@ -417,12 +415,23 @@ export function MeasuredCliffChart({
   )
   if (usable.length < 2) return null
 
+  // A 100x26 viewBox sized by width, with the default `meet` aspect ratio.
+  // The aspect is chosen to render at a readable height once it fills the
+  // content column: a squarer box becomes a chart taller than the screen.
+  // Not `preserveAspectRatio="none"` like the bar and line charts: stretching
+  // turns the round markers into ellipses of a different size at every screen
+  // width, and the marker is how a reader locates a measured point among the
+  // interpolation between them.
+  //
+  // Axis labels are HTML rather than SVG <text>. Text inside a viewBox scales
+  // with it, so a chart wide enough to be useful renders its labels at three
+  // times the body font size; keeping them outside lets the plot fill the
+  // width without the type following it up.
   const VIEW_W = 100
-  const VIEW_H = 60
-  const PAD_L = 10
-  const PAD_R = 3
-  const PAD_T = 4
-  const PAD_B = 8
+  const VIEW_H = 26
+  const PAD_X = 2
+  const PAD_T = 2
+  const PAD_B = 2
 
   const xs = usable.map((p) => p.gpu_layers)
   const xMin = Math.min(...xs)
@@ -438,7 +447,7 @@ export function MeasuredCliffChart({
   const ySpan = yMax - yMin || 1
 
   const px = (layers: number) =>
-    PAD_L + ((layers - xMin) / xSpan) * (VIEW_W - PAD_L - PAD_R)
+    PAD_X + ((layers - xMin) / xSpan) * (VIEW_W - PAD_X * 2)
   const py = (tps: number) =>
     VIEW_H - PAD_B - ((tps - yMin) / ySpan) * (VIEW_H - PAD_T - PAD_B)
 
@@ -448,57 +457,68 @@ export function MeasuredCliffChart({
     .join(' ')
 
   return (
-    <figure className="chart">
-      <svg
-        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-        role="img"
-        aria-label="Measured generation throughput against the number of layers offloaded to the GPU"
-        style={{ width: '100%', height }}
-      >
-        {[0.25, 0.5, 0.75].map((f) => (
-          <line
-            key={f}
-            x1={PAD_L}
-            x2={VIEW_W - PAD_R}
-            y1={PAD_T + (VIEW_H - PAD_T - PAD_B) * f}
-            y2={PAD_T + (VIEW_H - PAD_T - PAD_B) * f}
-            className="gridline"
+    <figure className="chart cliff-figure">
+      <div className="cliff-plot">
+        <span className="cliff-y-max">{Math.round(yMax)}</span>
+        <svg
+          viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+          role="img"
+          aria-label={
+            `Generation throughput against layers offloaded to the GPU, ` +
+            `from ${Math.round(sorted[0]!.tokens_per_second)} tok/s at ` +
+            `${sorted[0]!.gpu_layers} layers to ` +
+            `${Math.round(sorted[sorted.length - 1]!.tokens_per_second)} tok/s at ` +
+            `${sorted[sorted.length - 1]!.gpu_layers} layers`
+          }
+        >
+          {[0.25, 0.5, 0.75].map((f) => (
+            <line
+              key={f}
+              x1={PAD_X}
+              x2={VIEW_W - PAD_X}
+              y1={PAD_T + (VIEW_H - PAD_T - PAD_B) * f}
+              y2={PAD_T + (VIEW_H - PAD_T - PAD_B) * f}
+              className="gridline"
+            />
+          ))}
+          <polyline
+            points={line}
+            fill="none"
+            strokeWidth={0.4}
+            className="line line-0"
+            vectorEffect="non-scaling-stroke"
           />
-        ))}
-        <polyline points={line} fill="none" strokeWidth={0.7} className="line line-0" />
-        {sorted.map((p) => {
-          const x = px(p.gpu_layers)
-          const y = py(p.tokens_per_second)
-          const ci = p.ci95
-          return (
-            <g key={p.gpu_layers}>
-              {ci && (
-                <line
-                  x1={x}
-                  x2={x}
-                  y1={py(ci[0])}
-                  y2={py(ci[1])}
-                  strokeWidth={0.5}
-                  className="line line-0"
+          {sorted.map((p) => {
+            const x = px(p.gpu_layers)
+            const ci = p.ci95
+            return (
+              <g key={p.gpu_layers}>
+                {ci && (
+                  <line
+                    x1={x}
+                    x2={x}
+                    y1={py(ci[0])}
+                    y2={py(ci[1])}
+                    className="line line-0"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )}
+                <circle
+                  cx={x}
+                  cy={py(p.tokens_per_second)}
+                  r={0.55}
+                  className="cliff-marker"
                 />
-              )}
-              <circle cx={x} cy={y} r={1.1} className="cliff-marker" />
-            </g>
-          )
-        })}
-        <text x={PAD_L} y={VIEW_H - 1.5} className="chart-label">
-          {xMin} layers
-        </text>
-        <text x={VIEW_W - PAD_R} y={VIEW_H - 1.5} textAnchor="end" className="chart-label">
-          {xMax}
-        </text>
-        <text x={1} y={PAD_T + 2} className="chart-label">
-          {Math.round(yMax)}
-        </text>
-        <text x={1} y={VIEW_H - PAD_B} className="chart-label">
-          {Math.round(yMin)}
-        </text>
-      </svg>
+              </g>
+            )
+          })}
+        </svg>
+        <span className="cliff-y-min">{Math.round(yMin)}</span>
+      </div>
+      <div className="cliff-x-axis" aria-hidden="true">
+        <span>{xMin} layers</span>
+        <span>{xMax} layers</span>
+      </div>
       <figcaption className="muted">
         Generation tok/s against layers offloaded to the GPU. Whiskers are 95%
         confidence intervals; overlapping ones mean the two settings were not

@@ -134,6 +134,31 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     # stall is what makes a stream feel slow.
     metrics.update(streaming_latency_metrics(iterations))
 
+    # Prefill figures from a repeated prompt describe a cache, not prefill.
+    #
+    # Every iteration sends the same request, which is what makes the run
+    # reproducible -- and what lets a server with a prompt cache answer the
+    # second and later ones without doing the work. Measured here:
+    # `long_prompt` reported 338,103 prompt tokens per second for a
+    # 3331-token prompt, because prompt evaluation took four milliseconds
+    # after the warm-ups had already loaded it.
+    #
+    # The rate is not wrong as arithmetic; it is a measurement of the wrong
+    # thing. Nothing is discarded -- the figure stays, with a statement of
+    # what it describes -- because a reader who wants cache-hit prefill has a
+    # legitimate use for it and a reader who wants prefill needs to be told
+    # this is not it.
+    metrics.setdefault("metric_source", {})
+    if isinstance(metrics["metric_source"], dict):
+        metrics["metric_source"]["prompt_tokens_per_second"] = "possibly_cached"
+        metrics["metric_source"]["prompt_cache_note"] = (
+            "every iteration sends an identical prompt, so a runtime with a "
+            "prompt cache answers all but the first without prefilling. "
+            "Prompt-processing throughput here may describe the cache rather "
+            "than prefill; compare it against the first iteration's "
+            "prompt_eval_seconds to tell"
+        )
+
     # A speed number from a quantized run must not travel without a quality
     # signal: lowering precision makes a model faster AND changes what it
     # says. Determinism and an output fingerprint are measurable on every run

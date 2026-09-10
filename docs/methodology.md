@@ -106,6 +106,26 @@ Every benchmark run records and fixes:
   result says so in `thermal.reason` rather than leaving the fields
   unexplained.
 
+## Prompt-processing throughput may be measuring a cache
+
+Every iteration of a run sends the same request. That is what makes a
+benchmark reproducible, and it is also what lets a runtime with a prompt cache
+answer the second and later ones without prefilling at all.
+
+Measured here: the `long_prompt` profile reported **338,103 prompt tokens per
+second** for a 3331-token prompt, because prompt evaluation took four
+milliseconds once the warm-ups had already loaded it. The arithmetic is
+correct; it is measuring the wrong thing.
+
+Results therefore label `prompt_tokens_per_second` as `possibly_cached` in
+`metrics.metric_source` and say why. The figure is kept rather than discarded
+— cache-hit prefill is a real thing to want to know about — but it must not be
+read as prefill throughput. Compare it against the first iteration's
+`prompt_eval_seconds` to see the difference.
+
+This applies to any runtime with a prefix cache, which now includes Ollama,
+llama.cpp and SGLang, whose RadixAttention makes it the point of the engine.
+
 ## The machine has to be available to be measured
 
 Every run records the CPU load sampled immediately before it starts, and a

@@ -76,9 +76,21 @@ def test_execute_exception_recorded_as_failure():
     assert "boom" in records[0].result["error"]
 
 
-def test_queue_latency_zero_for_closed_loop():
+def test_queue_latency_is_unmeasurable_under_a_closed_loop():
+    """None, not zero.
+
+    A closed-loop worker submits and starts in the same breath, so there is no
+    client-side queue to time. This used to return exactly 0.0 and surface as
+    `mean_queue_latency_ms: 0.0`, which reads as "we measured queueing and
+    found none" -- while a capacity ladder at concurrency 8 was showing a
+    20-second p95 on 64-token requests. That queueing is inside the server,
+    and a client cannot see it from here.
+    """
     records = run_load(LoadgenConfig(requests=5), _fast_execute)
-    assert all(r.queue_latency_ms >= 0.0 for r in records)
+    assert records
+    assert all(r.queue_latency_ms is None for r in records)
+    # The wait is still counted -- inside the request, where it happened.
+    assert all(r.request_latency_ms > 0.0 for r in records)
 
 
 # ---------------------------------------------------------------------------

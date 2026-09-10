@@ -88,13 +88,58 @@ def test_open_loop_submit_times_preserved_on_schedule():
         assert r.submit_time <= r.start_time + 1e-6
 
 
-def test_closed_loop_has_zero_queue_latency():
-    """Closed-loop workers start immediately; queue latency stays
-    exactly zero by construction (unchanged behavior)."""
+def test_closed_loop_reports_no_queue_latency_rather_than_zero():
+    """The pattern has no client-side queue, so there is nothing to report.
+
+    Zero was a claim the measurement could not support: it said queueing had
+    been measured and found absent, when it had not been measured at all.
+    """
 
     def fast(_rid: int) -> dict:
         time.sleep(0.001)
         return {"completion_tokens": 1}
 
     records = run_load(LoadgenConfig(requests=6, concurrency=2), fast)
-    assert all(r.queue_latency_ms == 0.0 for r in records)
+    assert records
+    assert all(r.queue_latency_ms is None for r in records)
+
+
+def test_open_loop_queue_latency_is_a_real_measurement():
+    """Under open-loop arrival the wait is on the client, and visible.
+
+    Requests land on a pending list on a schedule and workers take them when
+    free, so the gap between the two is genuinely measurable -- unlike the
+    closed loop, where the worker is the schedule.
+    """
+
+    def slow(_rid: int) -> dict:
+        time.sleep(0.05)
+        return {"completion_tokens": 1}
+
+    # One worker against a fast arrival rate, so requests must wait.
+    records = run_load(
+        LoadgenConfig(requests=6, concurrency=1, pattern="constant_rate", rate_per_second=50.0),
+        slow,
+    )
+    assert records
+    measured = [r.queue_latency_ms for r in records if r.queue_latency_ms is not None]
+    assert measured, "open-loop arrivals must produce a measurable queue latency"
+    # The later arrivals waited behind the earlier ones.
+    assert max(measured) > 0.0
+
+
+def test_request_latency_covers_the_whole_request_under_a_closed_loop():
+    """With no separate start, the request spans submit to end.
+
+    Server-side queueing lives inside that span and cannot be separated out,
+    so the span has to include it rather than quietly dropping it.
+    """
+
+    def slow(_rid: int) -> dict:
+        time.sleep(0.02)
+        return {"completion_tokens": 1}
+
+    records = run_load(LoadgenConfig(requests=3, concurrency=1), slow)
+    for record in records:
+        assert record.request_latency_ms >= 20.0
+        assert record.queue_latency_ms is None

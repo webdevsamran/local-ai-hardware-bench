@@ -99,7 +99,11 @@ def _level_result(concurrency: int, records: list[RequestRecord]) -> LevelResult
     ttfts = [
         r.result["ttft_ms"] for r in records if r.success and r.result.get("ttft_ms") is not None
     ]
-    queue = [r.queue_latency_ms for r in records]
+    # Only requests that actually waited in a client-side queue. Under a
+    # closed loop none do, and the mean is None rather than zero: "not
+    # measurable in this pattern" and "measured, and there was none" are
+    # different statements, and only one of them is true here.
+    queue = [value for r in records if (value := r.queue_latency_ms) is not None]
     summary = summarize(latencies)
     return LevelResult(
         concurrency=concurrency,

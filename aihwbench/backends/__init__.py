@@ -23,7 +23,9 @@ from . import (
     openvino_genai,
     qnn,
     rocm,
+    sglang,
     tensorrt,
+    vllm,
     windows_ml,
 )
 from .base import (
@@ -50,6 +52,8 @@ BACKENDS: dict[str, Any] = {
     "qnn": qnn,
     "tensorrt": tensorrt,
     "hailo": hailo,
+    "vllm": vllm,
+    "sglang": sglang,
 }
 
 ALIASES: dict[str, str] = {

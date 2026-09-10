@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +34,7 @@ from ..report import render_report
 from ..runner import run_benchmark, save_result
 from ..suites import list_suites, load_suite, run_suite
 from ..sweep import SweepSpec, matrix_to_csv_rows, run_sweep
+from ..system_info import detect_system
 from ..workloads import get_workload, list_workloads
 from .common import echo_json, fail
 
@@ -175,7 +177,13 @@ def cmd_sweep(args: argparse.Namespace) -> int:
     except UnsupportedAxisError as exc:
         fail(str(exc))
         return EXIT_USAGE_ERROR
-    spec = SweepSpec(axes=axes, base={"runtime": args.runtime, "model": args.model or ""})
+    # What was swept, recorded whichever flag named it. Runtimes taking a
+    # `--model-path` left `model` empty, so a published cliff curve arrived
+    # with no model attached -- and a cliff curve without one is
+    # uninterpretable, since where throughput collapses depends entirely on
+    # how big the model is.
+    model_identity = args.model or (Path(args.model_path).name if args.model_path else "")
+    spec = SweepSpec(axes=axes, base={"runtime": args.runtime, "model": model_identity})
 
     def run_fn(point: dict[str, Any]) -> dict[str, Any]:
         config = BenchmarkConfig(
@@ -195,7 +203,23 @@ def cmd_sweep(args: argparse.Namespace) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"sweep-{args.runtime}.json"
     out_path.write_text(
-        json.dumps({"axes": {k: list(v) for k, v in axes.items()}, "matrix": matrix}, indent=2),
+        json.dumps(
+            {
+                "axes": {k: list(v) for k, v in axes.items()},
+                # The environment the whole sweep ran in. Every row shares it,
+                # and a sweep read on another machine is not interpretable
+                # without it: the offload cliff is a property of this GPU's
+                # memory and PCIe link as much as of the model.
+                "environment": {
+                    "runtime": args.runtime,
+                    "model": model_identity,
+                    "system": detect_system(),
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                },
+                "matrix": matrix,
+            },
+            indent=2,
+        ),
         encoding="utf-8",
     )
     csv_rows = matrix_to_csv_rows(matrix)

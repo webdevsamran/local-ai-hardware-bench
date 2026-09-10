@@ -1,0 +1,198 @@
+{
+  "axes": {
+    "iterations": [
+      8
+    ],
+    "gpu_layers": [
+      0,
+      6,
+      12,
+      18,
+      24,
+      99
+    ]
+  },
+  "environment": {
+    "runtime": "llama.cpp",
+    "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+    "system": {
+      "os": "Windows 11",
+      "os_version": "10.0.26200",
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "cpu_cores_physical": 14,
+      "cpu_cores_logical": 20,
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "gpu_vram_mb": 16384,
+      "gpu_driver_version": "610.74",
+      "npu": null,
+      "ram_gb": 31.7,
+      "platform_name": "Predator PT516-52s",
+      "topology": {
+        "numa_nodes": null,
+        "sockets": 1,
+        "unified_memory": null,
+        "cpu_features": [],
+        "gpu_count": 1
+      },
+      "gpus": [
+        {
+          "vendor": "NVIDIA",
+          "name": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+          "driver_version": "610.74",
+          "vram_mb": 16384,
+          "index": 0,
+          "pcie_gen": 4,
+          "pcie_width": 16,
+          "compute_capability": "8.6"
+        }
+      ]
+    },
+    "timestamp": "2026-09-10T06:22:23Z"
+  },
+  "matrix": [
+    {
+      "params": {
+        "runtime": "llama.cpp",
+        "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "gpu_layers": 0,
+        "iterations": 8
+      },
+      "metrics": {
+        "generation_tokens_per_second": 64.42,
+        "ttft_ms": 30.86,
+        "total_latency_ms": 531.73,
+        "peak_vram_mb": 232.0,
+        "average_power_watts": 28.59,
+        "generation_tps_cv": 0.1018,
+        "gen_tps_ci95": [
+          59.87,
+          68.96
+        ],
+        "gen_tps_min": 51.74,
+        "gen_tps_max": 73.44
+      },
+      "run_id": "llamacpp-1789021237-766f0916",
+      "error": null
+    },
+    {
+      "params": {
+        "runtime": "llama.cpp",
+        "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "gpu_layers": 6,
+        "iterations": 8
+      },
+      "metrics": {
+        "generation_tokens_per_second": 98.3,
+        "ttft_ms": 25.95,
+        "total_latency_ms": 340.52,
+        "peak_vram_mb": 426.0,
+        "average_power_watts": 30.68,
+        "generation_tps_cv": 0.094,
+        "gen_tps_ci95": [
+          91.89,
+          104.71
+        ],
+        "gen_tps_min": 87.3,
+        "gen_tps_max": 112.95
+      },
+      "run_id": "llamacpp-1789021258-0db5c546",
+      "error": null
+    },
+    {
+      "params": {
+        "runtime": "llama.cpp",
+        "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "gpu_layers": 12,
+        "iterations": 8
+      },
+      "metrics": {
+        "generation_tokens_per_second": 134.49,
+        "ttft_ms": 20.8,
+        "total_latency_ms": 241.18,
+        "peak_vram_mb": 494.0,
+        "average_power_watts": 32.47,
+        "generation_tps_cv": 0.1124,
+        "gen_tps_ci95": [
+          124.01,
+          144.96
+        ],
+        "gen_tps_min": 106.21,
+        "gen_tps_max": 162.14
+      },
+      "run_id": "llamacpp-1789021277-2ea5bc88",
+      "error": null
+    },
+    {
+      "params": {
+        "runtime": "llama.cpp",
+        "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "gpu_layers": 18,
+        "iterations": 8
+      },
+      "metrics": {
+        "generation_tokens_per_second": 164.58,
+        "ttft_ms": 19.57,
+        "total_latency_ms": 220.76,
+        "peak_vram_mb": 560.0,
+        "average_power_watts": 34.42,
+        "generation_tps_cv": 0.1322,
+        "gen_tps_ci95": [
+          149.5,
+          179.66
+        ],
+        "gen_tps_min": 120.9,
+        "gen_tps_max": 192.6
+      },
+      "run_id": "llamacpp-1789021297-310d5cbd",
+      "error": null
+    },
+    {
+      "params": {
+        "runtime": "llama.cpp",
+        "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "gpu_layers": 24,
+        "iterations": 8
+      },
+      "metrics": {
+        "generation_tokens_per_second": 272.36,
+        "ttft_ms": 16.44,
+        "total_latency_ms": 124.88,
+        "peak_vram_mb": 626.0,
+        "average_power_watts": 37.36,
+        "generation_tps_cv": 0.0363,
+        "gen_tps_ci95": [
+          265.51,
+          279.21
+        ],
+        "gen_tps_min": 259.27,
+        "gen_tps_max": 287.47
+      },
+      "run_id": "llamacpp-1789021315-022d5dbe",
+      "error": null
+    },
+    {
+      "params": {
+        "runtime": "llama.cpp",
+        "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "gpu_layers": 99,
+        "iterations": 8
+      },
+      "metrics": {
+        "generation_tokens_per_second": 371.85,
+        "ttft_ms": 10.07,
+        "total_latency_ms": 90.44,
+        "peak_vram_mb": 632.0,
+        "average_power_watts": 34.82,
+        "generation_tps_cv": 0.0472,
+        "gen_tps_ci95": [
+          359.68,
+          384.03
+        ],
+        "gen_tps_min": 335.54,
+        "gen_tps_max": 389.79
+      },
+      "run_id": "llamacpp-1789021332-f6079e4b",
+      "error": null
+    }
+  ]
+}

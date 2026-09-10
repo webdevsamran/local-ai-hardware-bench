@@ -131,3 +131,32 @@ def test_cold_start_ignores_non_numeric_load_times():
     report = cold_start_metrics([{"load_time_ms": "fast"}], [{"load_time_ms": True}])
     assert report["cold_start_ms"] is None
     assert report["warm_load_ms"] is None
+
+
+def test_a_cold_load_no_slower_than_warm_is_not_a_cold_start():
+    """Found on real hardware: the penalty went negative.
+
+    Running the agentic workload left the model resident, so the first
+    warm-up loaded nothing and its "cold" figure came in fractionally below
+    the warm mean. A negative penalty is meaningless and zero would claim
+    loading is free, so neither is reported -- but both raw figures stay
+    visible so a reader can see why.
+    """
+    from aihwbench.metrics import cold_start_metrics
+
+    report = cold_start_metrics([{"load_time_ms": 11.0}], [{"load_time_ms": 12.2}])
+    assert report["cold_start_penalty_ms"] is None
+    assert report["cold_start_measured"] is False
+    assert report["cold_start_ms"] == 11.0
+    assert report["warm_load_ms"] == 12.2
+
+
+def test_the_cold_start_penalty_is_never_negative():
+    """The schema requires >= 0, and a negative penalty has no meaning."""
+    from aihwbench.metrics import cold_start_metrics
+
+    for cold, warm in ((5.0, 50.0), (50.0, 5.0), (10.0, 10.0), (0.0, 1.0)):
+        penalty = cold_start_metrics([{"load_time_ms": cold}], [{"load_time_ms": warm}])[
+            "cold_start_penalty_ms"
+        ]
+        assert penalty is None or penalty >= 0

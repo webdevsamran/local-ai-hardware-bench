@@ -190,3 +190,81 @@ def test_doctor_text_and_json_agree_on_backends(capsys):
 
     for runtime in report["runtimes"]:
         assert runtime["name"] in text
+
+
+# --- Snapshot diffing --------------------------------------------------------
+#
+# `diff_snapshots` existed and nothing called it, while
+# `build_snapshot_manifest` computed the same set arithmetic inline -- two
+# implementations of "what changed between two snapshots", free to disagree.
+# There is one now, and it is reachable from the CLI for the case the builder
+# cannot serve: comparing two manifests when the directories they described
+# are long gone.
+
+
+def _manifest(tmp_path, name, members, version):
+    import json as _json
+
+    path = tmp_path / name
+    path.write_text(_json.dumps({"version": version, "members": members}), encoding="utf-8")
+    return str(path)
+
+
+def test_snapshot_diff_reports_added_and_removed(tmp_path, capsys):
+    old = _manifest(tmp_path, "old.json", {"a.json": "h1", "b.json": "h2"}, "v1")
+    new = _manifest(tmp_path, "new.json", {"b.json": "h2", "c.json": "h3"}, "v2")
+
+    assert main(["snapshot", "--diff", old, new]) == 0
+    diff = json.loads(capsys.readouterr().out)
+    assert diff["added"] == ["c.json"]
+    assert diff["removed"] == ["a.json"]
+    assert diff["changed"] == []
+    assert diff["old_version"] == "v1"
+    assert diff["new_version"] == "v2"
+
+
+def test_snapshot_diff_catches_a_result_edited_in_place(tmp_path, capsys):
+    """The case worth catching: same filename, different content.
+
+    A published result quietly edited after people cited it keeps its name, so
+    only the content hash reveals it.
+    """
+    old = _manifest(tmp_path, "old.json", {"a.json": "h1"}, "v1")
+    new = _manifest(tmp_path, "new.json", {"a.json": "DIFFERENT"}, "v2")
+
+    assert main(["snapshot", "--diff", old, new]) == 0
+    diff = json.loads(capsys.readouterr().out)
+    assert diff["changed"] == ["a.json"]
+    assert diff["added"] == [] and diff["removed"] == []
+
+
+def test_snapshot_diff_rejects_a_missing_manifest(tmp_path, capsys):
+    old = _manifest(tmp_path, "old.json", {}, "v1")
+    code = main(["snapshot", "--diff", old, str(tmp_path / "absent.json")])
+    assert code == 2
+    assert "not a file" in capsys.readouterr().err
+
+
+def test_snapshot_requires_a_version_when_building(capsys):
+    assert main(["snapshot"]) == 2
+    assert "--version is required" in capsys.readouterr().err
+
+
+def test_manifest_changes_agree_with_the_differ(tmp_path):
+    """The builder's inline changes and the differ must not drift apart."""
+    from aihwbench.dataset_versioning import build_snapshot_manifest, diff_snapshots
+
+    results = tmp_path / "published"
+    results.mkdir()
+    (results / "one.json").write_text(json.dumps({"run_id": "one"}), encoding="utf-8")
+    first = build_snapshot_manifest(results, "v1")
+
+    (results / "two.json").write_text(json.dumps({"run_id": "two"}), encoding="utf-8")
+    (results / "one.json").write_text(json.dumps({"run_id": "one!"}), encoding="utf-8")
+    second = build_snapshot_manifest(results, "v2", first)
+
+    standalone = diff_snapshots(first, second)
+    for key in ("added", "removed", "changed"):
+        assert second["changes_vs_previous"][key] == standalone[key]
+    assert standalone["added"] == ["two.json"]
+    assert standalone["changed"] == ["one.json"]

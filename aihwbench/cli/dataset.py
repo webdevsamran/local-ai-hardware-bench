@@ -7,7 +7,7 @@ import argparse
 import json
 from pathlib import Path
 
-from ..dataset_versioning import build_snapshot_manifest
+from ..dataset_versioning import build_snapshot_manifest, diff_snapshots
 from ..evaluators import list_evaluators, load_dataset, run_evaluation
 from ..exit_codes import EXIT_OK, EXIT_USAGE_ERROR, EXIT_VALIDATION_ERROR
 from ..export import DatasetLoadError, export_dataset, export_parquet
@@ -246,6 +246,31 @@ def cmd_anomalies(args: argparse.Namespace) -> int:
 
 def cmd_snapshot(args: argparse.Namespace) -> int:
     """Build a versioned dataset snapshot manifest (#41)."""
+    # Comparing two manifests that already exist is a different question from
+    # snapshotting a directory, and the only one that can answer "what changed
+    # between the release people cited and the one they have now" without
+    # still having both directories on disk.
+    if args.diff:
+        left, right = (Path(p) for p in args.diff)
+        for path in (left, right):
+            if not path.is_file():
+                fail(f"{path} is not a file")
+                return EXIT_USAGE_ERROR
+        try:
+            old_manifest = json.loads(left.read_text(encoding="utf-8"))
+            new_manifest = json.loads(right.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            fail(f"cannot read snapshot manifest: {exc}")
+            return EXIT_VALIDATION_ERROR
+        echo_json(diff_snapshots(old_manifest, new_manifest))
+        return EXIT_OK
+
+    # Required for building, meaningless for --diff, so it is checked here
+    # rather than declared required and rejecting a valid diff invocation.
+    if not args.version:
+        fail("--version is required when building a snapshot")
+        return EXIT_USAGE_ERROR
+
     results_dir = Path(args.results_dir)
     if not results_dir.is_dir():
         fail(f"{results_dir} is not a directory")
@@ -333,7 +358,18 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     anom.set_defaults(func=cmd_anomalies)
 
     snap = sub.add_parser("snapshot", help="Versioned dataset snapshot manifest")
-    snap.add_argument("--version", required=True)
+    snap.add_argument(
+        "--diff",
+        nargs=2,
+        metavar=("OLD", "NEW"),
+        default=None,
+        help=(
+            "Compare two existing snapshot manifests instead of building one. "
+            "Reports results added, removed, and changed in place -- the last "
+            "being a published result that no longer matches what people cited."
+        ),
+    )
+    snap.add_argument("--version", default=None)
     snap.add_argument("--results-dir", default="results/published")
     snap.add_argument("--previous", default=None, help="Previous manifest JSON")
     snap.add_argument("--output", default="results/snapshots/snapshot.json")

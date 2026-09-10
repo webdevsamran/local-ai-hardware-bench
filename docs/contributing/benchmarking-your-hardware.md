@@ -86,7 +86,19 @@ The action fails the job when a result does not pass every data-quality check.
 That is deliberate: it is far better to catch an unstable measurement on the
 machine that produced it than to have it argued over in a pull request.
 
-The check contributors hit most is `variance_acceptable`, and the reason is
+**The first thing to check is `measured_on_an_idle_machine`.** A benchmark
+measures your hardware only when your hardware is free to be measured. This is
+not a formality: re-measuring ONNX Runtime on CPU during a background
+antivirus scan produced 2.53 inferences per second where the same model on the
+same machine had measured 299.92 — a 118x error that passed every other check,
+because it was consistent and internally coherent and there was nothing to
+compare it against.
+
+Close what you can, wait for any scan or indexer to finish, and re-run. The
+result records the CPU load it measured, so you can see what it was competing
+with.
+
+The next check contributors hit is `variance_acceptable`, and the reason is
 usually fixable:
 
 - **Other work on the GPU.** A browser with hardware acceleration, a game

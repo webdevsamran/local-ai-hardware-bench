@@ -203,11 +203,23 @@ def get_nvidia_gpus() -> list[dict[str, Any]]:
     Each entry includes device index and PCIe link info where the driver
     exposes it; unavailable fields stay None (#28, #29).
     """
+    # Identity is queried on its own, and PCIe separately.
+    #
+    # nvidia-smi fails a whole query when any single field name is
+    # unrecognised, and field names change between driver generations. When
+    # identity and optional telemetry shared one query, a renamed PCIe field
+    # took down GPU detection entirely -- and the WMI fallback below then
+    # reported the integrated GPU on a machine with a discrete one, so results
+    # recorded NVIDIA power and VRAM readings against an Intel iGPU.
+    #
+    # `system.gpu` is in the comparison-safety classifier's strict set, so a
+    # wrong value there silently makes runs on one machine look like runs on
+    # two. Identity must not depend on an optional field being spelled the way
+    # one driver version spells it.
     out = _run(
         [
             "nvidia-smi",
-            "--query-gpu=index,name,memory.total,driver_version,compute_cap,"
-            "pci.pcie_gen.current,pci.pcie_link.width.current",
+            "--query-gpu=index,name,memory.total,driver_version,compute_cap",
             "--format=csv,noheader,nounits",
         ]
     )
@@ -218,20 +230,16 @@ def get_nvidia_gpus() -> list[dict[str, Any]]:
         parts = [p.strip() for p in line.split(",")]
         if len(parts) < 4:
             continue
-        # Older drivers may not support the extended query; fall back.
-        if len(parts) >= 7:
-            index_s, name, vram_mb, driver, compute_cap, pcie_gen, pcie_width = parts[:7]
-        else:
-            name, vram_mb, driver, compute_cap = parts[:4]
-            index_s = pcie_gen = pcie_width = ""
+        index_s, name, vram_mb, driver = parts[:4]
+        compute_cap = parts[4] if len(parts) >= 5 else ""
         gpu: dict[str, Any] = {
             "vendor": "NVIDIA",
             "name": name,
             "driver_version": driver,
             "vram_mb": int(vram_mb) if vram_mb.isdigit() else None,
             "index": int(index_s) if index_s.isdigit() else None,
-            "pcie_gen": int(pcie_gen) if pcie_gen.isdigit() else None,
-            "pcie_width": int(pcie_width.replace("x", "")) if pcie_width.strip() else None,
+            "pcie_gen": None,
+            "pcie_width": None,
         }
         try:
             major, minor = compute_cap.split(".")
@@ -239,7 +247,41 @@ def get_nvidia_gpus() -> list[dict[str, Any]]:
         except ValueError:
             pass
         gpus.append(gpu)
+
+    _attach_pcie_link(gpus)
     return gpus
+
+
+def _attach_pcie_link(gpus: list[dict[str, Any]]) -> None:
+    """Best-effort PCIe link width and generation, in place.
+
+    Queried separately so an unrecognised field name cannot cost us GPU
+    identity. The *max* link is recorded rather than the current one: current
+    values drop to gen 1 x8 at idle for power saving, so they describe the
+    moment of sampling rather than the machine.
+    """
+    if not gpus:
+        return
+    out = _run(
+        [
+            "nvidia-smi",
+            "--query-gpu=index,pcie.link.gen.max,pcie.link.width.max",
+            "--format=csv,noheader,nounits",
+        ]
+    )
+    if not out:
+        return
+    by_index = {gpu.get("index"): gpu for gpu in gpus}
+    for line in out.splitlines():
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) < 3:
+            continue
+        index_s, gen, width = parts[:3]
+        gpu = by_index.get(int(index_s) if index_s.isdigit() else None)
+        if gpu is None:
+            continue
+        gpu["pcie_gen"] = int(gen) if gen.isdigit() else None
+        gpu["pcie_width"] = int(width) if width.isdigit() else None
 
 
 def get_gpu_info() -> dict[str, Any]:

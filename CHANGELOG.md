@@ -651,6 +651,27 @@ contract.
   machine shapes, so the site and `aihwbench recommend` cannot advise
   differently.
 
+### Added — a RAG pipeline workload, and four task-shaped workloads
+
+- **`aihwbench rag`** runs retrieve → rerank → generate and times the three
+  phases **separately**. A single end-to-end number cannot tell a machine that
+  is slow because retrieval is scanning a corpus from one that is slow because
+  the model is slow, and those need different fixes.
+- Retrieval is **lexical and local by design**. An embedding model would
+  measure that model's speed alongside the hardware, and a vector store would
+  measure someone's index build — neither is the hardware under test, and both
+  would make the workload irreproducible between machines. The report states
+  plainly that it measures the *shape and cost* of a RAG request and never
+  retrieval quality.
+- Ties in retrieval are broken by corpus index, because equal scores ordering
+  arbitrarily would make the same question return different context on
+  different runs.
+- Four more registered workloads, each a distinct request *shape* rather than
+  just a different prompt: `code_completion_fim` (latency-bound, short in and
+  out), `long_document_summary` (prefill-bound), `structured_output` (pairs
+  with the `json_validity` evaluator) and `streaming_chat_interactivity` (read
+  for inter-token spread, not mean throughput).
+
 ## [0.2.0] - 2026-09-07
 
 ### Changed — BREAKING

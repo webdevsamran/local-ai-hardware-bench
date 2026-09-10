@@ -28,6 +28,7 @@ from ..backends import (
 from ..capacity import CapacityConfig, run_capacity_ladder
 from ..exit_codes import EXIT_OK, EXIT_USAGE_ERROR
 from ..manifests import ExperimentError, load_experiment
+from ..rag import run_rag_pipeline
 from ..report import render_report
 from ..runner import run_benchmark, save_result
 from ..suites import list_suites, load_suite, run_suite
@@ -206,6 +207,44 @@ def cmd_agentic(args: argparse.Namespace) -> int:
     report["workload"] = args.workload
     report["runtime"] = args.runtime
     report["model"] = args.model
+    echo_json(report)
+    return EXIT_OK
+
+
+def cmd_rag(args: argparse.Namespace) -> int:
+    """Run the RAG pipeline, timing retrieval, reranking and generation apart."""
+    try:
+        backend = resolve(args.runtime)
+    except BackendError as exc:
+        fail(str(exc))
+        return EXIT_USAGE_ERROR
+
+    generate = getattr(backend, "generate_text", None)
+    if generate is None:
+        fail(
+            f"runtime {args.runtime!r} does not implement generate_text, which "
+            "the RAG workload needs to issue its own assembled prompts. Graph "
+            "runtimes emit no tokens and cannot run this workload."
+        )
+        return EXIT_USAGE_ERROR
+
+    config = BenchmarkConfig(
+        model=args.model or "",
+        max_tokens=args.max_tokens,
+        iterations=1,
+        warmup_runs=0,
+        device=args.device,
+        extra={"model_path": args.model_path},
+    )
+    try:
+        report = run_rag_pipeline(lambda prompt: generate(prompt, config), top_k=args.top_k)
+    except BackendError as exc:
+        fail(str(exc))
+        return EXIT_USAGE_ERROR
+
+    report["runtime"] = args.runtime
+    report["model"] = args.model
+    report["top_k"] = args.top_k
     echo_json(report)
     return EXIT_OK
 
@@ -419,6 +458,18 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
         choices=sorted(AGENTIC_SCRIPTS),
     )
     agentic_p.set_defaults(func=cmd_agentic)
+
+    rag_p = sub.add_parser(
+        "rag",
+        help="Run a RAG pipeline (retrieval vs rerank vs generation time)",
+    )
+    rag_p.add_argument("--runtime", required=True, choices=sorted(BACKENDS))
+    rag_p.add_argument("--model", default=None)
+    rag_p.add_argument("--model-path", default=None)
+    rag_p.add_argument("--device", default="auto")
+    rag_p.add_argument("--max-tokens", type=int, default=192)
+    rag_p.add_argument("--top-k", type=int, default=4, help="Passages retrieved per question")
+    rag_p.set_defaults(func=cmd_rag)
 
     cliff_p = sub.add_parser("cliff", help="Find the offload cliff in a sweep matrix")
     cliff_p.add_argument("sweep", help="Path to a sweep-*.json produced by `aihwbench sweep`")

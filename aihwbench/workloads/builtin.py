@@ -14,6 +14,8 @@ import random
 
 from . import TrafficMixItem, TurnSpec, Workload, register
 
+NL = chr(10)
+
 __all__ = [
     "synthesize_prompt",
     "sample_traffic_mix",
@@ -203,5 +205,109 @@ register(
         ),
         osl_tokens=64,
         requires=("tool_calls",),
+    )
+)
+
+# ---------------------------------------------------------------------------
+# Task-shaped workloads
+#
+# Each has a distinct request *shape* rather than merely a distinct prompt: a
+# code-completion request is short-in/short-out and latency-bound, a
+# summarization request is long-in/short-out and prefill-bound, and the two
+# stress different parts of a machine. Registering them separately is what lets
+# a published result say which shape it measured.
+
+_FIM_PROMPT = (
+    "Complete the middle of this function."
+    + NL
+    + NL
+    + "def parse_duration(text: str) -> float:"
+    + NL
+    + "    # Seconds from a string like '2h30m' or '90s'."
+    + NL
+    + "    total = 0.0"
+    + NL
+    + "    # <FILL>"
+    + NL
+    + "    return total"
+    + NL
+)
+
+register(
+    Workload(
+        id="code_completion_fim",
+        kind="generation",
+        description=(
+            "Fill-in-the-middle code completion: short prefix and suffix, "
+            "short completion. Latency-bound, and the shape an editor "
+            "integration actually issues -- time to first token matters far "
+            "more here than sustained throughput."
+        ),
+        prompt=_FIM_PROMPT,
+        osl_tokens=64,
+    )
+)
+
+register(
+    Workload(
+        id="long_document_summary",
+        kind="prefill",
+        description=(
+            "Long-document summarization: a large input reduced to a short "
+            "answer. Prefill-bound, and the workload where context-depth "
+            "scaling and KV-cache pressure show up first."
+        ),
+        isl_tokens=8192,
+        osl_tokens=192,
+    )
+)
+
+register(
+    Workload(
+        id="structured_output",
+        kind="generation",
+        description=(
+            "Structured output / function calling: the model must emit "
+            "parseable JSON. Pairs with the json_validity evaluator, which "
+            "scores whether the output actually parsed rather than whether it "
+            "merely looked plausible."
+        ),
+        prompt=(
+            'Return a JSON object with keys "model", "quantization" and '
+            '"vram_gb" describing a 7B model at Q4_K_M on a 12 GB card. '
+            "Reply with JSON only."
+        ),
+        osl_tokens=96,
+        requires=("structured_output",),
+    )
+)
+
+register(
+    Workload(
+        id="streaming_chat_interactivity",
+        kind="generation",
+        description=(
+            "Interactive chat: a short prompt and a long streamed reply. Read "
+            "for inter-token latency spread rather than mean throughput, "
+            "because one long pause mid-response feels far worse than a "
+            "uniformly slower stream at the same average rate."
+        ),
+        isl_tokens=64,
+        osl_tokens=768,
+        requires=("streaming",),
+    )
+)
+
+register(
+    Workload(
+        id="rag_pipeline",
+        kind="combined",
+        description=(
+            "Retrieval-augmented generation: retrieve, rerank and generate, "
+            "each timed separately. Retrieval is lexical and local by design, "
+            "so the workload measures the machine rather than someone's "
+            "embedding model or vector index."
+        ),
+        osl_tokens=192,
     )
 )

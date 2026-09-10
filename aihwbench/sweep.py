@@ -40,6 +40,18 @@ DEFAULT_METRIC_KEYS = (
     "gen_tps_ci95",
     "gen_tps_min",
     "gen_tps_max",
+    # Requested by the tuner for its `most_efficient` verdict and its balanced
+    # frontier, computed by every backend, and dropped here -- so that verdict
+    # was None for every sweep ever run, and the frontier silently lost its
+    # efficiency axis. The tuner's note said "verdicts requiring unmeasured
+    # metrics are null rather than guessed", which read as a platform
+    # limitation rather than a projection dropping a measured value.
+    "performance_per_watt",
+    # Read by the context-scaling analyser, whose whole subject is how prompt
+    # processing degrades with input length -- and dropped here, so its curve
+    # reported `prompt_tokens_per_second: null` at every depth and it fell
+    # back to inferring prefill cost from time-to-first-token.
+    "prompt_tokens_per_second",
 )
 
 

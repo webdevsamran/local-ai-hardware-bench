@@ -33,7 +33,30 @@ from ..report import render_report
 from ..runner import run_benchmark, save_result
 from ..suites import list_suites, load_suite, run_suite
 from ..sweep import SweepSpec, matrix_to_csv_rows, run_sweep
+from ..workloads import get_workload, list_workloads
 from .common import echo_json, fail
+
+#: The `benchmark --max-tokens` default. Named so a workload's declared output
+#: length can tell an explicit --max-tokens from an untouched default.
+_DEFAULT_MAX_TOKENS = 128
+
+
+def _runnable_workloads() -> list[Any]:
+    """Registered workloads `benchmark` can actually run.
+
+    A workload with no prompt describes lengths only; running it would
+    silently fall back to the default prompt and measure something other than
+    what its name says. Those are offered by `run` with a manifest instead.
+    """
+    runnable = []
+    for workload_id in list_workloads():
+        try:
+            workload = get_workload(workload_id)
+        except KeyError:  # pragma: no cover - registry mutated mid-call
+            continue
+        if workload.prompt:
+            runnable.append(workload)
+    return runnable
 
 
 def cmd_benchmark(args: argparse.Namespace) -> int:
@@ -43,6 +66,34 @@ def cmd_benchmark(args: argparse.Namespace) -> int:
     if args.runtime in ("llama.cpp", "onnxruntime", "openvino") and not args.model_path:
         fail(f"--model-path is required for the {args.runtime} runtime")
         return EXIT_USAGE_ERROR
+    # `BenchmarkConfig.prompt` has always existed and always been left at its
+    # default here, so the prompt -- which is part of the comparison key --
+    # was the one benchmark parameter no user could set.
+    prompt = args.prompt
+    workload = None
+    workload_id = getattr(args, "workload", None)
+    if workload_id:
+        if prompt:
+            fail("--prompt and --workload set the same thing; pass only one")
+            return EXIT_USAGE_ERROR
+        try:
+            workload = get_workload(workload_id)
+        except KeyError:
+            fail(f"unknown workload {workload_id!r}; see `aihwbench run --help`")
+            return EXIT_USAGE_ERROR
+        if not workload.prompt:
+            fail(
+                f"workload {workload_id!r} declares no prompt, so it cannot be run "
+                "directly by `benchmark`. Length-only profiles need a dataset or "
+                "manifest; see `aihwbench run`."
+            )
+            return EXIT_USAGE_ERROR
+        prompt = workload.prompt
+        # A workload's declared output length is part of what it measures, so
+        # honour it unless the caller asked for something specific.
+        if workload.osl_tokens and args.max_tokens == _DEFAULT_MAX_TOKENS:
+            args.max_tokens = workload.osl_tokens
+
     config = BenchmarkConfig(
         model=args.model or "",
         max_tokens=args.max_tokens,
@@ -52,7 +103,8 @@ def cmd_benchmark(args: argparse.Namespace) -> int:
         seed=args.seed,
         context_length=args.context_length,
         device=args.device,
-        extra={"model_path": args.model_path},
+        extra={"model_path": args.model_path, "workload": workload},
+        **({"prompt": prompt} if prompt else {}),
     )
     try:
         resolve(args.runtime)
@@ -402,7 +454,26 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     bench.add_argument("--runtime", required=True, choices=sorted(BACKENDS))
     bench.add_argument("--model", default=None, help="Model identifier (e.g. ollama tag)")
     bench.add_argument("--model-path", default=None, help="Local model file path (llama.cpp)")
-    bench.add_argument("--max-tokens", type=int, default=128)
+    bench.add_argument("--max-tokens", type=int, default=_DEFAULT_MAX_TOKENS)
+    bench.add_argument(
+        "--prompt",
+        default=None,
+        help=(
+            "Prompt to benchmark. Recorded in the result and part of the "
+            "comparison key, so two runs with different prompts are never "
+            "ranked against each other."
+        ),
+    )
+    bench.add_argument(
+        "--workload",
+        default=None,
+        choices=sorted(w.id for w in _runnable_workloads()),
+        help=(
+            "A registered workload to run instead of the default prompt. "
+            "Sets the prompt and, unless --max-tokens says otherwise, the "
+            "target output length."
+        ),
+    )
     bench.add_argument("--warmup", type=int, default=2)
     bench.add_argument("--iterations", type=int, default=5)
     bench.add_argument("--temperature", type=float, default=0.0)

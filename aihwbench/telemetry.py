@@ -21,7 +21,13 @@ import time
 from collections.abc import Callable
 from typing import Any
 
-from .vendors import battery_sample, powermetrics_sample, rocm_sample
+from .vendors import (
+    battery_sample,
+    parse_rapl_energy,
+    powermetrics_sample,
+    read_rapl_counter,
+    rocm_sample,
+)
 
 __all__ = [
     "TelemetrySampler",
@@ -58,10 +64,70 @@ def _gpu_probes() -> tuple[tuple[str, Callable[[], dict[str, Any] | None]], ...]
     )
 
 
+class RaplPowerReader:
+    """CPU-package power from Intel RAPL, without blocking the sampler.
+
+    ``vendors.rapl_power_sample`` sleeps for its own interval to get two
+    counter readings. Calling that from a loop that already ticks every
+    half second would double the sampling interval, so this keeps the previous
+    reading instead and derives power from consecutive ticks. The first tick
+    returns None because a cumulative counter says nothing until it is read
+    twice.
+
+    This exists because RAPL is the *only* power source on a machine with no
+    discrete GPU -- an Intel or AMD laptop running on integrated graphics,
+    which is most of the consumer hardware this project is aimed at. Without
+    it those machines publish no energy data at all, and the joules-per-token
+    figures the project treats as a differentiator would only ever exist for
+    people who already own an NVIDIA card.
+
+    Its scope is narrower than a GPU probe's and every sample says so: it
+    measures the CPU package and excludes a discrete GPU entirely, so it must
+    never be presented as whole-system power.
+    """
+
+    DOMAIN = "/sys/class/powercap/intel-rapl:0"
+
+    def __init__(self, domain: str = DOMAIN) -> None:
+        self._domain = domain
+        self._previous: tuple[float, float] | None = None  # (energy_uj, monotonic)
+        self._max_energy_uj: float | None = None
+        self._checked_max = False
+
+    def available(self) -> bool:
+        """Whether this machine exposes the counter at all (Linux only)."""
+        return read_rapl_counter(f"{self._domain}/energy_uj") is not None
+
+    def sample(self) -> dict[str, Any] | None:
+        """Power since the previous call, or None if that cannot be derived."""
+        now = time.monotonic()
+        energy_uj = read_rapl_counter(f"{self._domain}/energy_uj")
+        if energy_uj is None:
+            self._previous = None
+            return None
+        if not self._checked_max:
+            self._max_energy_uj = read_rapl_counter(f"{self._domain}/max_energy_range_uj")
+            self._checked_max = True
+
+        previous = self._previous
+        self._previous = (energy_uj, now)
+        if previous is None:
+            return None
+        elapsed = now - previous[1]
+        if elapsed <= 0:
+            return None
+        return parse_rapl_energy(previous[0], energy_uj, elapsed, max_energy_uj=self._max_energy_uj)
+
+
 #: Extra keys a vendor probe may contribute beyond the common sample shape.
 _GPU_EXTRA_KEYS = frozenset(
     {"telemetry_vendor", "vram_percent", "cpu_power_watts", "gpu_power_watts", "power_basis"}
 )
+
+#: Keys carried through from a RAPL sample. `scope` travels with the reading
+#: because CPU-package power and GPU power are different quantities, and a
+#: result that does not say which it measured invites them to be compared.
+_RAPL_KEYS = ("power_watts", "energy_joules", "counter_wrapped", "telemetry_vendor", "scope")
 
 
 def _nvidia_smi_sample() -> dict[str, Any] | None:
@@ -178,6 +244,11 @@ class TelemetrySampler:
         self._lock = threading.Lock()
         self._samples: list[dict[str, Any]] = []
         self._sources: dict[str, str | None] = {}
+        # Probed once. On a machine without the sysfs counter -- anything not
+        # Linux, and Linux on non-Intel silicon -- this stays None and costs
+        # the loop nothing per tick.
+        reader = RaplPowerReader()
+        self._rapl: RaplPowerReader | None = reader if reader.available() else None
 
     def start(self) -> None:
         self._stop.clear()
@@ -196,6 +267,15 @@ class TelemetrySampler:
         "gpu_util_percent": "device",
         "temperature_c": "device",
         "power_watts": "device",
+    }
+
+    #: Scope overrides keyed by the source that actually answered. Power is
+    #: the one field whose scope depends on where it came from: a GPU probe
+    #: reports device power, while RAPL reports the CPU package and excludes a
+    #: discrete GPU entirely. Publishing both as "device" would invite them to
+    #: be compared, which is the error this project exists to prevent.
+    _SCOPE_BY_SOURCE = {
+        ("power_watts", "intel-rapl"): "cpu-package",
     }
 
     def summary(self) -> dict[str, Any]:
@@ -256,7 +336,10 @@ class TelemetrySampler:
         block: dict[str, Any] = {
             "source": "aihwbench-telemetry",
             "interval_seconds": self.interval,
-            "scope": dict(self._SCOPE),
+            "scope": {
+                key: self._SCOPE_BY_SOURCE.get((key, self._sources.get(key)), value)
+                for key, value in self._SCOPE.items()
+            },
             "sources": dict(self._sources),
             "samples": len(samples),
             # The measured time series. Aggregates alone cannot show a
@@ -348,6 +431,17 @@ class TelemetrySampler:
                 for key in ("vram_mb", "gpu_util_percent", "temperature_c", "power_watts"):
                     self._sources[key] = None
 
+            # Power of last resort. On a machine with no discrete GPU no probe
+            # above reports any, and without this the run carries no energy
+            # data at all -- which is most consumer laptops. It is a fallback
+            # rather than a peer: RAPL measures the CPU package only, so where
+            # a GPU probe answered, its reading is the better one.
+            if sample.get("power_watts") is None and self._rapl is not None:
+                rapl = self._rapl.sample()
+                if rapl is not None:
+                    sample.update({k: rapl[k] for k in _RAPL_KEYS if k in rapl})
+                    self._sources["power_watts"] = "intel-rapl"
+
             # Battery, where there is one. Sampled per point rather than once,
             # because the drain rate over a sustained run is the number laptop
             # owners want and a single reading cannot give it.
@@ -403,6 +497,13 @@ def sample_idle_power(seconds: float = 2.0, interval: float = 0.5) -> dict[str, 
     vram: list[float] = []
     deadline = time.time() + max(0.0, seconds)
     source: str | None = None
+    # The same last-resort power source the sampler uses. Without it a machine
+    # with no discrete GPU would measure power under load and have nothing to
+    # measure it against, so every energy figure would stay null.
+    rapl = RaplPowerReader()
+    rapl_reader = rapl if rapl.available() else None
+    if rapl_reader is not None:
+        rapl_reader.sample()  # prime: a cumulative counter needs two readings
     while time.time() < deadline:
         sample = _nvidia_smi_sample()
         if sample is not None and sample.get("power_watts") is not None:
@@ -412,6 +513,11 @@ def sample_idle_power(seconds: float = 2.0, interval: float = 0.5) -> dict[str, 
                 utils.append(float(sample["gpu_util_percent"]))
             if sample.get("vram_mb") is not None:
                 vram.append(float(sample["vram_mb"]))
+        elif rapl_reader is not None:
+            rapl_sample = rapl_reader.sample()
+            if rapl_sample is not None and rapl_sample.get("power_watts") is not None:
+                readings.append(float(rapl_sample["power_watts"]))
+                source = "intel-rapl"
         time.sleep(interval)
     if not readings:
         return {

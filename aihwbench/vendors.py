@@ -35,6 +35,7 @@ __all__ = [
     "rocm_sample",
     "powermetrics_sample",
     "rapl_power_sample",
+    "read_rapl_counter",
     "battery_sample",
     "VENDOR_STATUS",
 ]
@@ -241,7 +242,13 @@ def parse_rapl_energy(
     }
 
 
-def _read_rapl_counter(path: str) -> float | None:
+def read_rapl_counter(path: str) -> float | None:
+    """One raw RAPL sysfs counter, or None where it is unreadable.
+
+    Public because the telemetry sampler reads the counter directly: it ticks
+    on its own schedule and cannot use ``rapl_power_sample``, which sleeps to
+    get its second reading.
+    """
     try:
         with open(path, encoding="utf-8") as handle:
             return float(handle.read().strip())
@@ -260,16 +267,16 @@ def rapl_power_sample(
     """
     import time
 
-    start = _read_rapl_counter(f"{domain}/energy_uj")
+    start = read_rapl_counter(f"{domain}/energy_uj")
     if start is None:
         return None
     time.sleep(interval_seconds)
-    end = _read_rapl_counter(f"{domain}/energy_uj")
+    end = read_rapl_counter(f"{domain}/energy_uj")
     return parse_rapl_energy(
         start,
         end,
         interval_seconds,
-        max_energy_uj=_read_rapl_counter(f"{domain}/max_energy_range_uj"),
+        max_energy_uj=read_rapl_counter(f"{domain}/max_energy_range_uj"),
     )
 
 

@@ -36,19 +36,53 @@ from ..suites import list_suites, load_suite, run_suite
 from ..sweep import SweepSpec, matrix_to_csv_rows, run_sweep
 from ..system_info import detect_system
 from ..workloads import get_workload, list_workloads
+from ..workloads.builtin import synthesize_prompt
 from .common import echo_json, fail
 
 #: The `benchmark --max-tokens` default. Named so a workload's declared output
 #: length can tell an explicit --max-tokens from an untouched default.
 _DEFAULT_MAX_TOKENS = 128
 
+#: The `benchmark --context-length` default, named for the same reason as
+#: `_DEFAULT_MAX_TOKENS`: a workload needs to tell an explicit setting from an
+#: untouched one before it may raise it.
+_DEFAULT_CONTEXT_LENGTH = 2048
+
+
+def _workload_prompt(workload: Any) -> str | None:
+    """The request text for a workload, synthesized where it declares a length.
+
+    A workload either carries a prompt or declares how long its input should
+    be. Only the first kind used to be runnable, so eight registered profiles
+    -- `long_prompt`, `long_context`, `decode_only`, `prefill_only` and the
+    rest -- could not be executed at all, while `synthesize_prompt` sat in
+    `workloads/builtin.py` with no callers.
+
+    Synthesis is deterministic for a given length and seed, so two machines
+    running `long_prompt` send the same bytes. That is what makes the profile
+    a comparable measurement rather than two people each inventing 4096 tokens
+    of their own.
+
+    Returns None for a workload that is neither -- a multi-turn conversation,
+    a traffic mix, an agentic loop -- because those need a driver rather than
+    a single request, and `benchmark` is not it.
+    """
+    if workload.prompt:
+        return str(workload.prompt)
+    if workload.turns or workload.traffic_mix:
+        return None
+    if workload.isl_tokens:
+        return synthesize_prompt(int(workload.isl_tokens))
+    return None
+
 
 def _runnable_workloads() -> list[Any]:
     """Registered workloads `benchmark` can actually run.
 
-    A workload with no prompt describes lengths only; running it would
-    silently fall back to the default prompt and measure something other than
-    what its name says. Those are offered by `run` with a manifest instead.
+    A conversation, a traffic mix or an agentic loop needs a driver that
+    issues more than one request; offering those here would let someone run
+    `multi_turn_8` and measure a single turn while believing they measured
+    eight. They are reached through `aihwbench run`, `agentic` and `rag`.
     """
     runnable = []
     for workload_id in list_workloads():
@@ -56,7 +90,7 @@ def _runnable_workloads() -> list[Any]:
             workload = get_workload(workload_id)
         except KeyError:  # pragma: no cover - registry mutated mid-call
             continue
-        if workload.prompt:
+        if _workload_prompt(workload):
             runnable.append(workload)
     return runnable
 
@@ -83,18 +117,30 @@ def cmd_benchmark(args: argparse.Namespace) -> int:
         except KeyError:
             fail(f"unknown workload {workload_id!r}; see `aihwbench run --help`")
             return EXIT_USAGE_ERROR
-        if not workload.prompt:
+        prompt = _workload_prompt(workload)
+        if not prompt:
             fail(
-                f"workload {workload_id!r} declares no prompt, so it cannot be run "
-                "directly by `benchmark`. Length-only profiles need a dataset or "
-                "manifest; see `aihwbench run`."
+                f"workload {workload_id!r} needs more than one request -- a "
+                "conversation, a traffic mix or an agentic loop -- so "
+                "`benchmark` cannot run it. See `aihwbench run`, `agentic` "
+                "or `rag`."
             )
             return EXIT_USAGE_ERROR
-        prompt = workload.prompt
         # A workload's declared output length is part of what it measures, so
         # honour it unless the caller asked for something specific.
         if workload.osl_tokens and args.max_tokens == _DEFAULT_MAX_TOKENS:
             args.max_tokens = workload.osl_tokens
+
+        # And the context has to hold what the workload sends.
+        #
+        # `long_prompt` declares 4096 input tokens and ran at the 2048-token
+        # default, so the server truncated a 3331-token prompt to 1026 and the
+        # result reported prefill throughput for a third of the intended
+        # input. Nothing flagged it: `workload.isl_tokens` said 4096,
+        # `metrics.prompt_tokens` said 1026, and the two never met.
+        needed = (workload.isl_tokens or 0) + (workload.osl_tokens or 0)
+        if needed > args.context_length == _DEFAULT_CONTEXT_LENGTH:
+            args.context_length = needed
 
     config = BenchmarkConfig(
         model=args.model or "",
@@ -502,7 +548,7 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     bench.add_argument("--iterations", type=int, default=5)
     bench.add_argument("--temperature", type=float, default=0.0)
     bench.add_argument("--seed", type=int, default=42)
-    bench.add_argument("--context-length", type=int, default=2048)
+    bench.add_argument("--context-length", type=int, default=_DEFAULT_CONTEXT_LENGTH)
     bench.add_argument("--device", default="auto", help="auto | cpu | cuda | gpu | npu")
     bench.add_argument(
         "--output",

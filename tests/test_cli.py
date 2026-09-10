@@ -302,3 +302,107 @@ def test_every_output_flag_says_whether_it_wants_a_file_or_a_directory():
         "these commands' --output does not say whether it takes a file or a "
         f"directory: {sorted(set(undocumented))}"
     )
+
+
+# --- Length-only workloads are runnable, and their context fits --------------
+#
+# Thirteen of seventeen registered workloads could not be run by `benchmark`,
+# because they declare an input length rather than carrying a prompt — while
+# `synthesize_prompt`, which turns a length into a deterministic prompt, sat in
+# `workloads/builtin.py` with no callers.
+#
+# Enabling them exposed the next problem: `long_prompt` declares 4096 input
+# tokens and ran at the 2048-token default context, so the server truncated a
+# 3331-token prompt to 1026 and reported prefill throughput for a third of the
+# intended input. `workload.isl_tokens` said 4096, `metrics.prompt_tokens` said
+# 1026, and the two never met.
+
+
+def test_length_only_workloads_are_offered():
+    from aihwbench.cli import build_parser
+
+    parser = build_parser()
+    action = next(
+        a
+        for sub in parser._actions
+        if getattr(sub, "choices", None) and "benchmark" in (sub.choices or {})
+        for a in sub.choices["benchmark"]._actions
+        if "--workload" in getattr(a, "option_strings", [])
+    )
+    offered = set(action.choices or [])
+    for length_profile in ("long_prompt", "prefill_only", "decode_only", "long_context"):
+        assert length_profile in offered, f"{length_profile} is registered but unrunnable"
+
+
+def test_multi_request_workloads_are_not_offered():
+    """Running `multi_turn_8` as one request measures a single turn.
+
+    Offering it here would let someone believe they measured eight.
+    """
+    from aihwbench.cli import build_parser
+
+    parser = build_parser()
+    action = next(
+        a
+        for sub in parser._actions
+        if getattr(sub, "choices", None) and "benchmark" in (sub.choices or {})
+        for a in sub.choices["benchmark"]._actions
+        if "--workload" in getattr(a, "option_strings", [])
+    )
+    offered = set(action.choices or [])
+    for driven_elsewhere in ("multi_turn_8", "mixed_traffic_realistic", "agentic_swe"):
+        assert driven_elsewhere not in offered
+
+
+def test_a_synthesized_prompt_is_deterministic():
+    """Two machines running `long_prompt` must send the same bytes.
+
+    Otherwise the profile is not a comparable measurement — it is two people
+    each inventing 4096 tokens of their own.
+    """
+    from aihwbench.workloads.builtin import synthesize_prompt
+
+    assert synthesize_prompt(512) == synthesize_prompt(512)
+    assert synthesize_prompt(512) != synthesize_prompt(1024)
+
+
+def test_the_context_is_raised_to_hold_the_workload():
+    from aihwbench.cli import build_parser
+
+    parser = build_parser()
+    args = parser.parse_args(
+        ["benchmark", "--runtime", "ollama", "--model", "m", "--workload", "long_prompt"]
+    )
+    # The parser leaves the default in place; cmd_benchmark raises it. Check
+    # the default it must raise *from*, so a changed default is caught here.
+    from aihwbench.cli.benchmark import _DEFAULT_CONTEXT_LENGTH
+    from aihwbench.workloads import get_workload
+
+    assert args.context_length == _DEFAULT_CONTEXT_LENGTH
+    workload = get_workload("long_prompt")
+    needed = (workload.isl_tokens or 0) + (workload.osl_tokens or 0)
+    assert needed > _DEFAULT_CONTEXT_LENGTH, (
+        "long_prompt no longer exceeds the default context, so this test no "
+        "longer covers the truncation it was written for"
+    )
+
+
+def test_an_explicit_context_length_is_not_overridden():
+    """A caller who set it meant it, even if the workload wants more."""
+    from aihwbench.cli import build_parser
+
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "benchmark",
+            "--runtime",
+            "ollama",
+            "--model",
+            "m",
+            "--workload",
+            "long_prompt",
+            "--context-length",
+            "1024",
+        ]
+    )
+    assert args.context_length == 1024

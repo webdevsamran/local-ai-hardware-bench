@@ -975,3 +975,111 @@ button:focus-visible,
   .chip { transition: none; }
   .chip:active { transform: none; }
 }
+
+/* --- Embeddable result card -------------------------------------------
+   Rendered inside someone else's page, so it carries its own context: the
+   hardware, the runtime, the confidence interval and the caveat travel with
+   the number. A card that fits none of those should not be embeddable. */
+.embed-card {
+  box-sizing: border-box;
+  max-width: 420px;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.embed-empty {
+  color: var(--text-muted);
+}
+
+.embed-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.embed-model {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.embed-trust {
+  flex: none;
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.75em;
+  text-transform: lowercase;
+  color: var(--text-muted);
+}
+
+.embed-trust-verified {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.embed-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+  margin: 0 0 10px;
+}
+
+.embed-metrics > div { margin: 0; }
+
+.embed-metrics dt {
+  font-size: 0.78em;
+  color: var(--text-muted);
+}
+
+.embed-metrics dd {
+  margin: 0;
+  font-size: 1.15em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.embed-unit {
+  font-size: 0.7em;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.embed-ci {
+  display: block;
+  font-size: 0.62em;
+  font-weight: 400;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.embed-context {
+  margin: 0 0 6px;
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.embed-caveat {
+  margin: 0 0 10px;
+  font-size: 0.78em;
+  color: var(--text-muted);
+}
+
+.embed-link {
+  font-size: 0.82em;
+}
+
+/* The embed page is the whole document inside the iframe, so it must not
+   inherit the site's page padding or centred column. */
+body:has(.embed-card) {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}

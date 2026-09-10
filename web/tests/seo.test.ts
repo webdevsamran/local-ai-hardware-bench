@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { allRoutes, metaForPath } from '../src/lib/seo'
+import { allRoutes, indexableRoutes, metaForPath } from '../src/lib/seo'
 import type { Dataset } from '../src/lib/types'
 // Read as text at build time, so no Node type definitions are needed.
 import prerenderSource from '../scripts/prerender.mjs?raw'
@@ -160,5 +160,49 @@ describe('prerender data list', () => {
     for (const name of wanted) {
       expect(got, `prerender.mjs is missing '${name}'`).toContain(name)
     }
+  })
+})
+
+// --- Embeddable result cards ---------------------------------------------
+//
+// An embed is the same result as its /results/ page, rendered for someone
+// else's site. That makes it duplicate content, and the two ways of saying
+// "do not index this" have to agree: a page carrying a noindex meta tag while
+// also appearing in the sitemap asks a crawler to do two contradictory
+// things, and which one wins is not something this project gets to decide.
+
+describe('embed routes', () => {
+  it('has one embed route per published result', () => {
+    const routes = allRoutes(dataset)
+    for (const result of dataset.results) {
+      expect(routes).toContain(`/embed/result/${result.run_id}`)
+    }
+  })
+
+  it('marks embeds noindex', () => {
+    const meta = metaForPath('/embed/result/ollama-123', dataset)
+    expect(meta.noindex).toBe(true)
+  })
+
+  it('does not mark the canonical result page noindex', () => {
+    // The embed is the duplicate; the result page is the original.
+    expect(metaForPath('/results/ollama-123', dataset).noindex).toBeFalsy()
+  })
+
+  it('keeps every noindex route out of the sitemap', () => {
+    const indexable = indexableRoutes(dataset)
+    for (const route of indexable) {
+      expect(metaForPath(route, dataset).noindex).toBeFalsy()
+    }
+    // ...while still prerendering them, so an embed works without JS.
+    const all = allRoutes(dataset)
+    expect(all.length).toBeGreaterThan(indexable.length)
+  })
+
+  it('prerenders the sitemap from indexable routes, not all routes', () => {
+    // Reading the script is what catches someone passing `routes` back in:
+    // the mistake is invisible until a crawler is already indexing embeds.
+    expect(prerenderSource).toContain('indexableRoutes(dataset)')
+    expect(prerenderSource).toContain('name="robots" content="noindex, follow"')
   })
 })

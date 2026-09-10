@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import Layout from './components/Layout'
 import Home from './pages/Home'
@@ -27,6 +27,7 @@ import HardwareNeeded from './pages/HardwareNeeded'
 import Planned from './pages/Planned'
 import About from './pages/About'
 import NotFound from './pages/NotFound'
+import EmbedResult from './pages/EmbedResult'
 
 export function AppRoutes() {
   return (
@@ -75,7 +76,25 @@ export function AppRoutes() {
  * tree in a StaticRouter. Keeping the router out of here is what lets one
  * component tree serve both.
  */
+/** Routes rendered bare, with none of the site's own chrome. */
+function EmbedRoutes() {
+  return (
+    <Routes>
+      <Route path="/embed/result/:runId" element={<EmbedResult />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  )
+}
+
 export function AppShell({ children }: { children?: ReactNode }) {
+  const { pathname } = useLocation()
+  // An embed lives inside someone else's page, where this site's navigation,
+  // footer and theme toggle would be noise wrapped around a small card. The
+  // check is on the path rather than a prop so the browser and the
+  // prerenderer reach the same conclusion without being told separately.
+  if (pathname.startsWith('/embed/')) {
+    return <EmbedRoutes />
+  }
   return <Layout>{children ?? <AppRoutes />}</Layout>
 }
 

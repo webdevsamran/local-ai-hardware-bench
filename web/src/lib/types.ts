@@ -43,6 +43,19 @@ export interface Metrics {
   max_temperature_c?: number | null
   average_power_watts?: number | null
   performance_per_watt?: number | null
+  /**
+   * Spread of the headline metric across iterations. A mean without these is
+   * a number that cannot be argued with; published results carry them so a
+   * reader can see whether two figures are actually different.
+   */
+  gen_tps_ci95?: [number, number] | null
+  generation_tps_cv?: number | null
+  generation_tps_stddev?: number | null
+  /** Inter-token latency as a distribution: a mean cannot show a stall. */
+  itl_p50_ms?: number | null
+  itl_p90_ms?: number | null
+  itl_p99_ms?: number | null
+  itl_max_ms?: number | null
 }
 
 export interface Reproducibility {

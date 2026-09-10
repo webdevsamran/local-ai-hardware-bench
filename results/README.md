@@ -9,6 +9,20 @@ Publish a result by copying it here after `aihwbench validate` passes,
 together with its markdown report in `docs/reports/`. `aihwbench quality`
 should report every check passing; a result that fails one is not ready.
 
+## The graph-runtime results are noisy
+
+With variance now measured for them — it was not, because ONNX Runtime and
+OpenVINO record per-iteration timing as `latency_ms` where the check looked
+for `total_latency_ms` — the ONNX Runtime CPU result shows a latency
+coefficient of variation of **0.4997**, passing the 0.5 threshold by three
+ten-thousandths. The DirectML result sits at 0.32.
+
+They are published as they are rather than re-run to a nicer number: the
+threshold is not being moved to accommodate them, and a result sitting on the
+line is worth seeing. Graph inference of a small vision model takes single-
+digit milliseconds per iteration, where scheduling noise is a large share of
+the measurement, and more iterations would help more than a re-run would.
+
 ## Results that predate a field
 
 The schema gains fields as the tool learns to measure more, and older results

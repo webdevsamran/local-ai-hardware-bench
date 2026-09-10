@@ -906,3 +906,67 @@ def test_case_and_punctuation_do_not_change_the_score():
 def test_digits_are_kept_because_a_wrong_number_is_a_wrong_answer():
     assert _score("token_f1", "1969", "1969").score == 1.0
     assert _score("token_f1", "1970", "1969").score == 0.0
+
+
+# --- Variance must actually be measured to be acceptable --------------------
+#
+# `variance_acceptable` means "not known to be unstable". For four published
+# results it was passing on nothing: ONNX Runtime and OpenVINO record
+# per-iteration timing as `latency_ms`, while the check looked only for
+# `total_latency_ms`, and graph models carry no token counts, so neither
+# series existed. A check that cannot fail is the same defect as one that
+# always does.
+
+
+def test_graph_backend_latency_is_found():
+    """ONNX Runtime and OpenVINO write `latency_ms`, not `total_latency_ms`."""
+    from aihwbench.quality import data_quality_report
+
+    result = {
+        "metrics": {},
+        "iterations": [{"iteration": i, "latency_ms": v} for i, v in enumerate([2.3, 2.4, 2.2])],
+    }
+    checks = data_quality_report(result)["checks"]
+    assert checks["variance_measured"] is True
+    assert checks["cv_latency"] is not None
+
+
+def test_a_run_with_no_series_reports_variance_unmeasured():
+    from aihwbench.quality import data_quality_report
+
+    checks = data_quality_report({"metrics": {}, "iterations": [{"iteration": 0}]})["checks"]
+    assert checks["variance_measured"] is False
+    # Still "not known to be unstable" — but a reader can now see that nothing
+    # was checked, rather than reading a pass as a clean bill of health.
+    assert checks["variance_acceptable"] is True
+
+
+def test_an_unstable_graph_run_is_now_caught():
+    """Previously invisible: no `total_latency_ms` meant no check."""
+    from aihwbench.quality import data_quality_report
+
+    result = {
+        "metrics": {},
+        "iterations": [
+            {"iteration": i, "latency_ms": v} for i, v in enumerate([2.0, 40.0, 3.0, 55.0, 2.5])
+        ],
+    }
+    checks = data_quality_report(result)["checks"]
+    assert checks["variance_measured"] is True
+    assert checks["variance_acceptable"] is False
+
+
+def test_generative_latency_still_wins_where_both_exist():
+    """A backend writing both must not have them double-counted."""
+    from aihwbench.quality import _iteration_latencies
+
+    values = _iteration_latencies(
+        [{"total_latency_ms": 100.0, "latency_ms": 999.0}, {"total_latency_ms": 110.0}]
+    )
+    assert values == [100.0, 110.0]
+
+
+def test_a_boolean_is_not_a_latency():
+    from aihwbench.quality import _iteration_latencies
+
+    assert _iteration_latencies([{"latency_ms": True}, {"latency_ms": 5.0}]) == [5.0]

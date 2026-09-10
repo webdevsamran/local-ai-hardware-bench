@@ -69,6 +69,12 @@ def cmd_verify_bundle(args: argparse.Namespace) -> int:
             candidate = bundle_path.with_suffix(bundle_path.suffix + ".sig")
             signature_path = candidate if candidate.is_file() else None
         report["signature"] = verify_bundle_cosign(bundle_path, signature_path)
+        report["signature_checked"] = True
+        report["attests"] = (
+            "contents match the manifest, and the bundle's signature was checked"
+            if report["signature"]["verified"]
+            else "signature verification failed"
+        )
         if not report["signature"]["verified"]:
             # An unverified signature is a failure of the whole check: a
             # bundle whose checksums pass but whose signature does not is

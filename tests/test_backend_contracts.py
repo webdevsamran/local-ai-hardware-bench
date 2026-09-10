@@ -473,3 +473,108 @@ def test_openai_backends_honour_a_host_override(monkeypatch: pytest.MonkeyPatch,
     finally:
         monkeypatch.delenv(f"AIHWBENCH_{name.upper()}_HOST")
         importlib.reload(module)
+
+
+# ---------------------------------------------------------------------------
+# Ollama model identity — recorded, not guessed, and not left null
+# ---------------------------------------------------------------------------
+#
+# `quantization` and `parameters` were hardcoded to None while `/api/tags` had
+# been returning `details.quantization_level` and `details.parameter_size` all
+# along. `model.quantization` is in the comparison-safety classifier's strict
+# set, so null on both sides meant the two agreed about it: served under a name
+# that does not encode the quantization, two different quantizations compared
+# as STRICTLY_COMPARABLE with no reasons given.
+
+
+def _tags_response(details: dict[str, Any] | None) -> dict[str, Any]:
+    entry: dict[str, Any] = {"name": "m:tag", "digest": "sha256:abc"}
+    if details is not None:
+        entry["details"] = details
+    return {"models": [entry]}
+
+
+def test_ollama_records_the_quantization_the_api_reports(monkeypatch: pytest.MonkeyPatch) -> None:
+    from aihwbench.backends import ollama
+
+    monkeypatch.setattr(
+        ollama,
+        "_api_get",
+        lambda *_a, **_k: _tags_response(
+            {
+                "quantization_level": "Q4_K_M",
+                "parameter_size": "494.03M",
+                "family": "qwen2",
+                "format": "gguf",
+            }
+        ),
+    )
+    identity = ollama.model_identity("m:tag")
+    # Lower-cased to match the vocabulary the fit estimator and dashboard use.
+    assert identity["quantization"] == "q4_k_m"
+    assert identity["parameters"] == "494.03M"
+    assert identity["family"] == "qwen2"
+
+
+def test_ollama_leaves_identity_null_when_the_api_says_nothing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Absent stays absent. A guessed quantization is worse than none."""
+    from aihwbench.backends import ollama
+
+    monkeypatch.setattr(ollama, "_api_get", lambda *_a, **_k: _tags_response(None))
+    identity = ollama.model_identity("m:tag")
+    assert identity["quantization"] is None
+    assert identity["parameters"] is None
+
+
+def test_ollama_never_parses_the_quantization_out_of_the_tag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The tag says q4_K_M; the API does not. The result must stay null.
+
+    Parsing tags would give `:latest` and any renamed model a confident wrong
+    answer, and a wrong quantization is worse than a missing one -- it makes
+    two different models compare as one.
+    """
+    from aihwbench.backends import ollama
+
+    monkeypatch.setattr(ollama, "_api_get", lambda *_a, **_k: {"models": []})
+    identity = ollama.model_identity("qwen2.5:0.5b-instruct-q4_K_M")
+    assert identity["quantization"] is None
+
+
+def test_recorded_quantization_closes_the_comparison_hole() -> None:
+    """Same served name, different quantization, now caught."""
+    from aihwbench.comparability import compare_classification
+
+    base = {
+        "model": {"name": "qwen2.5-0.5b", "quantization": "q4_k_m"},
+        "runtime": {"name": "ollama", "backend": "ollama-http-api", "device": "cuda"},
+        "reproducibility": {"iterations": 8, "warmup_runs": 3},
+    }
+    other = {
+        "model": {"name": "qwen2.5-0.5b", "quantization": "q8_0"},
+        "runtime": {"name": "ollama", "backend": "ollama-http-api", "device": "cuda"},
+        "reproducibility": {"iterations": 8, "warmup_runs": 3},
+    }
+    verdict = compare_classification(base, other)
+    assert verdict["classification"] == "NOT_COMPARABLE"
+    assert any("quantization" in reason for reason in verdict["reasons"])
+
+
+def test_two_nulls_would_still_have_agreed() -> None:
+    """Why recording it mattered, stated as the defect it was.
+
+    `_same(None, None)` is True by design, so leaving the field null made two
+    different quantizations indistinguishable to the classifier.
+    """
+    from aihwbench.comparability import compare_classification
+
+    shared = {
+        "runtime": {"name": "ollama", "backend": "ollama-http-api", "device": "cuda"},
+        "reproducibility": {"iterations": 8, "warmup_runs": 3},
+    }
+    a = {"model": {"name": "qwen2.5-0.5b", "quantization": None}, **shared}
+    b = {"model": {"name": "qwen2.5-0.5b", "quantization": None}, **shared}
+    assert compare_classification(a, b)["classification"] == "STRICTLY_COMPARABLE"

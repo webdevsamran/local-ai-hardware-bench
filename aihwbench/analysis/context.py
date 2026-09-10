@@ -120,15 +120,27 @@ def analyze_context_scaling(
                 ),
             }
 
-    # Memory saturation: the depth at which VRAM stops climbing. On a machine
-    # with headroom the cache keeps growing; when it stops, the run has
-    # usually started spilling rather than stopped needing memory.
+    # Memory saturation: the depth from which VRAM stops climbing and stays
+    # flat for the rest of the curve.
+    #
+    # The persistence requirement is the whole check. Testing a single
+    # adjacent pair reported saturation at the second measured depth for any
+    # model whose weights dominate its VRAM -- measured here as 614, 620, 632,
+    # 658, 710 MB across 512 to 8192 tokens, where the 1% step from 512 to
+    # 1024 was called saturation and the note offered spilling as the likely
+    # cause, on a 16 GB card with 15 GB free. Memory that is still climbing at
+    # the last point has not saturated, whatever any one pair did.
     saturation: int | None = None
     vram_points = [p for p in points if p["peak_vram_mb"]]
-    for previous, current in zip(vram_points, vram_points[1:], strict=False):
-        growth = (current["peak_vram_mb"] - previous["peak_vram_mb"]) / previous["peak_vram_mb"]
-        if growth < _SATURATION_GROWTH:
-            saturation = current["context_tokens"]
+    for index in range(1, len(vram_points)):
+        flat_from_here = all(
+            (vram_points[i]["peak_vram_mb"] - vram_points[i - 1]["peak_vram_mb"])
+            / vram_points[i - 1]["peak_vram_mb"]
+            < _SATURATION_GROWTH
+            for i in range(index, len(vram_points))
+        )
+        if flat_from_here:
+            saturation = vram_points[index]["context_tokens"]
             break
 
     # Deepest context still above the caller's throughput floor.
@@ -150,10 +162,22 @@ def analyze_context_scaling(
         "prefill_scaling": prefill,
         "memory_saturation_tokens": saturation,
         "memory_saturation_note": (
-            "VRAM stopped growing here; on a constrained machine that usually "
-            "means the run began spilling, not that it stopped needing memory"
+            # Two readings fit this evidence and the analyser cannot choose
+            # between them from the curve alone, so it states both rather than
+            # asserting the alarming one. Whether the card had headroom is
+            # what separates them, and that is in the sweep's environment
+            # block, not here.
+            "VRAM stopped growing from this depth and stayed flat. On a card "
+            "near its limit that means the run began spilling; on one with "
+            "headroom it means the KV cache is small next to the weights. "
+            "Compare peak VRAM against the card's capacity to tell which"
             if saturation is not None
-            else None
+            else (
+                "VRAM was still growing at the deepest measured context, so "
+                "nothing saturated in this range"
+                if len(vram_points) > 1
+                else None
+            )
         ),
         "min_acceptable_tps": min_acceptable_tps,
         "last_usable_context_tokens": last_usable,

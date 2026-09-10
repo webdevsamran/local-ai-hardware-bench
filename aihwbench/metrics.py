@@ -300,18 +300,30 @@ def cold_start_metrics(
     warm = round(sum(warm_values) / len(warm_values), 3) if warm_values else None
 
     penalty: float | None = None
+    measured_cold_start = False
     if cold is not None and warm is not None:
-        penalty = round(cold - warm, 3)
+        difference = round(cold - warm, 3)
+        if difference > 0:
+            penalty = difference
+            measured_cold_start = True
+        # A "cold" load no slower than a warm one did not load anything: the
+        # model was already resident, usually from an earlier run on the same
+        # machine. Reporting a negative penalty would be meaningless, and
+        # reporting zero would claim loading is free. Neither is true, so the
+        # penalty is absent and the run is marked as having observed no cold
+        # start -- while both raw figures stay visible so a reader can see why.
     elif cold is not None and measured and not warm_values:
-        # No load reported on the measured runs means the model stayed
-        # resident, so the whole cold figure is the penalty.
+        # Load reported on the first warm-up and on none of the measured runs
+        # is the textbook cold start: the model loaded once and stayed
+        # resident, so the whole figure is the penalty.
         penalty = cold
+        measured_cold_start = True
 
     return {
         "cold_start_ms": cold,
         "warm_load_ms": warm,
         "cold_start_penalty_ms": penalty,
-        "cold_start_measured": cold is not None,
+        "cold_start_measured": measured_cold_start,
     }
 
 

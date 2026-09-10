@@ -76,15 +76,30 @@ contract. Summary:
 
 ## Submitting a benchmark result
 
-Follow [docs/results/submission-pipeline.md](docs/results/submission-pipeline.md):
+Full walkthrough:
+[docs/contributing/benchmarking-your-hardware.md](docs/contributing/benchmarking-your-hardware.md).
+Pipeline details: [docs/results/submission-pipeline.md](docs/results/submission-pipeline.md).
 
-1. Run the benchmark with default workload parameters where possible.
-2. `aihwbench validate results/raw/<run>.json`
-3. Open a PR adding the JSON to `results/published/`, a platform note
+1. Run the benchmark with `--workload sustained_generation`, at least 5
+   measured iterations after 2 warm-ups. Do **not** use the default chat
+   prompt for a throughput submission: it asks for a two-sentence answer, so
+   it generates about 29 tokens and measures the GPU's clock ramp rather
+   than a sustained rate.
+2. `aihwbench validate results/raw/<run>.json --formal`
+3. `aihwbench quality results/raw/<run>.json` — all checks must pass. If
+   `variance_acceptable` fails, see the troubleshooting section in the
+   walkthrough; a monotonic decline is a real finding about your machine and
+   worth reporting rather than hiding.
+4. Open a PR adding the JSON to `results/published/`, a platform note
    under `platforms/<vendor>/`, and a matrix row update for what was
    actually tested.
 
-CI validates every result file against schema 1.0 automatically.
+Results arrive with trust state `unreviewed`; a measurement is not verified
+by the machine that produced it. CI validates every result file against the
+current schema automatically.
+
+If you would rather have this reproducible and logged, the repository ships a
+GitHub Action you can run on a self-hosted runner — see the walkthrough.
 
 ## Documentation contributions
 

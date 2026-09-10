@@ -360,7 +360,7 @@ labeled in the issue tracker. See also:
 | Audience | Start here |
 | --- | --- |
 | New user | [Quickstart](docs/getting-started/quickstart.md) · [Installation](docs/getting-started/installation.md) · [FAQ](FAQ.md) |
-| Contributor | [Onboarding](docs/contributing/onboarding.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Glossary](GLOSSARY.md) |
+| Contributor | [Onboarding](docs/contributing/onboarding.md) · [Benchmark your hardware](docs/contributing/benchmarking-your-hardware.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Glossary](GLOSSARY.md) |
 | Runtime maintainer | [Backends overview](docs/backends/overview.md) · [Plugin API](docs/guides/plugin-api.md) |
 | Researcher | [Reproducibility](docs/research/reproducibility.md) · [Citation](docs/research/citation.md) |
 | Security/compliance | [Privacy](docs/security/privacy.md) · [Supply chain](docs/security/supply-chain.md) |

@@ -45,6 +45,24 @@ shipped-but-unreachable is not done.
       (`agentic_swe`, `agentic_data_analyst`) run a scripted loop over local,
       deterministic tools and report LLM inference time and tool execution
       time separately, with the unattributed remainder shown as overhead.
+- [x] Energy measured against a verified idle baseline. The baseline is
+      refused when the GPU is busy, per-token energy is null rather than zero
+      when the workload's draw is below the sensor's resolution, and every
+      figure states what share of gross power the workload accounted for. The
+      machine state at baseline time (utilization, resident VRAM) is recorded,
+      because a card still holding a model from an earlier run idles at
+      roughly twice the draw of the same card after eviction — which moves
+      per-token energy by two orders of magnitude with no hardware difference.
+- [x] Variance enforced on the headline metric. Generation throughput must
+      hold a coefficient of variation under 0.5 to pass the data-quality gate,
+      and a sustained decline across a run is reported separately from noise
+      by comparing the means of the run's halves. Latency variance alone was
+      insufficient: it is dominated by time-to-first-token, so throughput
+      could swing four-fold while latency variance stayed under 7%.
+- [x] `sustained_generation` workload, plus `--prompt` and `--workload` on
+      `aihwbench benchmark`. Generation throughput needs enough generated
+      tokens to reach a steady state; `default_chat` asks for a two-sentence
+      answer and measures mostly the GPU's clock ramp.
 
 ## Track 2 — Runtime Ecosystem
 

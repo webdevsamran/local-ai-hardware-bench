@@ -571,3 +571,210 @@ def test_measured_results_upgrade_the_evidence_tier():
     report = recommend_configuration({"gpu_vram_mb": 8192, "ram_gb": 16.0}, measured)
     assert report["evidence_tier"] == "measured"
     assert report["recommended_runtime"] == "llama.cpp"
+
+
+# --- Energy figures must not outlive the baseline they were measured against -
+#
+# Regression tests for a discrepancy observed on real hardware: the same
+# workload on the same machine produced 0.0777 J/token against a 14.9 W idle
+# baseline and 0.0009 J/token against a 31.4 W one. Neither power reading was
+# wrong. The second run simply began with a model still resident in VRAM, so
+# the card sat at raised clocks and almost all of the measured draw was
+# baseline. Presented bare, an 84x swing driven by nothing but what ran
+# beforehand reads as a hardware or efficiency difference.
+
+
+def test_energy_flags_a_figure_that_is_mostly_baseline():
+    out = compute_energy_metrics(
+        average_power_watts=31.6,
+        idle_power_watts=31.41,
+        generation_tokens_per_second=206.57,
+        requests_per_second=None,
+    )
+    # The measurement is still reported -- withholding it would hide real data.
+    assert out["energy_joules_per_token"] is not None
+    assert out["incremental_share_of_gross"] < 0.01
+    assert out["incremental_is_robust"] is False
+    assert "baseline" in out["caveat"]
+
+
+def test_energy_does_not_flag_a_workload_dominated_figure():
+    out = compute_energy_metrics(
+        average_power_watts=120.0,
+        idle_power_watts=20.0,
+        generation_tokens_per_second=40.0,
+        requests_per_second=None,
+    )
+    assert out["incremental_share_of_gross"] == pytest.approx(0.8333, abs=1e-4)
+    assert out["incremental_is_robust"] is True
+    assert out["caveat"] is None
+
+
+def test_energy_robustness_is_unknown_without_a_baseline():
+    """No baseline means no claim either way, not a passing grade."""
+    out = compute_energy_metrics(
+        average_power_watts=120.0,
+        idle_power_watts=None,
+        generation_tokens_per_second=40.0,
+        requests_per_second=None,
+    )
+    assert out["incremental_is_robust"] is None
+    assert out["incremental_share_of_gross"] is None
+    assert out["caveat"] is None
+
+
+def test_the_two_measured_baselines_are_told_apart():
+    """The exact pair of readings that motivated this, side by side."""
+    resident = compute_energy_metrics(31.6, 31.41, 206.57, None)
+    evicted = compute_energy_metrics(31.6, 14.9, 206.57, None)
+    assert evicted["energy_joules_per_token"] > resident["energy_joules_per_token"] * 50
+    assert evicted["incremental_is_robust"] is True
+    assert resident["incremental_is_robust"] is False
+
+
+def test_energy_below_the_noise_floor_is_not_reported_as_zero():
+    """Measured: gross 28.26 W under load against a 29.62 W idle baseline.
+
+    A 0.5B model held an RTX 3080 Ti at ~6% utilization, and the card's idle
+    draw drifted by more than the workload added. The old clamp published
+    `energy_joules_per_token: 0.0` -- an assertion that generating tokens was
+    free. It costs something; this sensor simply cannot resolve how much.
+    """
+    out = compute_energy_metrics(
+        average_power_watts=28.26,
+        idle_power_watts=29.62,
+        generation_tokens_per_second=206.0,
+        requests_per_second=None,
+    )
+    assert out["incremental_power_watts"] is None
+    assert out["energy_joules_per_token"] is None
+    assert out["energy_joules_per_1k_tokens"] is None
+    assert out["incremental_is_robust"] is None
+    assert "below the resolution" in out["caveat"]
+
+
+def test_energy_equal_power_is_also_unresolved():
+    """Exactly equal is no more informative than lower."""
+    out = compute_energy_metrics(30.0, 30.0, 100.0, None)
+    assert out["incremental_power_watts"] is None
+    assert out["energy_joules_per_token"] is None
+    assert out["caveat"] is not None
+
+
+def test_energy_reports_a_resolvable_difference_however_small():
+    """The guard must not swallow real, small measurements."""
+    out = compute_energy_metrics(30.5, 30.0, 100.0, None)
+    assert out["incremental_power_watts"] == pytest.approx(0.5)
+    assert out["energy_joules_per_token"] == pytest.approx(0.005)
+    # Small and honestly flagged as baseline-dominated, but not withheld.
+    assert out["incremental_is_robust"] is False
+
+
+# --- The headline metric's own stability ------------------------------------
+
+
+def _run_with_throughput(values: list[float]) -> dict:
+    """A result whose iterations produce the given per-iteration tok/s."""
+    return {
+        "metrics": {},
+        "iterations": [
+            {"completion_tokens": 100, "eval_seconds": 100.0 / v, "total_latency_ms": 2000.0}
+            for v in values
+        ],
+    }
+
+
+def test_throughput_decline_is_reported_when_sustained():
+    """The measured series that motivated this: 327, 342, 118, 124, 84 tok/s."""
+    from aihwbench.quality import per_iteration_throughput, throughput_decline
+
+    values = [327.4, 341.6, 118.0, 123.9, 84.3]
+    decline = throughput_decline(values)
+    assert decline is not None
+    # Halves, not endpoints: (334.5 - 104.1) / 334.5.
+    assert decline["decline_fraction"] == pytest.approx(0.689, abs=1e-3)
+    assert decline["early_mean_tps"] == pytest.approx(334.5, abs=0.1)
+    assert decline["late_mean_tps"] == pytest.approx(104.1, abs=0.1)
+
+    # And the helper recovers the same series from iteration records.
+    recovered = per_iteration_throughput(_run_with_throughput(values)["iterations"])
+    assert recovered == pytest.approx(values, rel=1e-6)
+
+
+def test_steady_throughput_is_not_called_a_decline():
+    from aihwbench.quality import throughput_decline
+
+    assert throughput_decline([200.0, 198.0, 201.0, 199.0, 200.0]) is None
+
+
+def test_one_low_iteration_is_not_a_decline():
+    """A dip that recovers is noise, and saying otherwise cries wolf."""
+    from aihwbench.quality import throughput_decline
+
+    assert throughput_decline([200.0, 90.0, 205.0, 198.0, 202.0]) is None
+
+
+def test_throughput_decline_needs_enough_iterations():
+    """Halves of a 3-point series overlap or omit a point; either way the
+    split decides the answer, so no claim is made below four."""
+    from aihwbench.quality import throughput_decline
+
+    assert throughput_decline([300.0, 100.0]) is None
+    assert throughput_decline([300.0, 100.0, 90.0]) is None
+
+
+def test_a_high_opening_iteration_is_not_a_collapse():
+    """The false positive that endpoint comparison produced.
+
+    333, 180, 266, 258, 242 tok/s recovers after one low iteration. Its first
+    and last values differ by 27%; its halves differ by 2%. An endpoint test
+    called this a sustained decline and would have put a throttling story on
+    an ordinary noisy run.
+    """
+    from aihwbench.quality import throughput_decline
+
+    assert throughput_decline([332.8, 179.9, 265.9, 258.4, 241.6]) is None
+
+
+def test_quality_gate_fails_on_unstable_headline_throughput():
+    """Latency CV alone let a 56%-CV throughput number through.
+
+    Total latency here is dominated by time-to-first-token, so it barely
+    moves while generation throughput swings four-fold -- exactly the shape
+    of the run that exposed this.
+    """
+    from aihwbench.quality import data_quality_report
+
+    result = {
+        "metrics": {"generation_tps_cv": 0.5603},
+        "iterations": [
+            {"completion_tokens": 29, "eval_seconds": s, "total_latency_ms": lat}
+            for s, lat in (
+                (0.0886, 2114.0),
+                (0.0849, 2136.0),
+                (0.2458, 2338.0),
+                (0.2340, 2321.0),
+                (0.3440, 2436.0),
+            )
+        ],
+    }
+    checks = data_quality_report(result)["checks"]
+    assert checks["cv_latency"] < 0.1  # latency looks fine...
+    assert checks["cv_generation_throughput"] > 0.5  # ...throughput does not
+    assert checks["variance_acceptable"] is False
+    assert checks["sustained_decline"] is not None
+
+
+def test_quality_gate_accepts_a_stable_run():
+    from aihwbench.quality import data_quality_report
+
+    result = {
+        "metrics": {},
+        "iterations": [
+            {"completion_tokens": 100, "eval_seconds": s, "total_latency_ms": 1000.0}
+            for s in (0.50, 0.51, 0.49, 0.50, 0.52)
+        ],
+    }
+    checks = data_quality_report(result)["checks"]
+    assert checks["variance_acceptable"] is True
+    assert checks["sustained_decline"] is None

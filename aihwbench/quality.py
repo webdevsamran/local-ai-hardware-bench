@@ -23,6 +23,10 @@ from .trust import TRUST_STATES, effective_trust
 
 __all__ = [
     "data_quality_report",
+    "per_iteration_throughput",
+    "throughput_decline",
+    "MAX_ACCEPTABLE_CV",
+    "SUSTAINED_DECLINE_FRACTION",
     "invalidate_result",
     "flag_anomalies",
     "statistical_confidence",
@@ -37,6 +41,27 @@ __all__ = [
 #: exactly like a five-iteration one.
 MIN_PUBLISHED_ITERATIONS = 5
 MIN_WARMUP_RUNS = 2
+
+#: Coefficient of variation above which a measured series is too unstable for
+#: its mean to be published as a headline figure.
+#:
+#: Applied to generation throughput as well as latency. Latency alone was not
+#: enough: in a short-generation workload, total latency is dominated by
+#: time-to-first-token, so a run whose throughput fell 327 -> 84 tok/s across
+#: five iterations (CV 0.56) still showed a latency CV of 0.06 and passed. The
+#: headline number on the leaderboard is tokens per second, and it was the one
+#: number whose stability nothing checked.
+MAX_ACCEPTABLE_CV = 0.5
+
+#: Fraction by which throughput must fall from the first measured iteration to
+#: the last before the decline is called sustained rather than noise.
+#:
+#: A monotonic slide is a different finding from a noisy one and has a
+#: different cause -- thermal or power limits engaging partway through, which
+#: is a property of the machine worth reporting rather than a defect in the
+#: measurement. Reporting it separately is what turns "this number is
+#: unreliable" into "this machine cannot hold this rate".
+SUSTAINED_DECLINE_FRACTION = 0.25
 
 
 def statistical_confidence(result: dict[str, Any]) -> dict[str, Any]:
@@ -129,7 +154,20 @@ def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:
         if isinstance(i, dict) and i.get("total_latency_ms") is not None
     ]
     variance = summarize(latencies) if latencies else None
-    high_variance = bool(variance and variance["cv"] is not None and variance["cv"] > 0.5)
+    latency_cv = variance["cv"] if variance else None
+
+    # The headline metric's own stability. Computed by the metrics layer on
+    # every run and, until now, consulted by nothing.
+    throughput = per_iteration_throughput(iterations)
+    throughput_variance = summarize(throughput) if throughput else None
+    throughput_cv = (result.get("metrics") or {}).get("generation_tps_cv")
+    if throughput_cv is None and throughput_variance:
+        throughput_cv = throughput_variance["cv"]
+
+    high_variance = any(
+        value is not None and value > MAX_ACCEPTABLE_CV for value in (latency_cv, throughput_cv)
+    )
+    decline = throughput_decline(throughput)
 
     trust = effective_trust(result)
     confidence = statistical_confidence(result)
@@ -146,7 +184,11 @@ def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:
         "provenance_present": bool((result.get("provenance") or {}).get("result_hash")),
         "reproducibility_score": repro["score"],
         "variance_acceptable": not high_variance,
-        "cv_latency": variance["cv"] if variance else None,
+        "cv_latency": latency_cv,
+        "cv_generation_throughput": throughput_cv,
+        # Present only when throughput slid monotonically: a sustained decline
+        # is a statement about the machine, not about the measurement.
+        "sustained_decline": decline,
         "trust_state": trust,
         "statistical_confidence": confidence["label"],
         "meets_iteration_policy": confidence["meets_policy"],
@@ -163,6 +205,74 @@ def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:
     )
     passed = sum(1 for key in scored if checks[key])
     return {"checks": checks, "checks_passed": passed, "checks_total": len(scored)}
+
+
+def per_iteration_throughput(iterations: list[Any]) -> list[float]:
+    """Generation throughput for each iteration, in tokens per second.
+
+    Derived from the tokens produced and the time spent producing them, which
+    is the only pair every backend records per iteration. Iterations missing
+    either are skipped rather than assumed.
+    """
+    values: list[float] = []
+    for iteration in iterations:
+        if not isinstance(iteration, dict):
+            continue
+        tokens = iteration.get("completion_tokens")
+        seconds = iteration.get("eval_seconds")
+        if isinstance(tokens, (int, float)) and isinstance(seconds, (int, float)):
+            if tokens > 0 and seconds > 0:
+                values.append(float(tokens) / float(seconds))
+    return values
+
+
+def throughput_decline(throughput: list[float]) -> dict[str, Any] | None:
+    """Describe a sustained fall in throughput across a run, if there is one.
+
+    Compares the mean of the first half of the run against the mean of the
+    last half, and reports only when the later half is lower by more than
+    ``SUSTAINED_DECLINE_FRACTION``.
+
+    Comparing *halves* rather than the first and last iterations is what makes
+    this trustworthy. An endpoint comparison reads a single high opening
+    iteration as a collapse: the series 333, 180, 266, 258, 242 tok/s is noise
+    that recovers, yet its first and last values differ by 27%. Its halves
+    differ by 2%, which is the truth.
+
+    A real decline looks like the reference machine's 327, 342, 118, 124,
+    84 tok/s -- halves 69% apart. Published as a mean of 199 tok/s, that
+    number describes no moment of the run; the machine never held it.
+    """
+    if len(throughput) < 4:
+        # Halves of a 3-point series share a point or omit one; either way the
+        # comparison says more about the split than about the run.
+        return None
+
+    midpoint = len(throughput) // 2
+    early = throughput[:midpoint]
+    late = throughput[len(throughput) - midpoint :]
+    early_mean = sum(early) / len(early)
+    late_mean = sum(late) / len(late)
+    if early_mean <= 0:
+        return None
+
+    drop = (early_mean - late_mean) / early_mean
+    if drop <= SUSTAINED_DECLINE_FRACTION:
+        return None
+
+    return {
+        "first_iteration_tps": round(throughput[0], 2),
+        "last_iteration_tps": round(throughput[-1], 2),
+        "early_mean_tps": round(early_mean, 2),
+        "late_mean_tps": round(late_mean, 2),
+        "decline_fraction": round(drop, 4),
+        "detail": (
+            f"generation throughput fell {drop:.0%} between the first and second "
+            f"half of the run ({early_mean:.0f} -> {late_mean:.0f} tok/s). The "
+            "mean is not a rate this machine sustained; it is likely settling "
+            "into a thermal or power limit"
+        ),
+    }
 
 
 def invalidate_result(

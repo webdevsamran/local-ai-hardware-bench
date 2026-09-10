@@ -99,10 +99,14 @@ METRIC_REGISTRY: dict[str, dict[str, Any]] = {
         "aliases": (),
         "family": "efficiency",
     },
+    # Published in the result's `energy` block, not under `metrics`: it is
+    # computed against incremental power (net of idle draw) and travels with
+    # the basis and caveats that make it readable. See aihwbench/analysis/energy.py.
     "energy_joules_per_token": {
         "unit": "J/token",
         "aliases": ("energy_per_token_joules",),
         "family": "efficiency",
+        "published_in": "energy",
     },
     "energy_joules_per_request": {
         "unit": "J/request",
@@ -442,9 +446,21 @@ def aggregate_iteration_metrics(iterations: list[dict[str, Any]]) -> dict[str, A
         "itl_ms": (
             round(1000.0 * mean_eval_s / mean_tokens, 3) if mean_eval_s and mean_tokens else None
         ),
-        "energy_joules_per_token": (
-            round(power_mean / gen_tps_mean, 4) if power_mean and gen_tps_mean else None
-        ),
+        # `energy_joules_per_token` is deliberately NOT computed here.
+        #
+        # It used to be, from `power_mean` -- a mean over a per-iteration
+        # `average_power_watts` that no backend has ever set. Power arrives
+        # from the telemetry sampler, which every caller merges *after* this
+        # function returns, so the value was null in every result ever
+        # published while looking like a metric that simply had not been
+        # measured.
+        #
+        # It is not moved later either. The `energy` block computes it against
+        # the *incremental* power the workload was responsible for, net of the
+        # machine's idle draw, and states its basis and its caveat. A second
+        # figure under the same name computed against gross power would be a
+        # different quantity wearing the same label, which is the confusion
+        # this project exists to prevent.
         "coverage": {
             "iterations": len(iterations),
             "ttft_measured": len(ttfts),

@@ -89,25 +89,39 @@ def test_idle_power_above_load_power_is_inconsistent():
 
 
 def test_energy_per_token_must_follow_from_power_and_throughput():
+    """Rewritten to reach the check the way a real result does.
+
+    This built `metrics.energy_joules_per_token` by hand, which no benchmark
+    has ever produced -- the field was computed before power was measured and
+    was null in every published result. So the test passed while the guard it
+    covered never ran once on real data. It now goes through the `energy`
+    block, where the figure actually lives.
+    """
     findings = check_plausibility(
-        _result(
-            average_power_watts=50.0,
-            generation_tokens_per_second=100.0,
-            energy_joules_per_token=99.0,  # should be about 0.5
-        )
+        {
+            "system": {"gpu_vram_mb": 16384},
+            "metrics": {"generation_tokens_per_second": 100.0},
+            "energy": {
+                "energy_joules_per_token": 99.0,  # should be about 0.5
+                "incremental_power_watts": 50.0,
+            },
+        }
     )
-    assert any(f["field"] == "metrics.energy_joules_per_token" for f in findings)
+    assert any(f["field"] == "energy.energy_joules_per_token" for f in findings)
 
 
 def test_energy_within_rounding_tolerance_is_accepted():
-    """0.5 J/token from 50 W at 100 tok/s, with rounding."""
+    """0.5 J/token from 50 W incremental at 100 tok/s, with rounding."""
     assert (
         check_plausibility(
-            _result(
-                average_power_watts=50.0,
-                generation_tokens_per_second=100.0,
-                energy_joules_per_token=0.503,
-            )
+            {
+                "system": {"gpu_vram_mb": 16384},
+                "metrics": {"generation_tokens_per_second": 100.0},
+                "energy": {
+                    "energy_joules_per_token": 0.503,
+                    "incremental_power_watts": 50.0,
+                },
+            }
         )
         == []
     )
@@ -154,3 +168,74 @@ def test_large_idle_excess_is_still_a_finding():
     flagged = [f for f in findings if f["field"] == "metrics.idle_power_watts"]
     assert flagged
     assert "300%" in flagged[0]["detail"]
+
+
+# --- Energy per token must follow from the power it claims to come from -----
+#
+# This check read `metrics.energy_joules_per_token`, which is null in every
+# result ever published: the field was computed inside
+# `aggregate_iteration_metrics`, from a per-iteration power key no backend has
+# ever set, and the telemetry that carries real power is merged only after
+# that function returns. So the guard has never once run, in the one area
+# where three separate energy defects have already been found.
+
+
+def _energy_result(*, joules_per_token, incremental_watts, tps):
+    return {
+        "system": {"gpu_vram_mb": 16384},
+        "metrics": {"generation_tokens_per_second": tps},
+        "energy": {
+            "energy_joules_per_token": joules_per_token,
+            "incremental_power_watts": incremental_watts,
+        },
+    }
+
+
+def test_energy_per_token_consistent_with_incremental_power_passes():
+    # 22.08 W over 281.65 tok/s is 0.0784 J/token.
+    findings = check_plausibility(
+        _energy_result(joules_per_token=0.0784, incremental_watts=22.08, tps=281.65)
+    )
+    assert findings == []
+
+
+def test_energy_per_token_that_does_not_follow_is_flagged():
+    findings = check_plausibility(
+        _energy_result(joules_per_token=5.0, incremental_watts=22.08, tps=281.65)
+    )
+    flagged = [f for f in findings if f["field"] == "energy.energy_joules_per_token"]
+    assert flagged, "an energy figure inconsistent with its own inputs must be caught"
+    assert "incremental" in flagged[0]["detail"]
+
+
+def test_the_check_uses_incremental_power_not_gross():
+    """Checking against gross would flag every correct result.
+
+    The `energy` block computes per-token energy net of the machine's idle
+    draw. A guard comparing that against gross power would fire on exactly the
+    results that got it right, which is worse than not running at all.
+    """
+    result = _energy_result(joules_per_token=0.0784, incremental_watts=22.08, tps=281.65)
+    # Gross power is much larger than incremental; its presence must not
+    # change the verdict.
+    result["metrics"]["average_power_watts"] = 53.32
+    assert check_plausibility(result) == []
+
+
+def test_no_energy_block_means_no_claim():
+    findings = check_plausibility(_result(generation_tokens_per_second=281.65))
+    assert not [f for f in findings if "energy" in f["field"]]
+
+
+def test_metrics_no_longer_carries_a_field_it_cannot_compute():
+    """The always-null duplicate is gone, not merely left null.
+
+    A metric that is structurally impossible to populate reads as "not
+    measured on this platform", which is a different and misleading claim.
+    """
+    from aihwbench.metrics import aggregate_iteration_metrics
+
+    produced = aggregate_iteration_metrics(
+        [{"completion_tokens": 100, "eval_seconds": 0.5, "total_latency_ms": 900.0}]
+    )
+    assert "energy_joules_per_token" not in produced

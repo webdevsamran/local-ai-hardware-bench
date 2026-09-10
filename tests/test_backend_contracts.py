@@ -688,3 +688,24 @@ def test_genuinely_different_devices_still_split() -> None:
         **shared,
     }
     assert compare_classification(on_cpu, on_dml)["classification"] == "NOT_COMPARABLE"
+
+
+def test_graph_backends_emit_the_canonical_latency_key() -> None:
+    """`total_latency_ms`, the name every consumer reads.
+
+    Writing only `latency_ms` meant the data-quality gate found no series for
+    ONNX Runtime and OpenVINO and reported its variance check as passing
+    without running — and once it did run, those turned out to be the noisiest
+    results in the corpus, one of them clearing the threshold by three
+    ten-thousandths.
+    """
+    import inspect
+
+    from aihwbench.backends import onnxruntime as ort
+    from aihwbench.backends import openvino as ov
+
+    for module in (ort, ov):
+        source = inspect.getsource(module.run)
+        assert '"total_latency_ms"' in source, module.__name__
+        # The original name stays, because published results carry it.
+        assert '"latency_ms"' in source, module.__name__

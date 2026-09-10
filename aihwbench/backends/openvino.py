@@ -215,6 +215,18 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "graph_inputs": _declared_inputs(specs),
         },
         "iterations": [
-            {"iteration": i, "latency_ms": round(v, 2)} for i, v in enumerate(latencies)
+            {
+                "iteration": i,
+                # Both names, on purpose. `total_latency_ms` is the canonical
+                # one every consumer reads; `latency_ms` is what this backend
+                # has always written and what the published results carry.
+                # Emitting only the second meant the data-quality gate found
+                # no series here and reported its variance check as passing
+                # without running -- and the graph runtimes turned out to be
+                # the noisiest results in the corpus.
+                "latency_ms": round(v, 2),
+                "total_latency_ms": round(v, 2),
+            }
+            for i, v in enumerate(latencies)
         ],
     }

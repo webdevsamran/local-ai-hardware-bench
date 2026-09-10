@@ -17,9 +17,12 @@
     ],
     "format": "gguf",
     "name": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
-    "quantizations": [],
+    "quantizations": [
+      "q4_k_m"
+    ],
     "result_ids": [
-      "llamacpp-1787391945"
+      "llamacpp-1787391945",
+      "llamacpp-1789031931-b98435ea"
     ]
   },
   {

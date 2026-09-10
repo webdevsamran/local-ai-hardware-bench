@@ -1,11 +1,13 @@
 [
   {
     "device_options": [
-      "cuda"
+      "cuda",
+      "auto"
     ],
     "name": "llama.cpp",
     "result_ids": [
-      "llamacpp-1787391945"
+      "llamacpp-1787391945",
+      "llamacpp-1789031931-b98435ea"
     ],
     "versions": [
       "0.2.0-dev (build 10578, commit 369e1cd61)"

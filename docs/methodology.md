@@ -86,9 +86,15 @@ Every benchmark run records and fixes:
 - Ollama's generate API reports `load_duration`, and `load_time_ms` is
   measured from it. It is null only when the model was already resident, so
   a null here means "already loaded", not "not measured".
-- llama.cpp's OpenAI-compatible usage object does not include evaluation
-  durations; generation tok/s is therefore null for the llama.cpp backend
-  until we parse server timing logs.
+- llama.cpp's OpenAI-compatible usage object reports token *counts* but no
+  evaluation durations. Generation tok/s is therefore derived from the client
+  wall-clock window between the first and last streamed content chunk, and is
+  labelled `client_wall_clock` in `metrics.metric_source` — it includes the
+  HTTP stack and is not comparable with an in-process engine counter such as
+  `llama-bench`'s. The same applies to LM Studio, vLLM and SGLang. It is
+  arguably the more useful number for this project, because it is what a
+  client of a local server actually waits, but it is a different quantity and
+  every result says which it is.
 - Power draw via `nvidia-smi` is GPU package power, not whole-system power.
 - WDDM GPU memory reporting can lag actual allocation slightly.
 - Thermal analysis reads a persisted telemetry trace, so published results

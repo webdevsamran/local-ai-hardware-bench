@@ -13,6 +13,15 @@
       },
       {
         "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "optimal": true,
+        "run_id": "llamacpp-1789031931-b98435ea",
+        "runtime": "llama.cpp",
+        "x": 338.31,
+        "y": 13.94
+      },
+      {
+        "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
         "model": "qwen2.5:0.5b-instruct-q4_K_M",
         "optimal": false,
         "run_id": "ollama-1787388930",
@@ -55,6 +64,15 @@
         "runtime": "llama.cpp",
         "x": 360.87,
         "y": 26.76
+      },
+      {
+        "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "optimal": false,
+        "run_id": "llamacpp-1789031931-b98435ea",
+        "runtime": "llama.cpp",
+        "x": 338.31,
+        "y": 72.42
       },
       {
         "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
@@ -103,6 +121,15 @@
       },
       {
         "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "optimal": true,
+        "run_id": "llamacpp-1789031931-b98435ea",
+        "runtime": "llama.cpp",
+        "x": 338.31,
+        "y": 634.0
+      },
+      {
+        "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
         "model": "qwen2.5:0.5b-instruct-q4_K_M",
         "optimal": false,
         "run_id": "ollama-1787388930",
@@ -113,7 +140,7 @@
       {
         "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
         "model": "qwen2.5:0.5b-instruct-q4_K_M",
-        "optimal": true,
+        "optimal": false,
         "run_id": "ollama-1789031359-bfb62628",
         "runtime": "ollama",
         "x": 297.05,

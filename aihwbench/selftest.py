@@ -175,15 +175,31 @@ def _check_thermal_state() -> dict[str, Any]:
 
 
 def _check_runtimes() -> dict[str, Any]:
-    from .backends import detect_all
+    """Whether anything on this machine can actually run a benchmark.
 
-    ready = [i["name"] for i in detect_all() if i.get("status") == "ready"]
-    if ready:
-        return {"check": "runtimes", "status": "pass", "detail": f"ready: {', '.join(ready)}"}
+    The status compared here is `RuntimeStatus.AVAILABLE`. It used to be the
+    string "ready", which no backend has ever returned -- so this check failed
+    on every machine regardless of what was installed, and because a failing
+    check is blocking, `aihwbench self-test` reported `overall: fail`
+    universally. A precondition check that always fails is worse than none:
+    it teaches people that the tool's verdict means nothing.
+    """
+    from .backends import detect_all
+    from .backends.base import RuntimeStatus
+
+    available = [
+        info["name"] for info in detect_all() if info.get("status") == RuntimeStatus.AVAILABLE.value
+    ]
+    if available:
+        return {
+            "check": "runtimes",
+            "status": "pass",
+            "detail": f"available: {', '.join(sorted(available))}",
+        }
     return {
         "check": "runtimes",
         "status": "fail",
-        "detail": "no runtimes detected; install ollama or llama.cpp",
+        "detail": "no runtime is available; install Ollama or llama.cpp, or start its server",
     }
 
 

@@ -66,3 +66,63 @@ def test_weights_and_references_are_published():
         "ttft_ms",
         "performance_per_watt",
     }
+
+
+# --- A saturated component has stopped measuring anything --------------------
+#
+# Every component clamps at 100, so a result at 2x its reference point and one
+# at 10x score identically. Measured on the reference machine: throughput was
+# 599% of its reference and efficiency 114%, both reported as exactly 100.0,
+# leaving the composite driven almost entirely by the one component still
+# below the ceiling. A number that has stopped discriminating should say so,
+# which is the objection this project raises to single-number scores in the
+# first place.
+
+
+def test_a_clamped_component_is_named():
+    report = compute_score(
+        _result(
+            {
+                "generation_tokens_per_second": 300.0,  # 6x the 50 tok/s reference
+                "ttft_ms": 2000.0,  # well under the ceiling
+                "performance_per_watt": 5.7,  # just over the 5.0 reference
+            }
+        )
+    )
+    assert report["components"]["throughput"] == 100.0
+    assert report["components_at_ceiling"] == ["efficiency", "throughput"]
+    # And by how much, so two saturated results can still be told apart.
+    assert report["uncapped_components"]["throughput"] == 600.0
+    assert report["uncapped_components"]["efficiency"] == 114.0
+    assert "2 of 3 components hit the 100-point ceiling" in report["note"]
+
+
+def test_nothing_at_the_ceiling_leaves_the_note_alone():
+    report = compute_score(
+        _result(
+            {
+                "generation_tokens_per_second": 25.0,
+                "ttft_ms": 1000.0,
+                "performance_per_watt": 2.5,
+            }
+        )
+    )
+    assert report["components_at_ceiling"] == []
+    assert "ceiling" not in report["note"]
+
+
+def test_the_uncapped_view_preserves_the_direction_of_each_component():
+    """Responsiveness is lower-is-better; its ratio must invert too."""
+    fast = compute_score(_result({"generation_tokens_per_second": 10.0, "ttft_ms": 250.0}))
+    slow = compute_score(_result({"generation_tokens_per_second": 10.0, "ttft_ms": 4000.0}))
+    assert (
+        fast["uncapped_components"]["responsiveness"]
+        > (slow["uncapped_components"]["responsiveness"])
+    )
+
+
+def test_a_missing_metric_has_no_uncapped_ratio():
+    report = compute_score(_result({"generation_tokens_per_second": 25.0}))
+    assert report["uncapped_components"]["efficiency"] is None
+    assert "efficiency" in report["missing_metrics"]
+    assert "efficiency" not in report["components_at_ceiling"]

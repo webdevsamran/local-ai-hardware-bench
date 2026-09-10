@@ -94,34 +94,39 @@ export default function OffloadCliff() {
             </div>
 
             <h3>Every measured point</h3>
-            <table className="data-table">
-              <caption className="visually-hidden">
-                Measured generation throughput and peak VRAM at each offload
-                setting
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">GPU layers</th>
-                  <th scope="col">Generation</th>
-                  <th scope="col">95% CI</th>
-                  <th scope="col">Peak VRAM</th>
-                </tr>
-              </thead>
-              <tbody>
-                {curve.points.map((point) => (
-                  <tr key={point.gpu_layers}>
-                    <td>{point.gpu_layers}</td>
-                    <td>{fmtNum(point.tokens_per_second)} tok/s</td>
-                    <td>
-                      {point.ci95
-                        ? `${fmtNum(point.ci95[0])} – ${fmtNum(point.ci95[1])}`
-                        : '—'}
-                    </td>
-                    <td>{fmtNum(point.peak_vram_mb)} MB</td>
+            {/* Scrolls on its own rather than widening the page: at 320px a
+                four-column table otherwise makes the whole body scroll
+                sideways, dragging the prose along with it. */}
+            <div className="table-wrap">
+              <table className="data-table">
+                <caption className="visually-hidden">
+                  Measured generation throughput and peak VRAM at each offload
+                  setting
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">GPU layers</th>
+                    <th scope="col">Generation</th>
+                    <th scope="col">95% CI</th>
+                    <th scope="col">Peak VRAM</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {curve.points.map((point) => (
+                    <tr key={point.gpu_layers}>
+                      <td>{point.gpu_layers}</td>
+                      <td>{fmtNum(point.tokens_per_second)} tok/s</td>
+                      <td>
+                        {point.ci95
+                          ? `${fmtNum(point.ci95[0])} – ${fmtNum(point.ci95[1])}`
+                          : '—'}
+                      </td>
+                      <td>{fmtNum(point.peak_vram_mb)} MB</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
         )
       })}

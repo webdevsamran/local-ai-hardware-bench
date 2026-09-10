@@ -824,3 +824,85 @@ def test_an_unmeasured_spread_does_not_change_the_verdict():
 def test_the_spread_is_published_so_a_reader_can_judge():
     out = compute_energy_metrics(53.3, 31.2, 280.0, None, idle_power_spread_watts=2.25)
     assert out["idle_power_spread_watts"] == 2.25
+
+
+# --- Overlap evaluators: ROUGE-L and SQuAD-style token F1 --------------------
+#
+# The closest academic competitor reports task quality — MMLU, SQuAD F1,
+# ROUGE-L, Spider — where this project had exact match, JSON validity, and
+# cosine similarity over vectors the caller supplies. These two are pure
+# algorithms: no dataset is bundled, so nothing depends on a licence this
+# repository cannot grant.
+
+
+def _score(name: str, response: str, expected: str | None):
+    from aihwbench.evaluators import get_evaluator
+
+    return get_evaluator(name).evaluate(response, expected)
+
+
+def test_rouge_l_scores_an_exact_reference_at_one():
+    assert _score("rouge_l", "the cat sat on the mat", "the cat sat on the mat").score == 1.0
+
+
+def test_rouge_l_is_order_sensitive_and_token_f1_is_not():
+    """The reason both exist.
+
+    Word order distinguishes a summary from a bag of the right words, and is
+    irrelevant to a short factual answer. Reversing a sentence halves ROUGE-L
+    and leaves token F1 untouched.
+    """
+    reversed_words = "mat the on sat cat the"
+    reference = "the cat sat on the mat"
+    assert _score("rouge_l", reversed_words, reference).score == 0.5
+    assert _score("token_f1", reversed_words, reference).score == 1.0
+
+
+def test_no_overlap_scores_zero_not_none():
+    """Zero is a measurement here; None would mean "not scored"."""
+    assert _score("rouge_l", "completely unrelated words", "the cat sat").score == 0.0
+    assert _score("token_f1", "completely unrelated words", "the cat sat").score == 0.0
+
+
+def test_an_empty_side_is_unscored_rather_than_zero():
+    """Precision or recall is undefined, and 0.0 would read as "scored badly"."""
+    for name in ("rouge_l", "token_f1"):
+        assert _score(name, "", "the cat sat").score is None
+        assert _score(name, "the cat sat", "").score is None
+
+
+def test_no_reference_means_no_score():
+    for name in ("rouge_l", "token_f1"):
+        result = _score(name, "anything", None)
+        assert result.score is None
+        assert "supplied" in result.detail
+
+
+def test_token_f1_counts_repeats_once_each():
+    """SQuAD's multiset intersection: saying "Paris" three times earns once."""
+    assert _score("token_f1", "paris paris paris", "paris").score == 0.5
+    assert _score("token_f1", "paris", "paris").score == 1.0
+
+
+def test_scores_stay_within_the_declared_range():
+    from aihwbench.evaluators import get_evaluator
+
+    pairs = [
+        ("the quick brown fox", "the quick brown fox jumps"),
+        ("x", "the quick brown fox jumps over"),
+        ("a b c d e f g", "g f e d c b a"),
+    ]
+    for name in ("rouge_l", "token_f1"):
+        for response, expected in pairs:
+            score = get_evaluator(name).evaluate(response, expected).score
+            assert score is not None and 0.0 <= score <= 1.0
+
+
+def test_case_and_punctuation_do_not_change_the_score():
+    assert _score("token_f1", "The Cat, sat!", "the cat sat").score == 1.0
+    assert _score("rouge_l", "The Cat, sat!", "the cat sat").score == 1.0
+
+
+def test_digits_are_kept_because_a_wrong_number_is_a_wrong_answer():
+    assert _score("token_f1", "1969", "1969").score == 1.0
+    assert _score("token_f1", "1970", "1969").score == 0.0

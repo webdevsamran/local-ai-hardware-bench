@@ -185,7 +185,7 @@ aihwbench anomalies --results-dir results/published
 aihwbench snapshot --version v1 --results-dir results/published
 
 # Quality evaluation over a JSONL responses file (evaluator plugins)
-aihwbench evaluate --evaluator exact_match --dataset responses.jsonl
+aihwbench evaluate --evaluator rouge_l --dataset responses.jsonl
 
 # Export via the exporter plugin API (json/csv/markdown/sqlite built-in)
 aihwbench export-as --format csv --results-dir results/published --output out.csv

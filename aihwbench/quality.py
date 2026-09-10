@@ -148,11 +148,7 @@ def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:
     repro = reproducibility_score(result)
 
     iterations = result.get("iterations") or []
-    latencies = [
-        i.get("total_latency_ms")
-        for i in iterations
-        if isinstance(i, dict) and i.get("total_latency_ms") is not None
-    ]
+    latencies = _iteration_latencies(iterations)
     variance = summarize(latencies) if latencies else None
     latency_cv = variance["cv"] if variance else None
 
@@ -167,6 +163,15 @@ def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:
     high_variance = any(
         value is not None and value > MAX_ACCEPTABLE_CV for value in (latency_cv, throughput_cv)
     )
+    # Whether stability was checked at all.
+    #
+    # `variance_acceptable` means "not known to be unstable", and for four
+    # published results it was passing on nothing: the graph backends record
+    # per-iteration timing as `latency_ms` while this looked only for
+    # `total_latency_ms`, and they carry no token counts, so neither series
+    # existed. A check that cannot fail is the same defect as one that always
+    # does, and this says which happened.
+    variance_measured = latency_cv is not None or throughput_cv is not None
     decline = throughput_decline(throughput)
 
     # Whether the machine was available to be measured.
@@ -201,6 +206,9 @@ def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:
         "variance_acceptable": not high_variance,
         "cv_latency": latency_cv,
         "cv_generation_throughput": throughput_cv,
+        # False means the run carried no series to measure, not that it was
+        # steady.
+        "variance_measured": variance_measured,
         # Present only when throughput slid monotonically: a sustained decline
         # is a statement about the machine, not about the measurement.
         "sustained_decline": decline,
@@ -224,6 +232,29 @@ def data_quality_report(result: dict[str, Any]) -> dict[str, Any]:
     )
     passed = sum(1 for key in scored if checks[key])
     return {"checks": checks, "checks_passed": passed, "checks_total": len(scored)}
+
+
+#: Per-iteration keys carrying a request's wall-clock duration.
+#:
+#: Generative backends write `total_latency_ms`; the graph backends (ONNX
+#: Runtime, OpenVINO) write `latency_ms`, because an inference is not a request
+#: with a prompt and a completion. Reading only the first meant four published
+#: results had their variance check pass with no series to check.
+_LATENCY_KEYS = ("total_latency_ms", "latency_ms")
+
+
+def _iteration_latencies(iterations: list[Any]) -> list[float]:
+    """Per-iteration durations, whichever key the backend used."""
+    values: list[float] = []
+    for iteration in iterations:
+        if not isinstance(iteration, dict):
+            continue
+        for key in _LATENCY_KEYS:
+            value = iteration.get(key)
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                values.append(float(value))
+                break
+    return values
 
 
 def per_iteration_throughput(iterations: list[Any]) -> list[float]:

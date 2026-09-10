@@ -123,6 +123,9 @@ function buildHead(meta, siteUrl, extraJsonLd) {
     `<meta name="twitter:title" content="${escapeHtml(meta.title)}" />`,
     `<meta name="twitter:description" content="${escapeHtml(meta.description)}" />`,
   ]
+  if (meta.noindex) {
+    tags.push(`<meta name="robots" content="noindex, follow" />`)
+  }
   if (extraJsonLd) {
     tags.push(
       `<script type="application/ld+json">${JSON.stringify(extraJsonLd)}</script>`,
@@ -186,9 +189,8 @@ async function main() {
     process.exit(1)
   }
 
-  const { render, allRoutes, metaForPath, SITE_URL } = await import(
-    pathToFileURL(SSR).href
-  )
+  const { render, allRoutes, indexableRoutes, metaForPath, SITE_URL } =
+    await import(pathToFileURL(SSR).href)
 
   const dataset = loadDataset()
   const template = readFileSync(join(DIST, 'index.html'), 'utf-8')
@@ -224,7 +226,14 @@ async function main() {
     'utf-8',
   )
 
-  writeFileSync(join(DIST, 'sitemap.xml'), buildSitemap(siteUrl, routes), 'utf-8')
+  // Not `routes`: embed cards are prerendered but must not be indexed, and
+  // listing a noindex page in the sitemap asks a crawler to do two
+  // contradictory things.
+  writeFileSync(
+    join(DIST, 'sitemap.xml'),
+    buildSitemap(siteUrl, indexableRoutes(dataset)),
+    'utf-8',
+  )
   writeFileSync(
     join(DIST, 'robots.txt'),
     `User-agent: *\nAllow: /\n\nSitemap: ${siteUrl}/sitemap.xml\n`,

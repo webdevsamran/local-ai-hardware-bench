@@ -4,6 +4,7 @@ import { Loading, ErrorState } from '../components/States'
 import { TrustBadge, Tag } from '../components/Badge'
 import CopyCommand from '../components/CopyCommand'
 import { fmtDate, fmtNum } from '../lib/format'
+import { SITE_URL } from '../lib/seo'
 
 export default function ResultDetail() {
   const { runId } = useParams()
@@ -31,6 +32,15 @@ export default function ResultDetail() {
   const m = r.metrics ?? {}
   const rep = r.reproducibility ?? {}
   const sys = r.system ?? {}
+
+  // An absolute URL, because the snippet is pasted onto someone else's
+  // domain where a relative path resolves to their site rather than this one.
+  // `loading="lazy"` so a card below the fold costs a reader nothing, and the
+  // title is what a screen reader announces in place of the frame.
+  const embedSnippet =
+    `<iframe src="${SITE_URL.replace(/\/$/, '')}/embed/result/${r.run_id}" ` +
+    `width="440" height="260" loading="lazy" style="border:0" ` +
+    `title="AIHWBench result ${r.run_id}"></iframe>`
 
   function downloadJson() {
     const blob = new Blob([JSON.stringify(r, null, 2)], {
@@ -145,6 +155,22 @@ export default function ResultDetail() {
             <CopyCommand command={rep.command} />
           </>
         )}
+      </section>
+
+      <section className="card">
+        <h2>Embed this result</h2>
+        <p className="muted">
+          A card for a blog post or a review. It carries the hardware, the
+          runtime, the confidence interval and the comparability caveat with
+          it — a benchmark number quoted without those is the false precision
+          this project argues against.
+        </p>
+        <CopyCommand command={embedSnippet} />
+        <p className="muted small">
+          Add <code>?theme=light</code> or <code>?theme=dark</code> to the URL
+          to match your page; without it the card follows the reader's own
+          system preference.
+        </p>
       </section>
 
       <section className="card">

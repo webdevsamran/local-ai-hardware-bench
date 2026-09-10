@@ -16,6 +16,13 @@ export interface PageMeta {
   description: string
   /** Canonical path, without the deploy base. */
   path: string
+  /**
+   * True for pages that are prerendered but must not be indexed — duplicate
+   * content whose canonical form lives elsewhere. Drives both the `robots`
+   * meta tag and exclusion from the sitemap; a page marked noindex in one
+   * and listed in the other sends a search engine contradictory instructions.
+   */
+  noindex?: boolean
 }
 
 const BRAND = 'AIHWBench — Local AI Hardware Benchmarks'
@@ -153,6 +160,20 @@ export function metaForPath(path: string, dataset?: Dataset | null): PageMeta {
   const section = segments[0]
   const key = segments[1] ? decodeURIComponent(segments[1]) : undefined
 
+  // /embed/result/<runId> -- the same result as /results/<runId>, in a card
+  // for someone else's page. Marked noindex: it is duplicate content whose
+  // canonical form already exists, and a search result landing a reader on a
+  // bare chrome-less card serves nobody.
+  if (section === 'embed' && segments[1] === 'result' && segments[2]) {
+    const runId = decodeURIComponent(segments[2])
+    return {
+      path: clean,
+      title: `AIHWBench result ${runId}`,
+      description: `Embeddable benchmark result card for run ${runId}.`,
+      noindex: true,
+    }
+  }
+
   // /models/<model>/on/<gpu> -- "how fast is X on a Y", which is a different
   // query from either half and deserves its own indexable page.
   if (section === 'models' && key && segments[2] === 'on' && segments[3]) {
@@ -237,5 +258,20 @@ export function allRoutes(dataset: Dataset): string[] {
   for (const h of dataset.hardware) routes.push(`/hardware/${h.fingerprint}`)
   for (const r of dataset.runtimes) routes.push(`/runtimes/${r.name}`)
   for (const r of dataset.results) routes.push(`/results/${r.run_id}`)
+  // Prerendered so an embed works with JavaScript disabled and renders
+  // instantly in an iframe. Kept out of the sitemap by `indexableRoutes`.
+  for (const r of dataset.results) routes.push(`/embed/result/${r.run_id}`)
   return Array.from(new Set(routes))
+}
+
+/**
+ * The routes that belong in the sitemap.
+ *
+ * Every route is prerendered, but not every prerendered page should be
+ * offered to a search engine: an embed is duplicate content whose canonical
+ * form is the result page, and indexing it would compete with the page it
+ * was extracted from.
+ */
+export function indexableRoutes(dataset: Dataset): string[] {
+  return allRoutes(dataset).filter((route) => !metaForPath(route, dataset).noindex)
 }

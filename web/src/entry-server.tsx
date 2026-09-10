@@ -10,7 +10,13 @@ import { AppShell } from './App'
 import { seedDataset } from './lib/data'
 import type { Dataset } from './lib/types'
 
-export { allRoutes, metaForPath, SITE_URL, SITE_NAME } from './lib/seo'
+export {
+  allRoutes,
+  indexableRoutes,
+  metaForPath,
+  SITE_URL,
+  SITE_NAME,
+} from './lib/seo'
 
 /**
  * Render one route to HTML with the dataset already in place.

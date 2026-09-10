@@ -76,6 +76,13 @@ shipped-but-unreachable is not done.
 - [ ] Lemonade / Ryzen AI backend (needs Ryzen AI hardware)
 - [ ] Qualcomm QNN backend + ARM64 Windows validation (needs Snapdragon X)
 - [ ] HailoRT backend, HEF benchmark configs (needs Hailo device)
+- [~] vLLM and SGLang backends over their OpenAI-compatible servers. Detection,
+      streaming, usage-token accounting and metric-source labelling are
+      implemented and unit-tested against a fake server; neither engine runs on
+      Windows, so nothing here has been exercised against a real one. Both
+      report `NOT_INSTALLED` honestly on this machine. Neither launches a
+      server: startup flags (tensor parallelism, GPU memory fraction,
+      quantization, KV-cache dtype) decide what is being measured.
 
 ## Track 3 — Hardware Coverage
 
@@ -84,7 +91,18 @@ shipped-but-unreachable is not done.
       Apple (powermetrics) collectors exist with tested parsers and are
       wired into the sampler; none has been run against real hardware, so
       `vendors.VENDOR_STATUS` records that per vendor. Battery telemetry
-      is tested on the reference laptop.
+      is tested on the reference laptop. RAPL is now the sampler's power
+      source of last resort, including for the idle baseline: without it a
+      machine with no discrete GPU carried no energy data at all, which is
+      most consumer laptops. Its scope is narrower than a GPU probe's and
+      every sample says so.
+- [x] NPU presence recorded in every result. No vendor exposes a portable
+      utilization or power counter, so the metrics stay null — but the block
+      distinguishes "this machine has no NPU" from "this machine has one and
+      nothing could read it", which silence could not.
+- [x] Container and image identity. A tag is not an identity, so the digest is
+      recorded where the launch environment supplies it and its absence is
+      explained where it does not. Never inferred from a tag.
 - [ ] Intel Core Ultra NPU counters (needs Core Ultra hardware)
 - [ ] AMD platform results (hardware needed)
 - [ ] Snapdragon X Elite results (hardware needed)

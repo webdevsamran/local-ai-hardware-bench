@@ -171,3 +171,52 @@ describe('validateDataset / assertDataset', () => {
     expect(() => assertDataset(makeDataset())).not.toThrow()
   })
 })
+// --- Confidence intervals on ranked rows --------------------------------
+//
+// A rank with no interval behind it cannot distinguish a real lead from a
+// tie. The published data carries one wherever the metric measured it, and a
+// malformed interval must fail rather than render as a plausible range.
+
+describe('leaderboard confidence intervals', () => {
+  const base = {
+    rank: 1,
+    run_id: 'r1',
+    group: 0,
+    group_size: 2,
+    group_label: 'model on runtime',
+    value: 280,
+  }
+
+  it('accepts a well-formed interval', () => {
+    expect(
+      validateLeaderboardRow({ ...base, ci95: [277.9, 285.4] }),
+    ).toEqual([])
+  })
+
+  it('accepts a row with no interval', () => {
+    expect(validateLeaderboardRow({ ...base, ci95: null })).toEqual([])
+    expect(validateLeaderboardRow(base)).toEqual([])
+  })
+
+  it('rejects an inverted interval', () => {
+    expect(
+      validateLeaderboardRow({ ...base, ci95: [285.4, 277.9] }).join(),
+    ).toContain('lower bound above upper bound')
+  })
+
+  it('rejects a malformed interval', () => {
+    expect(validateLeaderboardRow({ ...base, ci95: [1] }).join()).toContain('ci95')
+    expect(
+      validateLeaderboardRow({ ...base, ci95: ['a', 'b'] }).join(),
+    ).toContain('ci95')
+  })
+
+  it('rejects a non-boolean tie flag', () => {
+    expect(
+      validateLeaderboardRow({
+        ...base,
+        indistinguishable_from_rank_1: 'yes',
+      }).join(),
+    ).toContain('indistinguishable_from_rank_1')
+  })
+})

@@ -881,3 +881,22 @@ button:focus-visible,
     animation: rise-in var(--dur-slow) var(--ease) both;
   }
 }
+
+/* A rank whose confidence interval overlaps rank 1's. The number is a sort
+   order; the marker says it is not a measured lead. */
+.rank-tied {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.1em;
+  color: var(--text-muted);
+  cursor: help;
+}
+
+/* The interval belongs with the number it qualifies, not in a footnote. */
+.ci-range {
+  display: block;
+  font-size: 0.78em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}

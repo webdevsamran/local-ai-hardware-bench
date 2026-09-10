@@ -119,6 +119,16 @@ export interface LeaderboardRow {
   quantization?: string | null
   device?: string | null
   trust?: string | null
+  /** 95% confidence interval for `value`, when the metric measured one. */
+  ci95?: [number, number] | null
+  /** Coefficient of variation across iterations, when measured. */
+  cv?: number | null
+  /**
+   * True when this row's interval overlaps rank 1's, so the two are not
+   * distinguishable at this sample size and the rank gap is not a real one.
+   * Null when the metric carries no interval: unknown, not "distinguishable".
+   */
+  indistinguishable_from_rank_1?: boolean | null
 }
 
 export interface LeaderboardViews {

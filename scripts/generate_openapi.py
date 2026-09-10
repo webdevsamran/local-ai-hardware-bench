@@ -77,6 +77,15 @@ ENDPOINTS: dict[str, tuple[str, str, str]] = {
         "the classifier themselves should read the rules from here rather "
         "than hardcoding them.",
     ),
+    "privacy": (
+        "The privacy scanner's pattern registry, with reference vectors.",
+        "stable",
+        "Generated from `aihwbench/sanitize.py`. Consumers scanning results "
+        "themselves should read these rather than writing their own: a second "
+        "copy of the expressions eventually disagrees with the CLI about "
+        "whether a file is safe to share, and nobody notices a scan that has "
+        "quietly stopped catching something until a leak is published.",
+    ),
     "constants": (
         "Bits-per-weight table and overhead factor for the model-fit estimator.",
         "stable",

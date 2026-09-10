@@ -1,0 +1,176 @@
+{
+  "note": "Generated from aihwbench/sanitize.py, which stays canonical. Detection is regex-based and deliberately over-eager: a false positive costs a contributor a second look, while a false negative publishes someone's home directory.",
+  "patterns": [
+    {
+      "id": "mac_address",
+      "ignore_case": false,
+      "label": "MAC address",
+      "pattern": "(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}"
+    },
+    {
+      "id": "ipv4",
+      "ignore_case": false,
+      "label": "IPv4 address",
+      "pattern": "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b"
+    },
+    {
+      "id": "ipv6",
+      "ignore_case": false,
+      "label": "IPv6 address",
+      "pattern": "\\b(?:[0-9A-Fa-f]{1,4}:){2,7}[0-9A-Fa-f]{0,4}\\b"
+    },
+    {
+      "id": "ssn",
+      "ignore_case": false,
+      "label": "SSN",
+      "pattern": "\\b\\d{3}-\\d{2}-\\d{4}\\b"
+    },
+    {
+      "id": "token_or_credential",
+      "ignore_case": false,
+      "label": "possible token/credential",
+      "pattern": "\\b(?:gh[pousr]_[A-Za-z0-9]{36,}\\b|Bearer\\s+[A-Za-z0-9._~+/=-]{10,})"
+    },
+    {
+      "id": "windows_path",
+      "ignore_case": true,
+      "label": "Windows user home path",
+      "pattern": "[A-Za-z]:\\\\+Users\\\\+[^\\\"'\\\\]+"
+    },
+    {
+      "id": "home_path",
+      "ignore_case": true,
+      "label": "home directory",
+      "pattern": "(?:[\\\\/]{1,2})home(?:[\\\\/]{1,2})[A-Za-z0-9._-]+"
+    },
+    {
+      "id": "serial_number",
+      "ignore_case": true,
+      "label": "serial number",
+      "pattern": "\\bserial\\s*(?:number|no|#)?\\s*[:=]\\s*[A-Za-z0-9]+"
+    },
+    {
+      "id": "serial_like",
+      "ignore_case": false,
+      "label": "serial-like identifier",
+      "pattern": "\\bSN[-:]?\\s?[0-9A-Z]{8,}\\b"
+    },
+    {
+      "id": "username_placeholder",
+      "ignore_case": true,
+      "label": "username placeholder",
+      "pattern": "\\bUSERNAME\\b"
+    },
+    {
+      "id": "email",
+      "ignore_case": false,
+      "label": "email address",
+      "pattern": "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"
+    }
+  ],
+  "reference_cases": [
+    {
+      "matches": [
+        "ipv6",
+        "mac_address"
+      ],
+      "text": "aa:bb:cc:dd:ee:ff"
+    },
+    {
+      "matches": [
+        "mac_address"
+      ],
+      "text": "AA-BB-CC-DD-EE-FF"
+    },
+    {
+      "matches": [
+        "ipv4"
+      ],
+      "text": "192.168.1.44"
+    },
+    {
+      "matches": [
+        "ipv6"
+      ],
+      "text": "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
+    },
+    {
+      "matches": [
+        "ssn"
+      ],
+      "text": "123-45-6789"
+    },
+    {
+      "matches": [
+        "token_or_credential"
+      ],
+      "text": "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "matches": [
+        "token_or_credential"
+      ],
+      "text": "Bearer abcdef0123456789"
+    },
+    {
+      "matches": [
+        "windows_path"
+      ],
+      "text": "C:\\Users\\samra\\models"
+    },
+    {
+      "matches": [
+        "home_path"
+      ],
+      "text": "/home/alice/models"
+    },
+    {
+      "matches": [
+        "serial_number"
+      ],
+      "text": "Serial Number: ABC123XYZ"
+    },
+    {
+      "matches": [
+        "serial_like"
+      ],
+      "text": "SN-12345678"
+    },
+    {
+      "matches": [
+        "username_placeholder"
+      ],
+      "text": "USERNAME"
+    },
+    {
+      "matches": [
+        "email"
+      ],
+      "text": "someone@example.com"
+    },
+    {
+      "matches": [],
+      "text": "NVIDIA GeForce RTX 3080 Ti Laptop GPU"
+    },
+    {
+      "matches": [],
+      "text": "qwen2.5:0.5b-instruct-q4_K_M"
+    },
+    {
+      "matches": [],
+      "text": "12th Gen Intel(R) Core(TM) i9-12900H"
+    },
+    {
+      "matches": [],
+      "text": "generation_tokens_per_second"
+    },
+    {
+      "matches": [],
+      "text": "2026-09-10T08:00:00Z"
+    },
+    {
+      "matches": [],
+      "text": "serial"
+    }
+  ]
+}

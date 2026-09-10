@@ -28,6 +28,7 @@ import Planned from './pages/Planned'
 import About from './pages/About'
 import NotFound from './pages/NotFound'
 import EmbedResult from './pages/EmbedResult'
+import Submit from './pages/Submit'
 
 export function AppRoutes() {
   return (
@@ -39,6 +40,7 @@ export function AppRoutes() {
           <Route path="/frontiers" element={<Pareto />} />
           <Route path="/recommend" element={<Recommend />} />
           <Route path="/matchmaker" element={<Matchmaker />} />
+          <Route path="/submit" element={<Submit />} />
           <Route path="/hardware" element={<HardwareExplorer />} />
           <Route path="/hardware/:fingerprint" element={<HardwareDetail />} />
           <Route path="/runtimes" element={<RuntimeExplorer />} />

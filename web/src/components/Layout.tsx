@@ -20,6 +20,7 @@ const NAV = [
   { to: '/compatibility', label: 'Compatibility' },
   { to: '/docs', label: 'Docs' },
   { to: '/methodology', label: 'Methodology' },
+  { to: '/submit', label: 'Submit' },
   { to: '/community', label: 'Community' },
   { to: '/about', label: 'About' },
 ]

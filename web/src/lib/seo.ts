@@ -54,6 +54,11 @@ const STATIC_META: Record<string, Omit<PageMeta, 'path'>> = {
     description:
       'Which local AI configurations are not beaten on both axes at once: throughput against power draw, peak VRAM and time to first token. A card that is slower but far more efficient is still on the frontier, which a single ranked leaderboard cannot show.',
   },
+  '/submit': {
+    title: 'Submit a benchmark result — AIHWBench',
+    description:
+      'Contribute a local AI benchmark result without using git. The file is checked in your browser — schema shape and a privacy scan using the same patterns as the CLI — and nothing is uploaded, because this site has no server.',
+  },
   '/matchmaker': {
     title: 'Which local AI model should I run? — AIHWBench',
     description:

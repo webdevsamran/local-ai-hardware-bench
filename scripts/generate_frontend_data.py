@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -222,6 +223,75 @@ def _recommendation_constants(results: list[dict]) -> dict:
             "quantization density; measured results upgrade the evidence tier"
         ),
         "reference_cases": cases,
+    }
+
+
+def _privacy_patterns() -> dict:
+    """The privacy scanner's patterns, plus vectors pinning the two engines.
+
+    The submission page scans a contributor's result in the browser before
+    they share it, and a second hand-written copy of these expressions would
+    eventually disagree with the CLI about whether a file is safe. The
+    direction of that disagreement is the dangerous one: nobody notices a scan
+    that has quietly stopped catching something until a leak is published.
+
+    The vectors matter as much as the patterns. Python's `re` and JavaScript's
+    RegExp agree on this subset, but "agree" is a claim worth testing rather
+    than assuming -- so every probe ships with the ids Python matched, and
+    web/tests replays them through the browser implementation.
+    """
+    from aihwbench.sanitize import pattern_registry
+
+    # Strings chosen to exercise each pattern from both sides. The negatives
+    # are the important half: a pattern matching everything would sail through
+    # a positives-only check while making the scanner useless.
+    probes = [
+        "aa:bb:cc:dd:ee:ff",
+        "AA-BB-CC-DD-EE-FF",
+        "192.168.1.44",
+        "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+        "123-45-6789",
+        "ghp_" + "a" * 36,
+        "Bearer abcdef0123456789",
+        r"C:\Users\samra\models",
+        "/home/alice/models",
+        "Serial Number: ABC123XYZ",
+        "SN-12345678",
+        "USERNAME",
+        "someone@example.com",
+        # Negatives: ordinary content a result legitimately contains.
+        "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "qwen2.5:0.5b-instruct-q4_K_M",
+        "12th Gen Intel(R) Core(TM) i9-12900H",
+        "generation_tokens_per_second",
+        "2026-09-10T08:00:00Z",
+        "serial",  # a bare CPU capability flag, not a leak
+    ]
+
+    patterns = pattern_registry()
+    compiled = [
+        (
+            entry["id"],
+            re.compile(entry["pattern"], re.IGNORECASE if entry["ignore_case"] else 0),
+        )
+        for entry in patterns
+    ]
+    cases = [
+        {
+            "text": probe,
+            "matches": sorted({pid for pid, rx in compiled if rx.search(probe)}),
+        }
+        for probe in probes
+    ]
+    return {
+        "patterns": patterns,
+        "reference_cases": cases,
+        "note": (
+            "Generated from aihwbench/sanitize.py, which stays canonical. "
+            "Detection is regex-based and deliberately over-eager: a false "
+            "positive costs a contributor a second look, while a false "
+            "negative publishes someone's home directory."
+        ),
     }
 
 
@@ -553,6 +623,7 @@ def build(results: list[dict]) -> dict[str, object]:
         "trends": dict(sorted(trends.items())),
         "constants": _fit_constants(),
         "comparability": _comparability_rules(results),
+        "privacy": _privacy_patterns(),
         "tco": _tco_constants(),
         "pareto": _pareto_views(results),
         "recommend": _recommendation_constants(results),

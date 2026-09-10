@@ -1,5 +1,7 @@
 // Shared types mirroring the generated static dataset (web/public/data).
 
+import type { PrivacyRules } from './privacy'
+
 export interface SystemInfo {
   os?: string | null
   os_version?: string | null
@@ -247,4 +249,6 @@ export interface Dataset {
   comparability: ComparabilityRules
   pareto: Record<string, ParetoView>
   recommend: { note: string; reference_cases: unknown[] }
+  /** The privacy scanner's patterns, generated from aihwbench/sanitize.py. */
+  privacy: PrivacyRules
 }

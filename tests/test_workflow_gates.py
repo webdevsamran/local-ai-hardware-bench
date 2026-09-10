@@ -119,9 +119,7 @@ def _action() -> dict:
 
 
 def _action_run_text() -> str:
-    return "\n".join(
-        str(step.get("run", "")) for step in _action()["runs"]["steps"]
-    )
+    return "\n".join(str(step.get("run", "")) for step in _action()["runs"]["steps"])
 
 
 def test_run_benchmark_action_is_a_valid_composite_action():

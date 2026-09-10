@@ -92,6 +92,23 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     repro.setdefault("python_version", platform.python_version())
     repro.setdefault("power_profile", power_profile())
 
+    # Which workload produced this. `reproducibility.prompt` already carries
+    # the text and is part of the comparison key, but the text alone does not
+    # say what the run was *for*: a 512-token generation prompt and a
+    # 29-token chat prompt measure different things, and only the workload's
+    # identity says which was intended. Recorded when the caller named one --
+    # never inferred, since a prompt that resembles a workload's is not that
+    # workload.
+    workload = (getattr(config, "extra", {}) or {}).get("workload")
+    if workload is not None:
+        result["workload"] = {
+            "id": workload.id,
+            "version": workload.version,
+            "kind": workload.kind,
+            "osl_tokens": workload.osl_tokens,
+            "isl_tokens": workload.isl_tokens,
+        }
+
     metrics = result.setdefault("metrics", {})
     if idle["watts"] is not None:
         metrics.setdefault("idle_power_watts", idle["watts"])

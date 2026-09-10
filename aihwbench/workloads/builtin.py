@@ -124,6 +124,38 @@ register(
 
 register(
     Workload(
+        id="sustained_generation",
+        kind="generation",
+        description=(
+            "Long-form generation with a concrete prompt, for measuring decode "
+            "throughput at steady state. Unlike the decode_only and "
+            "long_generation profiles, which declare a target output length "
+            "but carry no prompt to elicit it, this one runs as-is."
+        ),
+        # `default_chat` asks for an answer "in two sentences", so it generates
+        # about 29 tokens however high max_tokens is set. That is too little
+        # work to measure a generation *rate*: on the reference machine the
+        # per-iteration figure ran 327, 342, 118, 124, 84 tok/s as the GPU
+        # ramped its clocks, giving a 56% coefficient of variation around a
+        # mean the machine never actually sustained.
+        #
+        # This prompt asks for output long enough to reach and hold a steady
+        # state, so the mean describes a rate rather than a ramp. It is a
+        # separate workload rather than a change to `default_chat`, because
+        # the prompt is part of the comparison key: editing the default would
+        # silently redefine what every existing published result measured.
+        prompt=(
+            "Write a detailed technical explanation of how transformer "
+            "language models process text, covering tokenization, embeddings, "
+            "self-attention, feed-forward layers, and autoregressive decoding. "
+            "Explain each stage thoroughly and in order, with concrete detail."
+        ),
+        osl_tokens=512,
+    )
+)
+
+register(
+    Workload(
         id="prefill_only",
         kind="prefill",
         description="Prefill-heavy: long input, minimal generation (prompt processing rate).",

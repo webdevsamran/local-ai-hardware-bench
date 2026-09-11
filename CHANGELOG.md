@@ -5,6 +5,40 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Added — a multiple-choice evaluator that refuses to guess
+
+- **`multiple_choice`, for MMLU-shaped sets.** The scoring is a string
+  comparison; the difficulty is deciding what the model picked from free-form
+  output, and getting that wrong is how a benchmark ends up measuring output
+  formatting and reporting it as accuracy.
+
+  It reads a letter only when the model marked it ("the answer is B",
+  "Answer: B", "Option C is correct"), gave it alone, or put a delimiter after
+  it ("B) Paris"). It does not scan for capital letters: "A bird can fly
+  south" does not answer "A".
+
+  An answer it cannot read scores `None`, never `0.0`. Zero says "answered
+  incorrectly", and conflating that with "answered unreadably" understates
+  every model whose formatting differs from the one the harness expected --
+  silently, and in a direction that looks like a quality difference. A
+  response naming two different letters is likewise unread rather than
+  resolved by taking the first, which would reward thinking out loud.
+
+  The dataset stays yours: this repository bundles no restricted datasets.
+
+### Fixed — a regex that matched nothing, and a guard for the whole class
+
+- **An escape written into a non-raw string became a control character.** The
+  answer-marker pattern began with a literal 0x08 where `` was meant, so it
+  required an unprintable byte before the word "answer" and matched nothing.
+  Every explicitly-marked answer scored as unreadable, which looks exactly
+  like a model that formats badly rather than like a fault.
+
+  ``, ``, `` and `` are all valid regex escapes *and* valid string
+  escapes, so this fails silently by construction: the pattern compiles, runs,
+  and never matches. A test now walks every module in the package and asserts
+  that no compiled pattern contains a control character.
+
 ### Added — schema 2.1, which requires what the classifier has to read
 
 - **Schema 2.0 accepted `{}` as a valid result.** `model` had no `required`

@@ -195,7 +195,12 @@ aihwbench anomalies --results-dir results/published
 aihwbench snapshot --version v1 --results-dir results/published
 
 # Quality evaluation over a JSONL responses file (evaluator plugins)
+aihwbench evaluators                      # exact_match, rouge_l, token_f1, ...
 aihwbench evaluate --evaluator rouge_l --dataset responses.jsonl
+
+# Multiple choice (MMLU-shaped sets). The dataset is yours; this scores it,
+# and reports an answer it cannot read as unknown rather than as wrong.
+aihwbench evaluate --evaluator multiple_choice --dataset mmlu-subset.jsonl
 
 # Export via the exporter plugin API (json/csv/markdown/sqlite built-in)
 aihwbench export-as --format csv --results-dir results/published --output out.csv

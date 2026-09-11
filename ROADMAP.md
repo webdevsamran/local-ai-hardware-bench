@@ -130,6 +130,8 @@ shipped-but-unreachable is not done.
 - [x] Written dispute process for published results
       ([docs/disputes.md](docs/disputes.md))
 - [x] Versioned dataset snapshot manifests
+- [x] Multiple-choice evaluator (MMLU-shaped sets) that reports an answer
+      it cannot read as unknown rather than as wrong
 - [x] Schema 2.1 requires every field the comparison-safety classifier
       reads, so a result that cannot be compared is refused on arrival
       rather than compared anyway

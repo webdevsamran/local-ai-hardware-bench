@@ -27,6 +27,8 @@ aihwbench benchmark --runtime openvino --model-path path/to/model.xml --device G
 
 ## Limitations
 
-- LLM token metrics require an IR-converted chat pipeline
-  (OpenVINO GenAI integration tracked separately)
+- This backend measures graph inference. For LLM token metrics — tokens per
+  second, time to first token, inter-token latency — use the
+  [`openvino_genai` backend](openvino-genai.md), which drives an
+  `LLMPipeline` over the same IR
 - NPU telemetry hooks are future work

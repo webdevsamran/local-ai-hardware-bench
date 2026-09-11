@@ -5,6 +5,118 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Added — OpenVINO GenAI: one model, three kinds of silicon
+
+- **The `openvino_genai` backend measures instead of refusing.** It was
+  detection-only: it could tell you OpenVINO GenAI was installed and then
+  raised on `run()`, which was the right thing to do while no measured path
+  existed. It drives a real `LLMPipeline` now.
+
+  It earns its place by being the only backend here that can hold the model
+  constant across an Intel CPU, an Intel iGPU and — on recent OpenVINO
+  releases — a discrete GPU. Every other LLM runtime in this project targets
+  one vendor's silicon, so "is the iGPU worth using?" was a question the
+  dataset could not answer.
+
+- **Both TTFT figures, because they measure different things.** The pipeline
+  reports its own; the streaming callback reports what the caller waited for.
+  Detokenisation sits between them. Reporting only the runtime's flatters it,
+  and reporting only the caller's hides where the time went.
+
+- **Quantization is read out of the IR, not inferred from the path.** NNCF
+  stamps its settings into `rt_info` at conversion time, so a result carries
+  `int4_asym` with `group_size: 128` — what the compressor applied — rather
+  than whatever someone named the directory. The optimum-intel version and the
+  OpenVINO release the IR was built with come along too: this model's IR was
+  built with 2025.2 and run on 2026.3, which is a difference worth being able
+  to see.
+
+- **`--device auto` is refused.** OpenVINO's AUTO plugin picks a device when it
+  compiles and `LLMPipeline` offers no way to ask what it picked. Since
+  `runtime.device` is in the comparison-safety classifier's strict set, a guess
+  there would not stay local — the classifier would go on to rank a silently-CPU
+  result against a GPU one. The error names the visible devices instead.
+
+### Fixed — OpenVINO detection re-initialised the GPU plugins every time
+
+- **One `Core` for the process, not one per call.** Constructing an OpenVINO
+  `Core` costs about a millisecond, but the first `get_available_devices()` on
+  each one costs ~900 ms, because that is where the GPU plugins initialise.
+  Both OpenVINO backends built a fresh `Core` on every detection, so each paid
+  it again: ~220 ms per `detect()`, twice over, on every `aihwbench detect`,
+  `runtimes` and `doctor`.
+
+  Two module-level caches would not have fixed it — the cost is per `Core`, so
+  the two backends keeping their own would still enumerate twice. It has to be
+  one `Core` for the process, and it now lives in `backends/base.py` where both
+  reach it. Repeated detection went from ~440 ms a pair to 0.1 ms.
+
+### Fixed — a shipped feature the docs called planned
+
+- **Release artifacts have carried signed build provenance for some time**, and
+  nothing said so. `docs/security/supply-chain.md` listed attestation under
+  "Planned" and the roadmap box was unticked, while
+  `actions/attest-build-provenance` was signing every wheel and sdist in the
+  release workflow. Understating what exists is a smaller failure than
+  overstating it, and it still leaves a reader unable to tell what a download
+  actually carries.
+
+  The docs now say what it is and how to check it, which was also missing: a
+  checksum proves the bytes did not change in transit and says nothing about
+  where they came from, since anyone can publish a checksum for anything.
+  `gh attestation verify` is the half that ties an artifact to the workflow run
+  that built it.
+
+- **The roadmap understated itself twice in one pass.** Artifact attestation
+  and the independent report template were both shipped and both unticked; the
+  template has nine filled-in reports sitting beside it. Corrected, and worth
+  recording as a pattern: this project audits hard for features claimed but not
+  built, and had not been looking in the other direction.
+
+- **Nothing guarded the attestation step.** It is six lines in a workflow that
+  only runs on a tag, so a removal would go unnoticed until someone tried to
+  verify a release and found nothing there — after the unattested artifacts
+  were already published. A test now asserts the step exists, is pinned to a
+  commit, covers both the wheel and the sdist, runs before upload, and that the
+  workflow holds the two permissions it needs to sign at all.
+
+### Fixed — a zero that meant "not measured"
+
+- **GPU metrics that describe a different GPU are dropped.** Telemetry reads
+  `nvidia-smi`, which reports the NVIDIA card whatever the run was actually on.
+  A run on the Intel iGPU therefore came back with `peak_vram_mb: 0.0` and
+  `avg_gpu_util_percent: 0.0` — both true statements about an idle NVIDIA card,
+  and both reading as "this run used no graphics memory". The iGPU allocates
+  from shared system RAM, where that tool cannot see it at all.
+
+  The numbers go and the reason stays, in `metrics.metric_source`. A CPU run
+  keeps them, because there the zeroes are a correct statement about this run.
+
+  The first version of the device comparison would have thrown away the good
+  case: OpenVINO says "NVIDIA GeForce RTX 3080 Ti Laptop GPU (dGPU)" where
+  nvidia-smi says the same name without the suffix, so the card failed to match
+  itself and the one genuine VRAM measurement available was discarded. A test
+  caught it.
+
+- **Generation throughput counted prefill as generation.** `eval_seconds` used
+  the pipeline's `get_inference_duration()`, which counts every forward pass
+  the request made — prefill included — so the resulting rate described work
+  that was partly not generation. Decode is now tokens times the runtime's own
+  time-per-output-token, with the total kept alongside.
+
+  The definition matters more than the size here, and the size was measured
+  rather than assumed: within about 1% either way when generation dominates
+  (33-token prompt, 64 generated) and 5% when it does not (994-token prompt,
+  8 generated). Neither figure is pure decode — TPOT comes from the generate
+  loop and carries sampling and detokenisation with it — but it is the one
+  that answers "how fast do tokens arrive".
+
+- **A compiled pipeline is cached per model and device.** Compiling an IR takes
+  around 2 seconds on a CPU and 17 on a discrete GPU, and an agentic workload
+  calls `generate_text` once a turn — so the backend was nominally able to run
+  those workloads and far too slow to actually use.
+
+
 ### Fixed — every prerendered page was being thrown away on load
 
 - **The client called `createRoot`, not `hydrateRoot`.** `createRoot` discards

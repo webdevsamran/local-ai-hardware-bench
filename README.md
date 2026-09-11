@@ -69,6 +69,7 @@ validated result file exists in [`results/published/`](results/published).
 | llama.cpp (`llama-server`, CUDA) | Yes | **Yes — tested** |
 | ONNX Runtime (CPU + DirectML EPs) | Yes | **Yes — tested** |
 | OpenVINO (CPU + GPU devices) | Yes | **Yes — tested** |
+| OpenVINO GenAI (LLM pipeline, CPU/iGPU/dGPU) | Yes | **Yes — measured**; not published, the machine was contended ([study](docs/results/openvino-three-devices.md)) |
 | NVIDIA CUDA | Yes | **Yes — tested** (via Ollama/llama.cpp CUDA builds) |
 | NVIDIA TensorRT | Yes | Not yet (needs per-GPU engine builds) |
 | AMD ROCm / Ryzen AI / Lemonade | Yes | Hardware needed (no AMD system available) |
@@ -380,7 +381,7 @@ labeled in the issue tracker. See also:
 | Researcher | [Reproducibility](docs/research/reproducibility.md) · [Citation](docs/research/citation.md) |
 | Security/compliance | [Privacy](docs/security/privacy.md) · [Supply chain](docs/security/supply-chain.md) |
 | Hardware | [Hardware overview](docs/hardware/overview.md) |
-| Measured studies | [Offload cliff](docs/results/offload-cliff-rtx3080ti.md) — throughput against GPU layers · [KV-cache quantization](docs/results/kv-cache-rtx3080ti.md) — what it costs in memory, and the two configurations that cost more than they save |
+| Measured studies | [Offload cliff](docs/results/offload-cliff-rtx3080ti.md) — throughput against GPU layers · [KV-cache quantization](docs/results/kv-cache-rtx3080ti.md) — what it costs in memory, and the two configurations that cost more than they save · [Three devices, one model](docs/results/openvino-three-devices.md) — CPU, iGPU and dGPU on the same IR, and the device where greedy decoding is not reproducible |
 | Models | [Model zoo](docs/models/zoo.md) — licences, checksums, how to obtain each |
 | Desktop app | [desktop/README.md](desktop/README.md) — a thin Tauri shell over the same CLI |
 | Dashboard | [Performance and accessibility](docs/research/dashboard-performance.md) — Lighthouse and axe results, with the conditions they were measured under |

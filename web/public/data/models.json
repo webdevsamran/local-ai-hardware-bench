@@ -9,7 +9,21 @@
       "onnxruntime-1787391455",
       "openvino-1787391625",
       "openvino-1787391710"
-    ]
+    ],
+    "zoo": {
+      "checksum": "sha256:c0c3f76d93fa3fd6580652a45618618a220fced18babf65774ed169de0432ad5",
+      "checksum_kind": "weights-sha256",
+      "family": "mobilenet",
+      "key": "mobilenetv2-12",
+      "license": "Apache-2.0",
+      "license_link": "https://github.com/onnx/models/blob/main/LICENSE",
+      "license_source": "declared",
+      "obtain": "https://media.githubusercontent.com/media/onnx/models/main/validated/vision/classification/mobilenet/model/mobilenetv2-12.onnx",
+      "parameters": "3.5M",
+      "resolved_by": "name",
+      "size_bytes": 13964571,
+      "source_kind": "https"
+    }
   },
   {
     "checksums": [
@@ -23,7 +37,21 @@
     "result_ids": [
       "llamacpp-1787391945",
       "llamacpp-1789031931-b98435ea"
-    ]
+    ],
+    "zoo": {
+      "checksum": "sha256:c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515",
+      "checksum_kind": "weights-sha256",
+      "family": "qwen2",
+      "key": "qwen2.5-0.5b-instruct-q4_k_m",
+      "license": "apache-2.0",
+      "license_link": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct/blob/main/LICENSE",
+      "license_source": "gguf-header",
+      "obtain": "ollama pull qwen2.5:0.5b-instruct-q4_K_M",
+      "parameters": "0.5B",
+      "resolved_by": "checksum",
+      "size_bytes": 397807936,
+      "source_kind": "ollama"
+    }
   },
   {
     "checksums": [
@@ -38,6 +66,20 @@
       "ollama-1787388930",
       "ollama-1789031359-bfb62628",
       "ollama-1789031428-39f82fdf"
-    ]
+    ],
+    "zoo": {
+      "checksum": "sha256:c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515",
+      "checksum_kind": "weights-sha256",
+      "family": "qwen2",
+      "key": "qwen2.5-0.5b-instruct-q4_k_m",
+      "license": "apache-2.0",
+      "license_link": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct/blob/main/LICENSE",
+      "license_source": "gguf-header",
+      "obtain": "ollama pull qwen2.5:0.5b-instruct-q4_K_M",
+      "parameters": "0.5B",
+      "resolved_by": "checksum",
+      "size_bytes": 397807936,
+      "source_kind": "ollama"
+    }
   }
 ]

@@ -46,6 +46,7 @@ from aihwbench.comparability import (  # noqa: E402
 )
 from aihwbench.export import comparison_groups, group_label  # noqa: E402
 from aihwbench.metrics import performance_per_watt_unit  # noqa: E402
+from aihwbench.modelzoo import ZooError, entry_for_checksum, load_zoo  # noqa: E402
 from aihwbench.sweep import pareto_frontier  # noqa: E402
 from aihwbench.trust import effective_trust  # noqa: E402
 
@@ -488,6 +489,73 @@ def _hardware_fingerprint(system: dict) -> str:
     return "hwfp-v2-" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
 
+def _attach_zoo(models: dict[str, dict]) -> None:
+    """Attach licence and provenance from the model zoo to each model.
+
+    A dashboard that tells you how fast a model runs, and nothing about
+    whether you may use it, has answered the easier half of the question.
+
+    Resolution is by checksum first, because that is an identity rather than a
+    label, and it is what lets two results recording different *kinds* of hash
+    for the same weights resolve to one entry. Name matching is the fallback
+    for results that recorded no checksum at all.
+
+    A model absent from the zoo gets `zoo: None` rather than a guessed
+    licence. "Unknown" is the honest answer and the dashboard says so.
+    """
+    try:
+        entries = load_zoo(REPO / "models" / "zoo.json")
+    except ZooError:
+        # The dataset must still build without a manifest; the pages then say
+        # the licence is unrecorded, which is true.
+        return
+
+    def slug(value: str) -> str:
+        stem = value.rsplit(".gguf", 1)[0].rsplit(".onnx", 1)[0].lower()
+        return "".join(c for c in stem if c.isalnum())
+
+    by_slug = {slug(e.key): e for e in entries}
+    by_slug.update({slug(e.name): e for e in entries})
+
+    for entry_data in models.values():
+        matched = None
+        for checksum in entry_data.get("checksums") or []:
+            matched = entry_for_checksum(entries, checksum)
+            if matched is not None:
+                break
+        resolved_by = "checksum"
+        if matched is None:
+            matched = by_slug.get(slug(entry_data["name"]))
+            resolved_by = "name" if matched is not None else None
+
+        if matched is None:
+            entry_data["zoo"] = None
+            continue
+
+        source = matched.source
+        entry_data["zoo"] = {
+            "key": matched.key,
+            "license": matched.license,
+            "license_link": matched.license_link,
+            "license_source": matched.license_source,
+            "parameters": matched.parameters,
+            "family": matched.family,
+            "size_bytes": matched.size_bytes,
+            "checksum": matched.checksum,
+            "checksum_kind": matched.checksum_kind,
+            "source_kind": source.get("kind"),
+            "obtain": (
+                f"ollama pull {source.get('ref')}"
+                if source.get("kind") == "ollama"
+                else source.get("url")
+            ),
+            # How the model was tied to this entry. Matching on a name is
+            # weaker evidence than matching on a hash, and the page says which
+            # it was rather than presenting both as equally certain.
+            "resolved_by": resolved_by,
+        }
+
+
 def build(results: list[dict]) -> dict[str, object]:
     hardware: dict[str, dict] = {}
     runtimes: dict[str, dict] = {}
@@ -540,6 +608,8 @@ def build(results: list[dict]) -> dict[str, object]:
         if csum and csum not in mentry["checksums"]:
             mentry["checksums"].append(csum)
         mentry["result_ids"].append(r["run_id"])
+
+    _attach_zoo(models)
 
     def sort_key(r: dict):
         tps = _metric(r, "generation_tokens_per_second")

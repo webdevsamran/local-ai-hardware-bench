@@ -129,12 +129,41 @@ export interface RuntimeEntry {
   result_ids: string[]
 }
 
+/** What the model zoo records about a model: licence, identity, how to get it. */
+export interface ZooInfo {
+  key: string
+  license?: string | null
+  license_link?: string | null
+  /**
+   * Where the licence claim came from. `gguf-header` and `ollama-api` were
+   * read from the artifact and can be re-derived; `declared` means a
+   * maintainer wrote it and nothing re-checks it.
+   */
+  license_source?: string | null
+  parameters?: string | null
+  family?: string | null
+  size_bytes?: number | null
+  checksum?: string | null
+  /** What the checksum is a hash *of* — weights, or an Ollama manifest. */
+  checksum_kind?: string | null
+  source_kind?: string | null
+  /** The command or URL that obtains this model. */
+  obtain?: string | null
+  /**
+   * How this model was tied to its zoo entry. A hash is evidence; a name is
+   * a label, and the page says which rather than implying equal certainty.
+   */
+  resolved_by?: 'checksum' | 'name' | null
+}
+
 export interface ModelEntry {
   name: string
   format?: string | null
   quantizations: string[]
   checksums: string[]
   result_ids: string[]
+  /** Null when no zoo entry covers this model — unknown, not permissive. */
+  zoo?: ZooInfo | null
 }
 
 export interface LeaderboardRow {

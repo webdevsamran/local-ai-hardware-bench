@@ -27,6 +27,11 @@ jobs:
         run: python scripts/generate_openapi.py --check
       - name: Published comparability rubric matches the classifier
         run: python scripts/generate_comparability_rubric.py --check
+      - name: Model zoo page matches the manifest
+        # The page states licence terms. A licence table describing a previous
+        # version of the manifest is worse than none, because a reader acts on
+        # it.
+        run: python scripts/generate_model_zoo_docs.py --check
       - name: Landscape table matches the fetched competitor data
         # The table states its own method ("fetched via the GitHub API")
         # but was typed by hand. In a sibling repo that drifted into

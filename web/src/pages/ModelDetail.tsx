@@ -4,6 +4,18 @@ import { Loading, ErrorState } from '../components/States'
 import { BarChart } from '../components/Charts'
 import { fmtNum, slugify } from '../lib/format'
 
+/**
+ * How much weight a licence claim carries. A licence read out of the artifact
+ * can be checked by anyone holding it; one a maintainer typed cannot, and
+ * saying so is the difference between a record and an assurance.
+ */
+function licenceBasis(source?: string | null): string {
+  if (source === 'gguf-header') return "read from the file's own GGUF header"
+  if (source === 'ollama-api') return 'reported by Ollama from the publisher'
+  if (source === 'declared') return 'declared by a maintainer, not read from the artifact'
+  return 'source unstated'
+}
+
 export default function ModelDetail() {
   const { slug } = useParams()
   const { dataset, loading, error, retry } = useDataset()
@@ -84,6 +96,56 @@ export default function ModelDetail() {
         </ul>
       </section>
 
+      <section className="card">
+        <h2>Licence and provenance</h2>
+        {model.zoo ? (
+          <>
+            <dl className="zoo-facts">
+              <dt>Licence</dt>
+              <dd>
+                {model.zoo.license ? (
+                  <>
+                    {model.zoo.license_link ? (
+                      <a href={model.zoo.license_link} rel="noreferrer noopener" target="_blank">
+                        {model.zoo.license}
+                      </a>
+                    ) : (
+                      model.zoo.license
+                    )}
+                    <span className="muted"> — {licenceBasis(model.zoo.license_source)}</span>
+                  </>
+                ) : (
+                  <span className="muted">not recorded</span>
+                )}
+              </dd>
+              {model.zoo.obtain && (
+                <>
+                  <dt>Obtain</dt>
+                  <dd>
+                    <code>{model.zoo.obtain}</code>
+                  </dd>
+                </>
+              )}
+              <dt>Verify</dt>
+              <dd>
+                <code>aihwbench zoo verify {model.zoo.key}</code>
+              </dd>
+            </dl>
+            <p className="muted note">
+              {model.zoo.resolved_by === 'checksum'
+                ? 'Matched to this model by checksum, so the results above measured these exact weights.'
+                : 'Matched by name only: the results above recorded no checksum, so nothing confirms they measured this exact file.'}{' '}
+              This is not legal advice — read the licence before relying on it.
+            </p>
+          </>
+        ) : (
+          <p className="muted">
+            No zoo entry covers this model, so its licence and origin are unknown. Unknown is not
+            permission: check the terms yourself before using it.
+          </p>
+        )}
+      </section>
+
       {model.checksums.length > 0 && (
         <section className="card">
           <h2>Recorded checksums</h2>
@@ -94,6 +156,15 @@ export default function ModelDetail() {
               </li>
             ))}
           </ul>
+          {model.zoo?.checksum_kind && (
+            <p className="muted note">
+              {model.zoo.checksum_kind === 'weights-sha256'
+                ? 'A hash of the weights file, so it is comparable across runtimes.'
+                : 'A hash of a served configuration, not of the weights alone.'}{' '}
+              Results from different runtimes can record different kinds of hash for the same
+              weights; the zoo is what ties them together.
+            </p>
+          )}
         </section>
       )}
     </div>

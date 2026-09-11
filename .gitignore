@@ -22,7 +22,13 @@ venv/
 *.safetensors
 *.engine
 *.trt
-models/
+# Model weights are large and redistributable only under their own terms.
+# `models/*` rather than `models/`: git cannot re-include a file whose parent
+# directory is itself excluded, and the manifest below must be tracked.
+models/*
+# ...except the zoo manifest, which is the record of what was
+# benchmarked, under what licence, and how to obtain it.
+!models/zoo.json
 
 # Results are committed selectively (published/ only); ignore transient state
 results/raw/*.tmp

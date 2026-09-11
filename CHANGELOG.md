@@ -5,6 +5,50 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Added — a model zoo, because a result named a model nobody could obtain
+
+- **`aihwbench zoo`: licences, checksums, and the command that gets each
+  model.** `models/zoo.json` records, per benchmarked model, the licence it is
+  offered under, a checksum, and how to obtain it. `zoo list`, `zoo verify`
+  and `zoo fetch` read it; `docs/models/zoo.md` is generated from it with a CI
+  freshness gate.
+- **Licences are read from the artifact, never inferred.** `gguf.read_gguf_license`
+  reads `general.license` out of the GGUF header and Ollama's `/api/show`
+  relays the same statement, so a licence can be re-derived by anyone holding
+  the file. `zoo verify` re-reads it and fails when the manifest and the
+  artifact disagree. Where a format carries no licence field, the entry is
+  marked `declared` — written by a maintainer, checked by nothing — and the
+  dashboard says so rather than presenting it as equally certain.
+- **The dashboard's model pages now state licence, origin and how to verify.**
+  A page that says how fast a model runs and nothing about whether you may use
+  it has answered the easier half of the question.
+
+### Fixed — an artifact that outlived nothing, and two checksums of one model
+
+- **Four published results measure a model that no longer exists anywhere.**
+  `mobilenetv2-12.onnx` had been deleted from the machine that produced them,
+  no result records where it came from, and all four record `checksum: null`.
+  Nobody could obtain it, and nobody obtaining a file by that name could
+  confirm it was the one measured. The zoo records the source; the file has
+  been re-obtained and hashed. The four results still cannot be tied to it —
+  they recorded no checksum — and the entry says so instead of implying
+  otherwise.
+- **Two published checksums for byte-identical weights disagreed.** The
+  llama.cpp results record `sha256:c5396e06...`, the hash of the GGUF weights
+  file. The Ollama results record `a8b0c515...`, which is Ollama's *manifest*
+  digest — a hash of a document covering the weights **and** the template
+  **and** the system prompt. One field, two kinds of hash, nothing saying
+  which. `model.checksum` is in the comparison-safety classifier's strict set,
+  so this errs safely: the mismatch pushes a pair toward NOT_COMPARABLE rather
+  than falsely toward agreement. But "cannot tell" was recorded as "differs".
+  Every zoo entry now states what its checksum is a hash *of*, and aliases tie
+  both spellings to the one model. `backends.ollama.model_weights_digest`
+  reports the weights hash, extracted from the documented API without keeping
+  the home-directory path it appears in.
+- **`models/` was gitignored as a directory, so the manifest could not be
+  tracked.** Git cannot re-include a file whose parent directory is excluded;
+  the pattern is now `models/*` with the manifest negated back in.
+
 ### Fixed — workloads that could not be run, and one that measured a third of itself
 
 - **Thirteen of seventeen registered workloads could not be run by

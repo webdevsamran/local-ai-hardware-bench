@@ -9,6 +9,7 @@ durations come from Ollama's final statistics object.
 from __future__ import annotations
 
 import json
+import re
 import time
 import urllib.error
 import urllib.request
@@ -27,6 +28,11 @@ from .base import (
 OLLAMA_HOST = "http://localhost:11434"
 
 
+#: Ollama names blob files for their own content hash, so the digest can be
+#: read out of a path without trusting (or keeping) the rest of the path.
+_BLOB_SHA256 = re.compile(r"sha256[:-]([0-9a-f]{64})")
+
+
 def _api_get(path: str, timeout: float = 5.0) -> dict[str, Any] | None:
     try:
         with urllib.request.urlopen(f"{OLLAMA_HOST}{path}", timeout=timeout) as resp:
@@ -34,6 +40,69 @@ def _api_get(path: str, timeout: float = 5.0) -> dict[str, Any] | None:
             return data if isinstance(data, dict) else None
     except (urllib.error.URLError, OSError, json.JSONDecodeError):
         return None
+
+
+def _api_show(model: str, timeout: float = 20.0) -> dict[str, Any] | None:
+    """The /api/show document for one model, or None if it cannot be read."""
+    request = urllib.request.Request(
+        f"{OLLAMA_HOST}/api/show",
+        data=json.dumps({"model": model}).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return data if isinstance(data, dict) else None
+    except (urllib.error.URLError, OSError, json.JSONDecodeError):
+        return None
+
+
+def model_weights_digest(model: str) -> str | None:
+    """SHA-256 of the weights blob, as distinct from the manifest digest.
+
+    `model_digest` returns what `/api/tags` calls the digest, which hashes the
+    Ollama *manifest*: the weights layer plus the template plus the system
+    prompt. Two Ollama models with identical weights and different templates
+    have different manifest digests, and a llama.cpp run over the very same
+    weights file records a third, unrelated-looking value. The zoo needs the
+    one hash that means "these are the same weights".
+
+    Ollama states it in the `FROM` line of `/api/show`, which names the blob
+    file -- and blob files are named for their own content hash. Only the
+    digest is extracted: the rest of that line is an absolute path through a
+    home directory, which is exactly what `sanitize` exists to keep out of
+    published results.
+    """
+    doc = _api_show(model)
+    if not doc:
+        return None
+    modelfile = doc.get("modelfile")
+    if not isinstance(modelfile, str):
+        return None
+    for line in modelfile.splitlines():
+        if not line.strip().upper().startswith("FROM"):
+            continue
+        match = _BLOB_SHA256.search(line)
+        if match:
+            return match.group(1)
+    return None
+
+
+def model_license(model: str) -> dict[str, Any]:
+    """Licence terms as Ollama reports them for a model.
+
+    Taken from `model_info`, which relays the GGUF header's own
+    `general.license`, so it agrees with `gguf.read_gguf_license` on the same
+    weights. Never inferred from the model name.
+    """
+    doc = _api_show(model)
+    info = (doc or {}).get("model_info") or {}
+    spdx = info.get("general.license")
+    link = info.get("general.license.link")
+    return {
+        "license": spdx if isinstance(spdx, str) and spdx else None,
+        "license_link": link if isinstance(link, str) and link else None,
+    }
 
 
 def detect() -> BackendInfo:

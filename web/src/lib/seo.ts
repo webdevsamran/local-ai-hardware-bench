@@ -59,6 +59,11 @@ const STATIC_META: Record<string, Omit<PageMeta, 'path'>> = {
     description:
       'What moving layers off the GPU actually costs, measured rather than estimated. Throughput does not degrade smoothly when a model stops fitting in VRAM: it falls off a step, and where that step sits depends on PCIe generation, memory bandwidth and what else is using the card.',
   },
+  '/kv-cache': {
+    title: 'KV-cache quantization: how much context fits — AIHWBench',
+    description:
+      'What quantizing the KV cache actually costs, measured rather than argued about. The cache is a memory setting, not a speed one: on the reference machine q4_0 for both K and V cut the cache by 72% at no measurable cost in throughput, while two asymmetric configurations used more device memory than the f16 default despite holding a smaller cache.',
+  },
   '/submit': {
     title: 'Submit a benchmark result — AIHWBench',
     description:

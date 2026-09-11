@@ -306,6 +306,39 @@
         ]
       }
     },
+    "/data/kvcache.json": {
+      "get": {
+        "description": "KV-cache dtype matrices, reported as memory rather than speed.\n\nWhat quantizing the KV cache costs, measured at every combination of K and V dtype. Each configuration carries two figures that answer different questions: the analytic cache size, computed from the model's attention geometry and therefore exact at any context length, and the measured device VRAM, which is real but includes everything else the card is holding. Throughput carries the run-to-run noise floor, so a difference inside it is marked indistinguishable rather than reported as a result. A configuration flagged `costs_more_than_baseline` was measured using more device memory than the f16 default despite holding a smaller cache -- an inversion the arithmetic alone does not predict.\n\n**Stability: unstable.**",
+        "operationId": "getKvcache",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "note": {
+                      "type": "string"
+                    },
+                    "studies": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "KV-cache dtype matrices, reported as memory rather than speed."
+          }
+        },
+        "summary": "KV-cache dtype matrices, reported as memory rather than speed.",
+        "tags": [
+          "convenience views"
+        ]
+      }
+    },
     "/data/leaderboard.json": {
       "get": {
         "description": "Ranked views, grouped by comparison safety.\n\nA convenience view for the dashboard. Rank is *within* a comparison group and never across the dataset; do not read it as a global ranking. Shape may change when the dashboard does.\n\n**Stability: unstable.**",

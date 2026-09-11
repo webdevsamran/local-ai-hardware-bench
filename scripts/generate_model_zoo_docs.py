@@ -96,6 +96,27 @@ def _section(entry: ZooEntry) -> str:
             "the one that was benchmarked."
         )
 
+    if entry.attention:
+        geometry = entry.attention
+        parts = [
+            f"{geometry.get('block_count')} layers",
+            f"{geometry.get('head_count_kv')} KV heads",
+            f"{geometry.get('head_dim')}-wide",
+        ]
+        lines.append(f"- **Attention**: {', '.join(parts)}")
+        from aihwbench.analysis.kvcache import BYTES_PER_MB, kv_cache_bytes
+
+        declared = geometry.get("context_length")
+        if declared:
+            f16 = kv_cache_bytes(geometry, declared, "f16", "f16")
+            q4 = kv_cache_bytes(geometry, declared, "q4_0", "q4_0")
+            if f16 and q4:
+                lines.append(
+                    f"  - KV cache at its declared {declared} tokens: "
+                    f"{f16 / BYTES_PER_MB:.0f} MiB at f16, "
+                    f"{q4 / BYTES_PER_MB:.0f} MiB at q4_0"
+                )
+
     if entry.aliases:
         lines.append("- **Also recorded in results as**:")
         lines += [f"  - `{alias}`" for alias in entry.aliases]

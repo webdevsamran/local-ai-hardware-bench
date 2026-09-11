@@ -125,3 +125,66 @@ def test_the_projection_actually_copies_the_metrics_it_declares():
     assert metrics["performance_per_watt"] == 3.4
     assert metrics["gen_tps_ci95"] == [95.0, 105.0]
     assert "some_unlisted_field" not in metrics
+
+
+class TestSweepOutputCollision:
+    """A second sweep of one runtime must not destroy the first.
+
+    The output name was derived from the runtime alone, so
+    `sweep --runtime llama.cpp` over KV-cache dtypes landed on the file
+    holding the published offload-cliff sweep -- the raw data
+    `docs/results/offload-cliff-rtx3080ti.md` cites. Nothing warned, and the
+    overwrite happened after ten minutes of measuring, so the loss and the
+    work were discovered together.
+    """
+
+    @staticmethod
+    def _sweep_file(tmp_path, axes: dict):
+        import json
+        from pathlib import Path
+
+        path = Path(tmp_path) / "sweep-llama.cpp.json"
+        path.write_text(json.dumps({"axes": axes, "matrix": []}), encoding="utf-8")
+        return path
+
+    def test_a_different_experiment_is_refused_before_measuring(self, tmp_path):
+        from aihwbench.cli.benchmark import _sweep_axes
+
+        path = self._sweep_file(tmp_path, {"gpu_layers": [0, 99], "iterations": [8]})
+        existing = _sweep_axes(path)
+        assert existing is not None
+        assert set(existing) != {"cache_type_k", "context_length"}
+
+    def test_the_same_axes_are_a_re_measurement_and_may_overwrite(self, tmp_path):
+        from aihwbench.cli.benchmark import _sweep_axes
+
+        axes = {"gpu_layers": [0, 99], "iterations": [8]}
+        path = self._sweep_file(tmp_path, axes)
+        assert set(_sweep_axes(path)) == set(axes)
+
+    def test_no_existing_file_is_not_a_collision(self, tmp_path):
+        from pathlib import Path
+
+        from aihwbench.cli.benchmark import _sweep_axes
+
+        assert _sweep_axes(Path(tmp_path) / "absent.json") is None
+
+    def test_an_unreadable_file_does_not_block_the_sweep(self, tmp_path):
+        """A corrupt file is not evidence of a sweep worth protecting."""
+        from pathlib import Path
+
+        from aihwbench.cli.benchmark import _sweep_axes
+
+        path = Path(tmp_path) / "sweep-llama.cpp.json"
+        path.write_text("{not json", encoding="utf-8")
+        assert _sweep_axes(path) is None
+
+    def test_the_published_cliff_sweep_still_holds_its_own_axes(self):
+        """The file the docs cite: regression guard for the overwrite itself."""
+        import json
+        from pathlib import Path
+
+        published = Path("results/sweeps/sweep-llama.cpp.json")
+        data = json.loads(published.read_text(encoding="utf-8"))
+        assert "gpu_layers" in data["axes"], "the offload-cliff sweep was overwritten"
+        assert len(data["matrix"]) >= 6

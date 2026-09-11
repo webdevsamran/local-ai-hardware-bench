@@ -365,3 +365,98 @@ def test_a_single_dip_does_not_end_the_climb():
         ]
     )
     assert report["memory_saturation_tokens"] is None
+
+
+# --- flash attention, threads and batch size --------------------------------
+#
+# `--flash-attn` defaults to `auto`, and auto is not a synonym for on.
+# llama.cpp declines flash attention for kernel combinations it does not
+# cover, and the fallback path allocates far more memory.
+#
+# Measured on the reference machine, qwen2.5-0.5B at 32768 context, K=q8_0
+# with V=f16:
+#
+#     auto  1842 MiB
+#     off   1834 MiB
+#     on     902 MiB
+#
+# 940 MiB from one flag. At `auto` that configuration costs 820 MiB *more*
+# than leaving both caches at f16 (1022 MiB), so a user quantizing the K cache
+# to save memory spends nearly a gigabyte instead. At `on` it costs 120 MiB
+# less, which is what the cache arithmetic says it should.
+
+
+def test_flash_attention_accepts_the_three_modes_llama_cpp_takes():
+    from aihwbench.backends.base import BenchmarkConfig
+    from aihwbench.backends.llama_cpp import _flash_attn
+
+    for mode in ("on", "off", "auto"):
+        assert _flash_attn(BenchmarkConfig(model="m", extra={"flash_attn": mode})) == mode
+
+
+def test_flash_attention_accepts_booleans_because_a_sweep_axis_spells_it_that_way():
+    from aihwbench.backends.base import BenchmarkConfig
+    from aihwbench.backends.llama_cpp import _flash_attn
+
+    assert _flash_attn(BenchmarkConfig(model="m", extra={"flash_attn": True})) == "on"
+    assert _flash_attn(BenchmarkConfig(model="m", extra={"flash_attn": "false"})) == "off"
+
+
+def test_an_unknown_flash_attention_mode_is_refused_before_the_server_starts():
+    """llama-server would fail to launch; a benchmark that dies partway is
+    harder to diagnose than one that never begins."""
+    import pytest
+
+    from aihwbench.backends.base import BackendError, BenchmarkConfig
+    from aihwbench.backends.llama_cpp import _flash_attn
+
+    with pytest.raises(BackendError, match="unknown flash-attention mode"):
+        _flash_attn(BenchmarkConfig(model="m", extra={"flash_attn": "sometimes"}))
+
+
+def test_unset_flash_attention_is_none_not_auto():
+    """ "We did not pass the flag" and "we passed auto" are different runs.
+
+    They happen to behave the same today, and recording them the same would
+    hide it if they ever stopped.
+    """
+    from aihwbench.backends.base import BenchmarkConfig
+    from aihwbench.backends.llama_cpp import _flash_attn
+
+    assert _flash_attn(BenchmarkConfig(model="m", extra={})) is None
+
+
+def test_a_zero_thread_or_batch_count_is_refused():
+    """llama.cpp substitutes its own default rather than failing.
+
+    The run then produces a number that looks like a measurement of the
+    configuration that was asked for, and is not one.
+    """
+    import pytest
+
+    from aihwbench.backends.base import BackendError, BenchmarkConfig
+    from aihwbench.backends.llama_cpp import _positive_int
+
+    for key, flag in (("threads", "--threads"), ("batch_size", "--batch-size")):
+        with pytest.raises(BackendError, match="must be at least 1"):
+            _positive_int(BenchmarkConfig(model="m", extra={key: 0}), key, flag)
+        assert _positive_int(BenchmarkConfig(model="m", extra={key: 8}), key, flag) == 8
+        assert _positive_int(BenchmarkConfig(model="m", extra={}), key, flag) is None
+
+
+def test_the_backend_declares_every_axis_it_applies():
+    """The tuner refuses axes a backend does not declare, so an applied-but-
+    undeclared axis is unreachable from the CLI -- which is what kept the KV
+    cache axes unusable despite the backend passing them to llama-server."""
+    import inspect
+
+    from aihwbench.backends import llama_cpp
+
+    source = inspect.getsource(llama_cpp.LlamaServerHandle.__enter__)
+    for axis, flag in (
+        ("flash_attn", "--flash-attn"),
+        ("threads", "--threads"),
+        ("batch_size", "--batch-size"),
+    ):
+        assert axis in llama_cpp.TUNABLE_AXES, f"{axis} is applied but not declared"
+        assert flag in source, f"{axis} is declared but never reaches the command line"

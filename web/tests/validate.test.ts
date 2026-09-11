@@ -72,6 +72,7 @@ function makeDataset(): Dataset {
     recommend: { note: '', reference_cases: [] },
     privacy: { patterns: [], reference_cases: [], note: '' },
     cliff: { curves: [], note: '' },
+    kvcache: { studies: [], note: '' },
   }
 }
 

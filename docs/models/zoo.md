@@ -32,6 +32,8 @@ Nothing here is inferred from a model's name, from a sibling model's terms, or f
 - **Licence**: apache-2.0 — read from the file's own GGUF header (`general.license`), so anyone holding the file can re-derive it. [Terms](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct/blob/main/LICENSE)
 - **Checksum**: `sha256:c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515`
   - SHA-256 of the weights file. Identifies the weights and nothing else, so it is the only kind that can be compared across runtimes.
+- **Attention**: 24 layers, 2 KV heads, 64-wide
+  - KV cache at its declared 32768 tokens: 384 MiB at f16, 108 MiB at q4_0
 - **Also recorded in results as**:
   - `a8b0c51577010a279d933d14c2a8ab4b268079d44c5c8830c0a93900f1827c67`
 

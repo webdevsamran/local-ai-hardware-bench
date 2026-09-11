@@ -5,6 +5,79 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Added — KV-cache quantization, measured as memory rather than speed
+
+- **`aihwbench kv-cache` and the `cache_type_k`/`cache_type_v` sweep axes.**
+  The llama.cpp backend has declared both axes as tunable, validated them
+  against the dtypes llama.cpp accepts, and passed them to `llama-server` --
+  and no CLI path could set either. The axes are reachable now, and the
+  analysis reports the memory story first.
+- **The cache size is computed from the model's own attention geometry.**
+  `gguf.read_gguf_attention` reads layer count, KV-head count and head width
+  out of the header, so the size is exact and scales to a context length
+  nobody has measured. The reference model has 14 query heads and 2 KV heads;
+  sizing from the query count would overstate the cache sevenfold.
+- **Checked against llama.cpp on the reference machine.** At 32768 tokens the
+  predicted saving against f16 is 180 MiB for `q8_0` and 276 MiB for `q4_0`;
+  measured device VRAM moved 178 MiB and 274 MiB. `q5_1`, `q5_0` and `q4_1`
+  are each 30 MiB adrift in the same direction, because total VRAM includes
+  compute buffers that vary with cache type and not the cache alone -- which
+  is why the analytic column sits beside the measured one rather than
+  replacing it.
+- **The framing is the feature.** At 32768 tokens this 0.5B model's f16 KV
+  cache is 384 MiB, larger than its 379 MB of weights. Read as speed, cache
+  quantization looks like a small loss and the advice is to leave it alone;
+  read as memory, it is what decides whether a long conversation fits at all.
+  Throughput is reported with the measured 10% run-to-run noise floor
+  attached, and a difference inside that floor is reported as
+  indistinguishable rather than as a result.
+
+- **Flash attention, threads and batch size are sweepable on llama.cpp.**
+  `--flash-attn-list`, `--threads-list` and `--batch-list`, applied by the
+  backend and declared as tunable axes so the tuner will accept them. A thread
+  or batch count below 1 is refused rather than passed on, because llama.cpp
+  substitutes its own default and the result then looks like a measurement of
+  a configuration nobody ran.
+
+- **A `/kv-cache` dashboard page, and the study behind it**
+  ([docs/results/kv-cache-rtx3080ti.md](docs/results/kv-cache-rtx3080ti.md)).
+  Nine configurations measured on the reference machine. The page states the
+  best configuration outright, marks the two that cost more memory than they
+  save in prose rather than relying on a shaded table row, and carries a
+  slider for the question the table cannot answer: how many tokens of context
+  a given VRAM budget holds. The cache sizes are computed in the browser from
+  the geometry the zoo records, and reproduce the Python figures exactly.
+- **The model zoo records attention geometry.** Layers, KV heads and head
+  width, read from the GGUF header. It is what sizes the KV cache, and
+  recording it means the dashboard can compute cache sizes for any context
+  length without the weights present -- which matters, since the weights are
+  the one thing that cannot be shipped.
+
+### Fixed — two ways a sweep could produce confident, wrong numbers
+
+- **The prerenderer and the browser kept two hand-written lists of the same
+  data files, and they drifted.** A file the browser fetched and the
+  prerenderer did not renders the page's empty state into the static HTML --
+  which is what a search engine and a first-time visitor see. The
+  prerenderer's own comment warned about this; nothing checked it. Now
+  `tests/test_frontend_data_contract.py` does, in both directions.
+
+- **A finished benchmark's VRAM could still be resident when the next one
+  started.** The OS reaps a terminated `llama-server` and reports it gone
+  while the driver is still tearing down its GPU context, and a leaked server
+  holds its allocation indefinitely -- one was observed holding 1022 MiB
+  across an entire sweep, which every point of that sweep would have measured
+  as its own. `telemetry.wait_for_vram_release` now blocks until the device
+  gives the memory back, and reports rather than raises when it does not: the
+  finished run is still worth keeping, and the *next* one is what is suspect.
+- **A second sweep of one runtime silently destroyed the first.** The output
+  name was derived from the runtime alone, so a KV-cache sweep of llama.cpp
+  wrote over the published offload-cliff sweep that
+  `docs/results/offload-cliff-rtx3080ti.md` cites as its raw data. The check
+  now runs *before* measuring -- refusing afterwards would cost the run as
+  well as the data -- and `--output-name` gives a sweep its own file. A sweep
+  over the same axes is a re-measurement and still overwrites.
+
 ### Added — a model zoo, because a result named a model nobody could obtain
 
 - **`aihwbench zoo`: licences, checksums, and the command that gets each

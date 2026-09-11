@@ -33,6 +33,9 @@ __all__ = [
     "TelemetrySampler",
     "measure",
     "sample_idle_power",
+    "current_vram_mb",
+    "wait_for_vram_release",
+    "VRAM_RELEASE_TOLERANCE_MB",
     "trace_series",
     "MAX_TRACE_SAMPLES",
 ]
@@ -41,6 +44,11 @@ __all__ = [
 # this is roughly 40 minutes of full-resolution sampling; longer soaks are
 # downsampled uniformly rather than truncated, and the fact is recorded.
 MAX_TRACE_SAMPLES = 5000
+
+#: How close to the pre-run reading VRAM must return before the device counts
+#: as released. Drivers round and hold small allocations, so demanding an exact
+#: return would never be satisfied.
+VRAM_RELEASE_TOLERANCE_MB = 64.0
 
 
 def _gpu_probes() -> tuple[tuple[str, Callable[[], dict[str, Any] | None]], ...]:
@@ -618,3 +626,78 @@ def npu_snapshot_safe() -> dict[str, Any] | None:
     except Exception:  # pragma: no cover - host-hardware dependent
         return None
     return block if block.get("npu_device") else None
+
+
+def current_vram_mb() -> float | None:
+    """Device VRAM in use right now, or None if it cannot be read."""
+    sample = _nvidia_smi_sample()
+    if sample is None:
+        return None
+    value = sample.get("vram_mb")
+    return float(value) if isinstance(value, int | float) else None
+
+
+def wait_for_vram_release(
+    baseline_mb: float | None,
+    timeout: float = 30.0,
+    interval: float = 0.5,
+    tolerance_mb: float = VRAM_RELEASE_TOLERANCE_MB,
+) -> dict[str, Any]:
+    """Block until the GPU gives back what a finished run was holding.
+
+    A terminated process is not a released allocation. The OS reaps the
+    process and reports it gone while the driver is still tearing down its
+    context, so a benchmark starting immediately afterwards loads its model
+    alongside the previous one's -- and measures both.
+
+    This was not hypothetical. A nine-point sweep over KV-cache dtypes
+    produced seven readings within 30 MiB of the analytic cache size and two
+    that were high by **926 MiB, twice, identically** -- the size of a second
+    resident model. The throughput column from the same sweep was incoherent
+    for the same reason, and every point had low variance, so nothing in the
+    data flagged itself.
+
+    Returns what happened rather than raising. A caller that could not read
+    VRAM at all should not be blocked from benchmarking; it should know that
+    it could not check.
+    """
+    if baseline_mb is None:
+        return {
+            "released": None,
+            "waited_seconds": 0.0,
+            "reason": "VRAM was not readable before the run, so there is nothing to return to",
+        }
+
+    target = baseline_mb + tolerance_mb
+    started = time.time()
+    latest: float | None = None
+    while time.time() - started < timeout:
+        latest = current_vram_mb()
+        if latest is None:
+            return {
+                "released": None,
+                "waited_seconds": round(time.time() - started, 2),
+                "reason": "VRAM became unreadable while waiting",
+            }
+        if latest <= target:
+            return {
+                "released": True,
+                "waited_seconds": round(time.time() - started, 2),
+                "vram_mb": latest,
+                "reason": f"VRAM returned to {latest:.0f} MiB",
+            }
+        time.sleep(interval)
+
+    return {
+        "released": False,
+        "waited_seconds": round(time.time() - started, 2),
+        "vram_mb": latest,
+        # Not raising: the previous run is over and this one may still be
+        # worth taking. But the next measurement is now known to be suspect,
+        # and saying so is the difference between a caveat and a silent error.
+        "reason": (
+            f"VRAM was still {latest:.0f} MiB after {timeout:.0f}s, against "
+            f"{baseline_mb:.0f} MiB before the run: something is still resident "
+            "and the next measurement will include it"
+        ),
+    }

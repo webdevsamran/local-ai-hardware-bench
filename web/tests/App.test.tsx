@@ -80,6 +80,71 @@ const dataset = {
   recommend: { note: '', reference_cases: [] },
   privacy: { patterns: [], reference_cases: [], note: '' },
   cliff: { curves: [], note: '' },
+  kvcache: {
+    note: 'Quantizing the KV cache is a memory setting, not a speed one.',
+    studies: [
+      {
+        source: 'sweep-test.json',
+        runtime: 'llama.cpp',
+        model: 'Test Model',
+        model_key: 'test-model',
+        gpu: 'Test GPU',
+        gpu_vram_mb: 16384,
+        timestamp: '2026-09-11T00:00:00Z',
+        report: {
+          context_length: 32768,
+          geometry: { block_count: 24, head_count_kv: 2, head_dim: 64 },
+          baseline: {
+            cache_type_k: 'f16',
+            cache_type_v: 'f16',
+            peak_vram_mb: 1022,
+            generation_tokens_per_second: 382.3,
+            kv_cache_mb: 384,
+          },
+          configurations: [
+            {
+              cache_type_k: 'q4_0',
+              cache_type_v: 'q4_0',
+              is_baseline: false,
+              kv_cache_mb: 108,
+              kv_cache_saved_mb: 276,
+              kv_cache_saved_percent: 71.9,
+              peak_vram_mb: 748,
+              measured_vram_saved_mb: 274,
+              generation_tokens_per_second: 382.4,
+              throughput_change_percent: 0,
+              throughput_distinguishable: false,
+            },
+            {
+              cache_type_k: 'q8_0',
+              cache_type_v: 'f16',
+              is_baseline: false,
+              kv_cache_mb: 294,
+              kv_cache_saved_mb: 90,
+              kv_cache_saved_percent: 23.4,
+              peak_vram_mb: 1858,
+              measured_vram_saved_mb: -836,
+              generation_tokens_per_second: 358.4,
+              throughput_change_percent: -6.3,
+              throughput_distinguishable: false,
+              costs_more_than_baseline: true,
+              measurement_note: 'used more than the baseline',
+            },
+            {
+              cache_type_k: 'f16',
+              cache_type_v: 'f16',
+              is_baseline: true,
+              kv_cache_mb: 384,
+              peak_vram_mb: 1022,
+              generation_tokens_per_second: 382.3,
+            },
+          ],
+          framing: 'memory before throughput',
+          unresolved: null,
+        },
+      },
+    ],
+  },
 }
 
 beforeEach(() => {
@@ -100,6 +165,7 @@ beforeEach(() => {
         'data/recommend.json': dataset.recommend,
         'data/privacy.json': dataset.privacy,
         'data/cliff.json': dataset.cliff,
+        'data/kvcache.json': dataset.kvcache,
       }
       // The app requests base-anchored URLs (`/data/x.json`, or
       // `/local-ai-hardware-bench/data/x.json` in production) because a
@@ -234,6 +300,27 @@ describe('later routes (smoke)', () => {
     // rendering an empty chart that reads as "no cliff".
     renderAt('/offload-cliff')
     expect(await screen.findByText(/No offload sweep has been published/)).toBeTruthy()
+  })
+
+  it('warns about a configuration that costs more memory than it saves', async () => {
+    // The measured inversion: a smaller cache that used *more* device memory.
+    // It is the one row a reader must not skim past, so the page states it in
+    // prose rather than relying on a shaded table row that colour-blind or
+    // greyscale readers would not see.
+    renderAt('/kv-cache')
+    expect(await screen.findByText(/836 MiB more/)).toBeTruthy()
+  })
+
+  it('names the best measured configuration rather than leaving it to be inferred', async () => {
+    renderAt('/kv-cache')
+    expect(await screen.findByText(/71.9% less cache/)).toBeTruthy()
+  })
+
+  it('marks a throughput difference inside the noise floor as indistinguishable', async () => {
+    // -6.3% is inside the measured run-to-run noise floor. Rendering it as a
+    // plain number would invite tuning against the machine.
+    renderAt('/kv-cache')
+    expect(await screen.findByText(/-6.3% ≈/)).toBeTruthy()
   })
 
   it('renders an embed card for a known run', async () => {

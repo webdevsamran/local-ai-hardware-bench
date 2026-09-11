@@ -36,6 +36,7 @@ function loadDataset() {
     'recommend',
     'privacy',
     'cliff',
+    'kvcache',
   ]
   // Kept in step with the browser's list in src/lib/data.ts. A file missing
   // here does not crash the prerender -- seedDataset bypasses the runtime

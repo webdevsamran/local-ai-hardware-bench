@@ -37,6 +37,14 @@ TUNING_AXES: dict[str, tuple[Any, ...]] = {
     "batch_size": (1, 2, 4),
     "context_length": (1024, 2048, 4096),
     "gpu_layers": (0, 16, 32, 99),
+    # KV-cache dtypes. The default space is f16 against the two formats
+    # with fast native CUDA paths, because those are the ones whose
+    # measured VRAM matches the analytic cache size; q5_1, q5_0 and q4_1
+    # allocate differently and belong in a deliberate sweep, not a default.
+    "cache_type_k": ("f16", "q8_0", "q4_0"),
+    "cache_type_v": ("f16", "q8_0", "q4_0"),
+    # auto is the llama.cpp default and is not a synonym for on.
+    "flash_attn": ("on", "off", "auto"),
     "concurrency": (1, 2, 4),
 }
 

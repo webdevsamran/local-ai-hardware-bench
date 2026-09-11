@@ -308,6 +308,8 @@ export interface Dataset {
   privacy: PrivacyRules
   /** Measured offload sweeps with the cliff analysis applied. */
   cliff: OffloadCliffData
+  /** Measured KV-cache dtype matrices, reported as memory. */
+  kvcache: KvCacheData
 }
 
 /** One measured point on an offload sweep. */
@@ -352,5 +354,62 @@ export interface OffloadCliffCurve {
 
 export interface OffloadCliffData {
   curves: OffloadCliffCurve[]
+  note: string
+}
+/** One KV-cache dtype configuration, measured and computed. */
+export interface KvCacheConfiguration {
+  cache_type_k: string
+  cache_type_v: string
+  is_baseline: boolean
+  /** Analytic cache size from the model's attention geometry. Exact. */
+  kv_cache_mb: number | null
+  kv_cache_saved_mb?: number | null
+  kv_cache_saved_percent?: number | null
+  /** Device-wide VRAM with the server loaded. Includes everything resident. */
+  peak_vram_mb: number | null
+  measured_vram_saved_mb?: number | null
+  generation_tokens_per_second: number | null
+  throughput_change_percent?: number | null
+  /** False when the change is inside the run-to-run noise floor. */
+  throughput_distinguishable?: boolean
+  throughput_note?: string
+  /**
+   * Measured using MORE device memory than the f16 baseline despite holding a
+   * smaller cache. The inversion a memory-saving setting is not supposed to
+   * have, and the one thing on this page a reader must not skim past.
+   */
+  costs_more_than_baseline?: boolean
+  measurement_note?: string
+  run_id?: string | null
+}
+
+export interface KvCacheReport {
+  context_length: number | null
+  geometry: Record<string, number | string | null> | null
+  baseline: {
+    cache_type_k: string
+    cache_type_v: string
+    peak_vram_mb: number | null
+    generation_tokens_per_second: number | null
+    kv_cache_mb: number | null
+  } | null
+  configurations: KvCacheConfiguration[]
+  framing: string
+  unresolved: string | null
+}
+
+export interface KvCacheStudy {
+  source: string
+  runtime: string | null
+  model: string | null
+  model_key: string | null
+  gpu: string | null
+  gpu_vram_mb: number | null
+  timestamp: string | null
+  report: KvCacheReport
+}
+
+export interface KvCacheData {
+  studies: KvCacheStudy[]
   note: string
 }

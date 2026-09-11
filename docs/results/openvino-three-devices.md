@@ -63,10 +63,13 @@ which is exactly what that probe is for.
 token is five times longer.
 
 **This is a statement about OpenVINO's path to the card, not about the card.**
-OpenVINO reaches an NVIDIA GPU through a generic route rather than CUDA. The
-comparison that would say what the card can actually do is llama.cpp with a
-CUDA build — a different runtime and a different quantization, so no number
-from it is quoted here.
+OpenVINO reaches an NVIDIA GPU through a generic route rather than CUDA.
+
+For scale: this repository's own published llama.cpp CUDA result on the same
+card is **360.87 tok/s**. That is a different model build and a different
+quantization, so it is *not* a like-for-like comparison and does not belong in
+the table above — it is quoted only because an 18× gap is far larger than a
+quantization difference explains.
 
 The useful lesson is narrower and more practical: *"runtime X supports your
 GPU"* and *"runtime X is a good way to use your GPU"* are different claims, and

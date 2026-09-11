@@ -32,8 +32,8 @@ today:
 
 | Capability | Status |
 | --- | --- |
-| Fleet benchmarking & centralized orchestration | planned |
-| Private result storage adapters | planned |
+| Fleet benchmarking & centralized orchestration | planned; [design](fleet-operation.md) |
+| Private result storage adapters | planned; [interface spec](storage-adapter.md) |
 | Organization/team management | planned |
 | Dashboards & regression monitoring | planned |
 | CI performance gates with baseline policies | partially available via `compare` exit codes |

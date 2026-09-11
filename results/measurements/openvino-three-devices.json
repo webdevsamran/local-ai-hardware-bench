@@ -135,7 +135,7 @@
     {
       "claim": "Reaching the discrete GPU through OpenVINO is roughly four times slower than the CPU and draws nearly twice the power.",
       "evidence": "19.64 tok/s at 50.16 W, against 74.98 tok/s at 28.76 W on the CPU. Time to first token 332.23 ms against 62.03 ms.",
-      "not_concluded": "That this GPU is slow at inference. OpenVINO reaches it through a generic path rather than CUDA. The comparison that would settle what the card can do is llama.cpp with a CUDA build, which is a different runtime and a different model quantization -- so it is not quoted here as a number."
+      "not_concluded": "That this GPU is slow at inference. OpenVINO reaches it through a generic path rather than CUDA. For scale: this repository's own published llama.cpp CUDA result on the same card is 360.87 tok/s (results/published, qwen2.5-0.5b-instruct-q4_k_m.gguf). That is a different model build and a different quantization, so it is NOT a like-for-like comparison and is quoted only to show the gap is far larger than a quantization difference explains."
     },
     {
       "claim": "Memory use on the integrated GPU was not measured.",

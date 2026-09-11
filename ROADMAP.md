@@ -191,8 +191,16 @@ shipped-but-unreachable is not done.
 - [x] Enterprise architecture overview (documented as planned/future)
 - [x] Stable exit codes for CI gates
 - [x] Baseline/regression CLI primitives (`baseline`, `regression`)
-- [ ] Private storage adapter interface spec
-- [ ] Fleet operation design doc
+- [x] Private storage adapter interface spec
+      ([docs/enterprise/storage-adapter.md](docs/enterprise/storage-adapter.md)):
+      four operations, the artifact as the interface, fingerprint as
+      identity, and no ranking inside the store -- plus the gaps the open
+      core still owes it
+- [x] Fleet operation design doc
+      ([docs/enterprise/fleet-operation.md](docs/enterprise/fleet-operation.md)):
+      a fleet is n small leaderboards, not one large one, because fifty
+      heterogeneous machines mostly cannot be compared -- and the obvious
+      sorted table is the thing this project argues against
 
 ## Track 7 — Security
 

@@ -69,6 +69,37 @@ Format based on Keep a Changelog; versioning is SemVer.
   number as though it were everyone's. It now reads 17–44, which is what
   genuinely different pages look like.
 
+### Added — the two enterprise designs, written before anything is built
+
+- **[Private storage adapter interface](docs/enterprise/storage-adapter.md).**
+  Four operations, and the artifact itself as the interface: a store that keeps
+  its own shape has to be migrated whenever the schema moves and, worse,
+  becomes the thing people query instead of the result. `put` is idempotent on
+  the content fingerprint, because fleet collection retries and a store that
+  appends on retry reports a machine as twice as productive as it is. `delete`
+  takes a reason, for the same cause invalidation records exist in the public
+  dataset: a result that silently disappears is indistinguishable from one
+  never taken.
+
+  An adapter may not rank. Ranking is a second implementation of the
+  leaderboard, and it will disagree with the first.
+
+- **[Fleet operation design](docs/enterprise/fleet-operation.md).** Running one
+  benchmark on fifty machines is easy; the hard part is that fifty
+  heterogeneous machines produce results which mostly *cannot* be compared, and
+  the obvious dashboard — one leaderboard, fifty rows, sorted by tokens per
+  second — is wrong in a way that looks authoritative.
+
+  So a fleet view is n small leaderboards, not one large one, most of them with
+  a single member that cannot be ranked at all. "Thirty-one of fifty machines
+  are comparable with nothing else, because their driver versions differ" is
+  the finding, and no throughput number is worth more than it.
+
+  Both documents end with what the open core still owes them — no reference
+  adapter, no collector, no entry-point group for storage, and
+  `comparison_groups` unmeasured at fleet size — so neither is mistaken for a
+  plan already met.
+
 ### Added — moderation guidelines for a benchmark project's discussions
 
 - **The failures a conduct policy does not cover**, because they are not

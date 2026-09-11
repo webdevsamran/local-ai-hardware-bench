@@ -130,6 +130,8 @@ shipped-but-unreachable is not done.
 - [x] Written dispute process for published results
       ([docs/disputes.md](docs/disputes.md))
 - [x] Versioned dataset snapshot manifests
+- [x] Tokenizer-identity check: a strict comparability field that no
+      backend had ever written, so silent tokenizer drift was invisible
 - [x] KV-cache quantization matrix, reported as memory rather than speed
       ([docs/results/kv-cache-rtx3080ti.md](docs/results/kv-cache-rtx3080ti.md)):
       the cache size is computed from the model's own attention geometry,

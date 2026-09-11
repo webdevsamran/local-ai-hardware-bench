@@ -1,5 +1,5 @@
 {
-  "$comment": "Benchmark model tiers. Models are never committed to Git and never redistributed by this project; they are pulled from their upstream source at benchmark time. Tiers exist so results are comparable within a tier. Every tier records its licence and where that licence was read, because a benchmark that tells you to download weights owes you the terms attached to them.",
+  "$comment": "Benchmark model tiers. Models are never committed to Git and never redistributed by this project; they are pulled from their upstream source at benchmark time. Tiers exist so results are comparable within a tier. Every tier records its licence and where that licence was read, because a benchmark that tells you to download weights owes you the terms attached to them. This file says which model each tier *should* use and cites the page a maintainer read its licence from. models/zoo.json is the companion record of what was actually measured, with checksums and the licence as read out of the artifact itself; tests/test_model_licences.py checks the two do not disagree.",
   "tiers": {
     "smoke": {
       "description": "Tiny model for installation and functionality checks.",

@@ -6,8 +6,10 @@ import {
   validateIndex,
   validateLeaderboardRow,
   validateMetrics,
+  validateModelEntry,
   validateResultDoc,
   validateTrendPoint,
+  validateZooInfo,
 } from '../src/lib/validate'
 import type { Dataset, Metrics } from '../src/lib/types'
 
@@ -220,5 +222,68 @@ describe('leaderboard confidence intervals', () => {
         indistinguishable_from_rank_1: 'yes',
       }).join(),
     ).toContain('indistinguishable_from_rank_1')
+  })
+})
+
+describe('model zoo info', () => {
+  const valid = {
+    key: 'qwen2.5-0.5b-instruct-q4_k_m',
+    license: 'apache-2.0',
+    license_source: 'gguf-header',
+    resolved_by: 'checksum',
+  }
+
+  it('accepts a well-formed entry', () => {
+    expect(validateZooInfo(valid)).toEqual([])
+  })
+
+  it('accepts an entry with only a key, since every other field is optional', () => {
+    expect(validateZooInfo({ key: 'k' })).toEqual([])
+  })
+
+  it('rejects a licence provenance the UI cannot describe', () => {
+    // The page renders "read from the artifact" vs "declared by a maintainer"
+    // from this field. An unknown value would render a licence with no
+    // stated basis, which is the claim the zoo exists to avoid making.
+    const issues = validateZooInfo({ ...valid, license_source: 'trust-me' })
+    expect(issues).toHaveLength(1)
+    expect(issues[0]).toContain('license_source')
+  })
+
+  it('rejects an unknown resolution basis', () => {
+    // Matching on a hash is evidence; matching on a name is a label. A value
+    // that is neither would be rendered as the weaker of the two, silently.
+    const issues = validateZooInfo({ ...valid, resolved_by: 'vibes' })
+    expect(issues).toHaveLength(1)
+    expect(issues[0]).toContain('resolved_by')
+  })
+
+  it('requires a key, since it is what addresses the manifest entry', () => {
+    expect(validateZooInfo({ license: 'MIT' })[0]).toContain('key')
+  })
+
+  it('rejects a non-object', () => {
+    expect(validateZooInfo('apache-2.0')[0]).toContain('expected object')
+  })
+})
+
+describe('model entries carry zoo info', () => {
+  const model = {
+    name: 'm.gguf',
+    quantizations: ['q4_k_m'],
+    checksums: ['sha256:' + 'a'.repeat(64)],
+    result_ids: ['r1'],
+  }
+
+  it('accepts a model with no zoo entry: unknown is a valid state', () => {
+    // A model the zoo does not cover has an unknown licence. Refusing to
+    // render it would be worse than saying so.
+    expect(validateModelEntry({ ...model, zoo: null })).toEqual([])
+    expect(validateModelEntry(model)).toEqual([])
+  })
+
+  it('reports a malformed zoo block on the model that carries it', () => {
+    const issues = validateModelEntry({ ...model, zoo: { key: 'k', resolved_by: 'guess' } })
+    expect(issues[0]).toContain('models[].zoo.resolved_by')
   })
 })

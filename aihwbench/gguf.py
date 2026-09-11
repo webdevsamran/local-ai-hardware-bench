@@ -25,7 +25,13 @@ import struct
 from pathlib import Path
 from typing import Any, BinaryIO
 
-__all__ = ["read_gguf_identity", "GGUF_MAGIC", "FILE_TYPES"]
+__all__ = [
+    "read_gguf_identity",
+    "read_gguf_license",
+    "read_gguf_attention",
+    "GGUF_MAGIC",
+    "FILE_TYPES",
+]
 
 GGUF_MAGIC = b"GGUF"
 
@@ -199,4 +205,79 @@ def read_gguf_identity(path: str | Path) -> dict[str, Any]:
         "quantization": quantization,
         "parameters": size_label if isinstance(size_label, str) else None,
         "family": architecture if isinstance(architecture, str) else None,
+    }
+
+
+def read_gguf_license(path: str | Path) -> dict[str, Any]:
+    """Licence terms as the GGUF file itself states them.
+
+    `general.license` is an SPDX identifier the publisher wrote into the
+    header, and `general.license.link` points at the text. Both are absent
+    from plenty of real files, and absent is what this then reports.
+
+    A licence is a legal claim about someone else's work, so this reads it
+    from the artifact and never infers it. A model named `llama-*` is not
+    thereby under the Llama licence, a repository's LICENSE file governs the
+    repository rather than the weights, and a sibling model's terms say
+    nothing about this one. Inferring any of those would produce a confident
+    statement about redistribution rights that nobody checked.
+    """
+    metadata = read_gguf_header(
+        path, wanted={"general.license", "general.license.link", "general.license.name"}
+    )
+    spdx = metadata.get("general.license")
+    link = metadata.get("general.license.link")
+    name = metadata.get("general.license.name")
+    return {
+        "license": spdx if isinstance(spdx, str) and spdx else None,
+        "license_link": link if isinstance(link, str) and link else None,
+        "license_name": name if isinstance(name, str) and name else None,
+    }
+
+
+def read_gguf_attention(path: str | Path) -> dict[str, Any]:
+    """Attention geometry, which is what determines KV-cache size.
+
+    The KV cache is the one memory cost that grows with the conversation
+    rather than with the model, and it is sized entirely by these numbers:
+    layers, KV heads, and the width of each head. A model with grouped-query
+    attention has far fewer KV heads than query heads -- 2 against 14 on the
+    reference model -- so guessing from the query count would overstate the
+    cache by seven times.
+
+    `head_dim` is taken from an explicit `attention.key_length` where the
+    publisher states one, and derived from embedding width over head count
+    otherwise, which is the same thing for every architecture that omits it.
+
+    Returns nulls for whatever the header does not state. A cache size
+    computed from a guessed geometry would look authoritative and be wrong.
+    """
+    metadata = read_gguf_header(path)
+    architecture = metadata.get("general.architecture")
+    if not isinstance(architecture, str):
+        return {
+            "architecture": None,
+            "block_count": None,
+            "head_count_kv": None,
+            "head_dim": None,
+            "context_length": None,
+        }
+
+    def _int(key: str) -> int | None:
+        value = metadata.get(f"{architecture}.{key}")
+        return int(value) if isinstance(value, int) else None
+
+    head_dim = _int("attention.key_length")
+    if head_dim is None:
+        embedding = _int("embedding_length")
+        heads = _int("attention.head_count")
+        if embedding and heads:
+            head_dim = embedding // heads
+
+    return {
+        "architecture": architecture,
+        "block_count": _int("block_count"),
+        "head_count_kv": _int("attention.head_count_kv") or _int("attention.head_count"),
+        "head_dim": head_dim,
+        "context_length": _int("context_length"),
     }

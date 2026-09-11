@@ -14,11 +14,12 @@ import argparse
 from .. import __version__
 from . import benchmark as _benchmark
 from . import dataset as _dataset
+from . import modelzoo as _modelzoo
 from . import reporting as _reporting
 from . import repro as _repro
 from . import system as _system
 
-COMMAND_GROUPS = (_system, _benchmark, _reporting, _dataset, _repro)
+COMMAND_GROUPS = (_system, _benchmark, _reporting, _dataset, _repro, _modelzoo)
 
 
 def build_parser() -> argparse.ArgumentParser:

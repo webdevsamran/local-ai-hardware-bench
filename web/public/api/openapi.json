@@ -373,6 +373,9 @@
                       },
                       "result_ids": {
                         "type": "array"
+                      },
+                      "zoo": {
+                        "type": "object"
                       }
                     },
                     "type": "object"

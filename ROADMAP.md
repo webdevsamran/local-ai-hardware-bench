@@ -130,6 +130,9 @@ shipped-but-unreachable is not done.
 - [x] Written dispute process for published results
       ([docs/disputes.md](docs/disputes.md))
 - [x] Versioned dataset snapshot manifests
+- [x] Model zoo manifest: licence terms read from the artifact, checksums
+      that state what they hash, and a download helper that deletes a
+      mismatched file ([docs/models/zoo.md](docs/models/zoo.md))
 - [ ] Zenodo DOI for versioned dataset snapshots (when dataset matures)
 
 ## Track 6 — Enterprise Foundations

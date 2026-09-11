@@ -93,6 +93,34 @@ export function validateModelEntry(d: unknown): Issue[] {
   if (!isStringArray(d.quantizations)) issues.push('models[].quantizations: expected array of strings')
   if (!isStringArray(d.checksums)) issues.push('models[].checksums: expected array of strings')
   if (!isResultIdArray(d.result_ids)) issues.push('models[].result_ids: expected array of non-empty strings')
+  if (d.zoo != null) issues.push(...validateZooInfo(d.zoo))
+  return issues
+}
+
+/** Licence-claim provenances the UI knows how to describe. */
+const LICENSE_SOURCES = ['gguf-header', 'ollama-api', 'declared']
+
+/**
+ * The model zoo block. Both vocabularies are checked because the UI branches
+ * on them: an unrecognised `resolved_by` would silently render the weaker
+ * "matched by name" caveat for a model that was in fact matched by hash, and
+ * an unrecognised `license_source` would render a licence with no stated
+ * basis. Both fail safe, but a wrong value should be reported, not absorbed.
+ */
+export function validateZooInfo(d: unknown): Issue[] {
+  const issues: Issue[] = []
+  if (!isRecord(d)) return [`models[].zoo: expected object, got ${String(d)}`]
+  if (!isNonEmptyString(d.key)) issues.push('models[].zoo.key: expected non-empty string')
+  optionalString('models[].zoo.license', d.license, issues)
+  optionalString('models[].zoo.license_link', d.license_link, issues)
+  optionalString('models[].zoo.obtain', d.obtain, issues)
+  optionalString('models[].zoo.checksum', d.checksum, issues)
+  if (d.license_source != null && !LICENSE_SOURCES.includes(String(d.license_source))) {
+    issues.push(`models[].zoo.license_source: expected one of ${LICENSE_SOURCES.join(', ')}`)
+  }
+  if (d.resolved_by != null && d.resolved_by !== 'checksum' && d.resolved_by !== 'name') {
+    issues.push("models[].zoo.resolved_by: expected 'checksum' or 'name'")
+  }
   return issues
 }
 

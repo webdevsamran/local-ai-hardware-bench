@@ -496,6 +496,24 @@ label.filter-label {
 .kv-list dt { color: var(--text-muted); font-weight: 600; }
 .kv-list dd { margin: 0; overflow-wrap: anywhere; }
 
+/* Model zoo: licence, how to obtain, how to verify. Same shape as .kv-list,
+   but the values are long (a URL, a command) so they wrap rather than
+   forcing the page to scroll sideways on a phone. */
+.zoo-facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; }
+.zoo-facts dt { color: var(--text-muted); font-weight: 600; }
+.zoo-facts dd { margin: 0; overflow-wrap: anywhere; }
+.zoo-facts code { overflow-wrap: anywhere; }
+
+@media (max-width: 30rem) {
+  /* A two-column grid with a 60-character command in the second column is
+     unreadable on a narrow screen; stack instead. */
+  .zoo-facts { grid-template-columns: 1fr; gap: 2px 0; }
+  .zoo-facts dd { margin-bottom: 8px; }
+}
+
+/* A caveat attached to the figure above it, not a standalone paragraph. */
+.note { margin: 10px 0 0; font-size: 0.9rem; line-height: 1.5; }
+
 .notice {
   border-left: 4px solid var(--warn);
   background: color-mix(in srgb, var(--warn) 8%, var(--surface));

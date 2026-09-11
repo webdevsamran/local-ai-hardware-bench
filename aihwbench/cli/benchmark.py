@@ -14,6 +14,7 @@ from ..agentic import AGENTIC_SCRIPTS, run_agentic_loop
 from ..analysis.cliff import find_offload_cliff
 from ..analysis.context import analyze_context_scaling
 from ..analysis.kvcache import analyze_kv_cache_matrix
+from ..analysis.perplexity import measure_perplexity
 from ..analysis.tune import (
     TUNING_AXES,
     UnsupportedAxisError,
@@ -495,6 +496,24 @@ def cmd_kv_cache(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def cmd_perplexity(args: argparse.Namespace) -> int:
+    """Measure perplexity over a corpus, recording what makes it comparable.
+
+    Perplexity is per token, so two models with different tokenizers produce
+    numbers on different scales. The report carries the tokenizer identity and
+    the corpus hash so a later comparison can be checked rather than assumed.
+    """
+    report = measure_perplexity(
+        args.model_path,
+        args.corpus,
+        context_length=args.context,
+        chunks=args.chunks,
+        gpu_layers=args.gpu_layers,
+    )
+    echo_json(report)
+    return EXIT_OK if report.get("perplexity") is not None else EXIT_VALIDATION_ERROR
+
+
 def _load_matrix(path: Path) -> list[dict[str, Any]] | None:
     """Read a sweep matrix, tolerating either the file or a bare array."""
     try:
@@ -808,6 +827,25 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     )
     kv_p.add_argument("--json", action="store_true", help="Emit the report as JSON")
     kv_p.set_defaults(func=cmd_kv_cache)
+
+    ppl_p = sub.add_parser(
+        "perplexity",
+        help="Perplexity over a corpus, with what makes it comparable recorded",
+    )
+    ppl_p.add_argument("--model-path", required=True, help="GGUF model file")
+    ppl_p.add_argument(
+        "--corpus",
+        required=True,
+        help=(
+            "Text file to measure over. Supplied by you: this project bundles "
+            "no datasets, and a perplexity figure over a corpus nobody names "
+            "is not a result."
+        ),
+    )
+    ppl_p.add_argument("--context", type=int, default=512)
+    ppl_p.add_argument("--chunks", type=int, default=None, help="Default: the whole corpus")
+    ppl_p.add_argument("--gpu-layers", type=int, default=99)
+    ppl_p.set_defaults(func=cmd_perplexity)
 
     ctx_p = sub.add_parser(
         "context-scaling",

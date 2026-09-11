@@ -5,6 +5,44 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Added — four quality and capacity measurements that were missing
+
+- **Perplexity, with the reason most perplexity comparisons are void.**
+  `aihwbench perplexity` runs llama.cpp's `llama-perplexity` over a corpus you
+  supply. Perplexity is a per-*token* quantity, so two models with different
+  tokenizers compute it over different denominators and the comparison means
+  nothing while looking exactly like one that does. Every measurement records
+  the tokenizer identity, the corpus hash, the context length and the chunk
+  count, and `perplexity_comparable` refuses a comparison that differs in any
+  of them. Measured here: the chunk count alone moved the figure 23% on one
+  model over one corpus.
+
+- **Text-to-SQL scored by execution, not by string match.** `SELECT name FROM t
+  WHERE age > 30` and `SELECT t.name FROM t WHERE 30 < t.age` are the same
+  query and share almost no characters, so a text metric reports a correct
+  model as wrong. The `sql_execution` evaluator runs both and compares results:
+  row order matters only when the reference asked for it, duplicates are not
+  collapsed, an invalid query is wrong, and a *reference* that fails to run is
+  a broken dataset row rather than the model's fault. The database is opened
+  read-only, enforced by SQLite rather than by pattern-matching the query --
+  the SQL came from a model, and a benchmark that drops its own fixtures is
+  one you cannot run twice.
+
+- **Mixture-of-experts memory, which has two answers.** A model named
+  "30B-A3B" advertises its *active* parameter count; read as a memory
+  requirement it is off by a factor of sixteen. On Qwen3-30B-A3B's geometry, 8
+  of 128 experts run per token, so 16.3 GB must be resident while 1.0 GB is
+  active. Expert offload traffic is reported as best/expected/worst per token
+  rather than an average, because which experts the router picks changes per
+  token and an average hides the tail.
+
+- **Cloud instance profiles as a TCO baseline.** Hardware specs are bundled
+  with the URL and date they were read; prices are not, because an instance's
+  GPU is a stable fact and its price varies by region, commitment and the spot
+  market. No throughput is claimed for any of them: this project has measured
+  none, and a measured local number beside an assumed remote one is the
+  assumption dressed up as a comparison.
+
 ### Added — the flash-attention memory matrix, measured on an idle card
 
 - **All nine KV-dtype configurations, at `--flash-attn auto` and `on`**

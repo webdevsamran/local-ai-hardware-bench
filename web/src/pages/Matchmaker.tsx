@@ -9,7 +9,7 @@ import {
   type QuizAnswers,
   type UseCase,
 } from '../lib/matchmaker'
-import { fmtNum } from '../lib/format'
+import { fmtInt, fmtNum } from '../lib/format'
 
 // The quiz asks about the task, because that is what people know about
 // themselves. It answers from measured results where any exist, and says
@@ -159,7 +159,7 @@ export default function Matchmaker() {
               </div>
               <div>
                 <dt>Context needed</dt>
-                <dd>{recommendation.requirements.contextLength.toLocaleString()} tokens</dd>
+                <dd>{fmtInt(recommendation.requirements.contextLength)} tokens</dd>
               </div>
               <div>
                 <dt>Throughput floor</dt>

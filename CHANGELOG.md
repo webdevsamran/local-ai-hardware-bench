@@ -5,6 +5,118 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Fixed — every prerendered page was being thrown away on load
+
+- **The client called `createRoot`, not `hydrateRoot`.** `createRoot` discards
+  whatever is in the container and renders from scratch, so 53 pages of
+  prerendered HTML were built, shipped, painted and then destroyed on every
+  single visit. The static output was doing its job for crawlers and nothing
+  at all for readers: the server's content appeared, React wiped it, and the
+  page fell back to a loading skeleton until 14 JSON files arrived.
+
+  Nothing caught it because nothing looked. Every frontend test rendered
+  components directly; none asked whether the server's markup and the client's
+  first render agree — which is the only question hydration turns on. This is
+  the project's commonest defect class in its purest form: built, tested,
+  documented, and not wired into the path that matters.
+
+  It shows up as a measurement, not an opinion: `renderToString` emits
+  `<!-- -->` comment nodes between adjacent text nodes and a client render
+  emits none. The live pages had zero of the server's 75.
+
+- **The Suspense boundary was inside the browser-only branch.** Once hydration
+  was switched on, every page still failed, and the reason is the kind that
+  survives review: a boundary that never suspends renders no DOM, so wrapping
+  only the client's tree looks free. Hydration does not compare DOM, it
+  compares elements — the client had a `<Suspense>` where the server had the
+  route's `<div>`. The boundary is now outside the branch, which costs the
+  prerenderer nothing because its components are all preloaded.
+
+- **Hydration also needs the data and the route's own chunk in hand.** Absent
+  either, the first client render is a skeleton or the route fallback, neither
+  of which is what the server sent. The entry point awaits the dataset and
+  exactly one route chunk — `preloadRoute`, not `preloadRoutes`, so the code
+  splitting survives — and `lazyRouteElements` renders an already-resolved
+  module directly, because `React.lazy` suspends on first render even when the
+  chunk is in memory.
+
+- **A test that agreed with itself.** The first version of the hydration test
+  passed against the broken code. `useEager()` decided the branch with
+  `typeof window === 'undefined'`, and jsdom defines `window` — so the
+  "server" render in the test took the browser's branch and was compared to
+  itself. It is a prop now, passed explicitly by `entry-server.tsx`, and the
+  regression was reintroduced to confirm 4 of 8 cases fail without the fix.
+
+- **Four numbers were formatted in the host's locale.** `toLocaleString()`
+  with no argument formats with the build machine's locale on the server and
+  the reader's in the browser, so `32768` renders as `32,768` for whoever
+  built the site and `32.768` for a reader in much of Europe — a hydration
+  mismatch nobody who builds it can reproduce. A test now rejects the bare
+  call anywhere in `web/src`, alongside one for `Date.now()` and
+  `Math.random()` in render paths.
+
+### Fixed — touch targets the test said were fine
+
+- **The test was `assert "44px" in css`.** The string was there, on form
+  fields and filter chips, and nothing checked it reached anything else.
+  Measured in a browser at 320px: the column sort buttons were 13x23, the
+  navigation toggle 66x23 — and below 900px that toggle is the only way to
+  reach the navigation at all — the theme toggle 67x33, the header home link
+  124x29. The sort buttons were under WCAG 2.2's 24x24 floor, not just under
+  this project's own 44px bar; `all: unset` had stripped every default the
+  button had, size included, leaving a target as wide as its label.
+
+  The sort control is now the whole header cell rather than a 44px-tall
+  button, which would have pushed every header row down by half its height on
+  desktop too. The cell was already 43px; it costs two pixels of padding and a
+  pseudo-element.
+
+  `.field input` claimed 44px through `padding: 11px 12px` and a comment
+  asserting the arithmetic — true for the current font size and border width
+  and silently false after either changes. It states a minimum now.
+
+  The test reads the effective `min-height` per control and compares it
+  numerically, so deleting a rule fails it. Two controls stay under 44 and the
+  reasons are recorded: links inside prose, which WCAG 2.2 exempts, and the
+  sort button's *width* in the narrowest column, where a wider target would
+  overlap the next column's and sort the wrong one.
+
+### Added — an accessibility gate, and the site's first favicon
+
+- **`npm run a11y` runs axe-core over all 54 prerendered pages** and fails the
+  build on a violation. It reads `dist/`, not a mocked component render,
+  because the prerendered HTML is the artifact a crawler indexes and a screen
+  reader receives before hydration. CI runs it after the build. Six seconds.
+
+  It found that the nine embed pages had no `<main>` and no `<h1>`. The embed
+  shell drops the site chrome deliberately — the card sits inside someone
+  else's article — but it dropped the landmark and the heading with it, and an
+  iframe is its own document, so a reader entering one inherited no structure
+  at all. Fixed at the source, and the heading is pinned to the card's own
+  font size so an accessibility fix did not ship as a visible redesign.
+
+  The report names what it could *not* check. jsdom has no layout engine, so
+  `color-contrast` cannot return a verdict and is listed as unevaluated rather
+  than folded into the pass count — "we did not look" and "we looked and it
+  was fine" are different claims. Two rules that error under jsdom but need no
+  layout (`landmark-one-main`, `page-has-heading-one`) are checked directly
+  instead of being written off; they are the two that caught the embed bug.
+
+- **A favicon**, which the site had never had. Every page load requested
+  `/favicon.ico`, got a 404, and logged a console error — Lighthouse scored
+  Best Practices 96 on an otherwise clean page because of it. The SVG follows
+  the reader's theme; `favicon.ico` is the fallback for browsers that ignore
+  SVG icons and is generated by `scripts/generate_favicon.py --check`, because
+  a committed binary with no source is a thing nobody can edit later.
+
+- **Lighthouse measured and recorded** in `docs/research/dashboard-performance.md`:
+  100 across performance, accessibility, best practices and SEO on four
+  routes, with CLS at 0. Recorded with its conditions, including that the
+  machine was at 38% CPU — above this project's own 20% publish threshold —
+  and why that makes a perfect score a stronger claim rather than a weaker
+  one. It is not a CI gate, and the file says why.
+
+
 ### Added — the dashboard quality bar: code splitting, three chart shapes, print
 
 - **Routes are code-split.** 34 routes shared one 372 KB bundle, so someone

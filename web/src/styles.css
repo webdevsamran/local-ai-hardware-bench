@@ -407,6 +407,68 @@ button {
   to { background-position: -200% 0; }
 }
 
+/* --- Touch targets -------------------------------------------------------
+   Measured in a browser at 320px, not assumed. Every control below came back
+   under the 44px this project sets as its bar, and `.th-sort` came back at
+   13x23 -- under WCAG 2.2's 24x24 floor as well.
+
+   The stylesheet did contain `44px`, which is all the old test checked for.
+   It reached `.field input` and `.chip` and nothing else, so the assertion
+   passed while the header's sort buttons, the mobile navigation toggle and
+   the theme toggle all failed. A test that asserts a string exists somewhere
+   is not a test of the thing the string was for.
+   ------------------------------------------------------------------------ */
+
+.skip-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.nav-toggle {
+  /* Below 900px this is the only way to reach the navigation at all, and it
+     measured 66x23. */
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+}
+
+.theme-toggle {
+  min-height: 44px;
+}
+
+.btn {
+  /* Was 42px: close enough to look fine and still short of the bar. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+
+/* A sortable column's hit area is the whole header cell, not the few pixels
+   of text inside it. `all: unset` on `.th-sort` strips every default the
+   button had, size included, so it was as wide as its label -- 13px for a
+   column headed "#". The cell was already 43px tall, so this is two pixels of
+   padding and a pseudo-element that fills the cell, rather than a 44px-tall
+   button that would have pushed every header row down by half its height. */
+.data-table th {
+  position: relative;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.th-sort::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* Blanket, not a list. Naming each animation meant every new one shipped
      moving until somebody remembered to add it here -- and the person who
@@ -720,7 +782,11 @@ button:focus-visible,
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
-  /* 44px minimum touch target. */
+  /* Stated, not derived. This was `padding: 11px 12px` with a comment saying
+     it made 44px -- true only for the current font size and border width, and
+     silently false after either changes. The padding stays for horizontal
+     comfort; the height is now a floor rather than an arithmetic result. */
+  min-height: 44px;
   padding: 11px 12px;
   transition:
     border-color var(--dur-fast) var(--ease),
@@ -1076,6 +1142,12 @@ button:focus-visible,
 }
 
 .embed-model {
+  /* An `<h1>` for the screen reader, card-sized for the eye. Without these two
+     the accessibility fix would have shipped as a layout change: the global h1
+     scale is several times the 14px this card sets, and the browser's own h1
+     margin would push the metrics down. */
+  margin: 0;
+  font-size: inherit;
   font-weight: 600;
   word-break: break-word;
 }

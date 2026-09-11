@@ -33,17 +33,23 @@ export default function EmbedResult() {
   // system preference like every other page.
   const theme = params.get('theme')
 
-  if (loading) return <div className="embed-card embed-empty">Loading…</div>
+  // These three branches are landmarks but carry no heading, and that is
+  // deliberate: none is reachable during prerendering, because the embed
+  // routes are generated from the same dataset this card reads. If one ever
+  // does land in the static output, the route list and the data have
+  // disagreed, and the a11y gate failing on a headingless page is the
+  // correct way to find out.
+  if (loading) return <main className="embed-card embed-empty">Loading…</main>
   if (error || !dataset) {
-    return <div className="embed-card embed-empty">Result unavailable.</div>
+    return <main className="embed-card embed-empty">Result unavailable.</main>
   }
 
   const result = dataset.results.find((r) => r.run_id === runId)
   if (!result) {
     return (
-      <div className="embed-card embed-empty">
+      <main className="embed-card embed-empty">
         No published result with id <code>{runId}</code>.
-      </div>
+      </main>
     )
   }
 
@@ -51,13 +57,21 @@ export default function EmbedResult() {
   const ci = metrics.gen_tps_ci95
   const permalink = `${SITE_URL.replace(/\/$/, '')}/results/${result.run_id}`
 
+  // `<main>` and `<h1>`, despite this being a card rather than a page.
+  //
+  // An embed is loaded in an iframe, and an iframe is its own document: a
+  // screen reader that enters one gets no landmarks or headings from the host
+  // page, so dropping the site chrome dropped the only structure this document
+  // had. The heading outline here is separate from the host's, so an `<h1>`
+  // names the widget without competing with the article around it. The model
+  // name is already the visual title; it just was not marked up as one.
   return (
-    <div
+    <main
       className="embed-card"
       data-theme={theme === 'dark' || theme === 'light' ? theme : undefined}
     >
       <div className="embed-head">
-        <span className="embed-model">{result.model?.name ?? 'unknown model'}</span>
+        <h1 className="embed-model">{result.model?.name ?? 'unknown model'}</h1>
         <span className={`embed-trust embed-trust-${result.trust_state ?? 'unreviewed'}`}>
           {result.trust_state ?? 'unreviewed'}
         </span>
@@ -106,6 +120,6 @@ export default function EmbedResult() {
       >
         Full result and methodology — AIHWBench
       </a>
-    </div>
+    </main>
   )
 }

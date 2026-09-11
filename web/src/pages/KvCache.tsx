@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useDataset } from '../lib/useDataset'
 import { Loading, ErrorState } from '../components/States'
 import { Heatmap } from '../components/Distributions'
-import { fmtNum } from '../lib/format'
+import { fmtInt, fmtNum } from '../lib/format'
 import type { KvCacheConfiguration } from '../lib/types'
 
 // KV-cache quantization, reported as a memory setting rather than a speed one.
@@ -138,7 +138,7 @@ export default function KvCache() {
             <p className="muted">
               {study.runtime}
               {report.context_length
-                ? `, ${report.context_length.toLocaleString()} token context`
+                ? `, ${fmtInt(report.context_length)} token context`
                 : ''}
               {study.timestamp ? ` · measured ${study.timestamp.slice(0, 10)}` : ''}
             </p>
@@ -271,13 +271,13 @@ export default function KvCache() {
                     At <code>f16</code>
                   </dt>
                   <dd>
-                    {Math.floor(budgetBytes / perToken.f16).toLocaleString()} tokens
+                    {fmtInt(Math.floor(budgetBytes / perToken.f16))} tokens
                   </dd>
                   <dt>
                     At <code>q4_0</code>
                   </dt>
                   <dd>
-                    {Math.floor(budgetBytes / perToken.q4_0).toLocaleString()} tokens
+                    {fmtInt(Math.floor(budgetBytes / perToken.q4_0))} tokens
                   </dd>
                 </dl>
                 <p className="muted note">

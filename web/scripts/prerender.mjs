@@ -111,6 +111,37 @@ function datasetJsonLd(siteUrl) {
   }
 }
 
+/** Whether a concrete path was generated from a route pattern. */
+function pathMatchesPattern(actual, pattern) {
+  if (pattern === '*') return false
+  const a = actual.split('/').filter(Boolean)
+  const b = pattern.split('/').filter(Boolean)
+  if (a.length !== b.length) return false
+  return b.every((segment, i) => segment.startsWith(':') || segment === a[i])
+}
+
+/**
+ * `<link rel="modulepreload">` for the chunk this route needs to hydrate.
+ *
+ * Route components are code-split, so without this the browser discovers the
+ * route chunk only after the entry script has parsed and React.lazy asks for
+ * it — a request it could have started at the same time as the entry. One
+ * preload per page, not all of them: preloading thirty chunks would undo the
+ * splitting.
+ *
+ * Returns nothing when the manifest has no entry for the module. A preload
+ * pointing at a chunk that does not exist is a 404 on every page load, which
+ * is worse than the waterfall it was meant to remove.
+ */
+function preloadForRoute(manifest, base, routePath, routeModules) {
+  const moduleName = routeModules.get(routePath)
+  if (!moduleName) return ''
+  const entry = manifest[moduleName]
+  if (!entry || !entry.file) return ''
+  const href = `${base.replace(/[/]$/, '')}/${entry.file}`
+  return `<link rel="modulepreload" href="${escapeHtml(href)}" />`
+}
+
 function buildHead(meta, siteUrl, extraJsonLd) {
   const canonical = urlFor(siteUrl, meta.path)
   const tags = [
@@ -192,8 +223,14 @@ async function main() {
     process.exit(1)
   }
 
-  const { render, allRoutes, indexableRoutes, metaForPath, SITE_URL } =
+  const { prepare, render, allRoutes, indexableRoutes, metaForPath, SITE_URL, ROUTES } =
     await import(pathToFileURL(SSR).href)
+
+  // Route components are code-split for the browser. `renderToString` cannot
+  // suspend, so they are all loaded before anything is rendered -- otherwise a
+  // route still in flight writes its loading fallback into the static HTML,
+  // which is the copy a crawler indexes.
+  await prepare()
 
   const dataset = loadDataset()
   const template = readFileSync(join(DIST, 'index.html'), 'utf-8')
@@ -202,15 +239,28 @@ async function main() {
   // SITE_URL already includes the repository sub-path for GitHub Pages.
   const siteUrl = SITE_URL.replace(/\/$/, '')
 
+  // Vite writes this only when `build.manifest` is on; a build without it
+  // still prerenders, just without the preload hint.
+  const manifestPath = join(DIST, '.vite', 'manifest.json')
+  const manifest = existsSync(manifestPath)
+    ? JSON.parse(readFileSync(manifestPath, 'utf-8'))
+    : {}
+
+  // Concrete route paths are generated from patterns like '/models/:slug', so
+  // the pattern's module is found by matching the generated path back to it.
+  const routeModules = new Map()
+  for (const routePath of routes) {
+    const match = ROUTES.find((def) => pathMatchesPattern(routePath, def.path))
+    if (match) routeModules.set(routePath, match.module)
+  }
+
   let written = 0
   for (const routePath of routes) {
     const meta = metaForPath(routePath, dataset)
     const body = render(routePath, dataset)
-    const head = buildHead(
-      meta,
-      siteUrl,
-      routePath === '/' ? datasetJsonLd(siteUrl) : null,
-    )
+    const head =
+      buildHead(meta, siteUrl, routePath === '/' ? datasetJsonLd(siteUrl) : null) +
+      preloadForRoute(manifest, BASE, routePath, routeModules)
     writePage(routePath, composePage(template, head, body))
     written += 1
   }

@@ -1,94 +1,51 @@
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { Suspense } from 'react'
+import { BrowserRouter, Routes, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import Layout from './components/Layout'
-import Home from './pages/Home'
-import Leaderboard from './pages/Leaderboard'
-import WillItRun from './pages/WillItRun'
-import Tco from './pages/Tco'
-import Pareto from './pages/Pareto'
-import Recommend from './pages/Recommend'
-import Matchmaker from './pages/Matchmaker'
-import ModelOnHardware from './pages/ModelOnHardware'
-import HardwareExplorer from './pages/HardwareExplorer'
-import HardwareDetail from './pages/HardwareDetail'
-import RuntimeExplorer from './pages/RuntimeExplorer'
-import RuntimeDetail from './pages/RuntimeDetail'
-import ModelExplorer from './pages/ModelExplorer'
-import ModelDetail from './pages/ModelDetail'
-import ResultExplorer from './pages/ResultExplorer'
-import ResultDetail from './pages/ResultDetail'
-import Compare from './pages/Compare'
-import DatasetExplorer from './pages/DatasetExplorer'
-import Methodology from './pages/Methodology'
-import CompatibilityMatrix from './pages/CompatibilityMatrix'
-import Docs from './pages/Docs'
-import Community from './pages/Community'
-import HardwareNeeded from './pages/HardwareNeeded'
-import Planned from './pages/Planned'
-import About from './pages/About'
-import NotFound from './pages/NotFound'
-import EmbedResult from './pages/EmbedResult'
-import Submit from './pages/Submit'
-import OffloadCliff from './pages/OffloadCliff'
-import KvCache from './pages/KvCache'
+import { EMBED_ROUTES, ROUTES, eagerRouteElements, lazyRouteElements } from './routes'
 
-export function AppRoutes() {
+/**
+ * Whether route components are already loaded.
+ *
+ * The prerenderer awaits `preloadRoutes()` and then renders synchronously,
+ * because `renderToString` cannot suspend -- a lazy route would put a spinner
+ * into the static HTML, which is the one output that must carry real content.
+ * The browser has no such constraint and takes the split chunks.
+ */
+function useEager(): boolean {
+  return typeof window === 'undefined'
+}
+
+/** What a visitor sees for the moment a route chunk is in flight. */
+function RouteFallback() {
   return (
-    <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/will-it-run" element={<WillItRun />} />
-          <Route path="/local-vs-cloud" element={<Tco />} />
-          <Route path="/frontiers" element={<Pareto />} />
-          <Route path="/offload-cliff" element={<OffloadCliff />} />
-          <Route path="/kv-cache" element={<KvCache />} />
-          <Route path="/recommend" element={<Recommend />} />
-          <Route path="/matchmaker" element={<Matchmaker />} />
-          <Route path="/submit" element={<Submit />} />
-          <Route path="/hardware" element={<HardwareExplorer />} />
-          <Route path="/hardware/:fingerprint" element={<HardwareDetail />} />
-          <Route path="/runtimes" element={<RuntimeExplorer />} />
-          <Route path="/runtimes/:name" element={<RuntimeDetail />} />
-          <Route path="/models" element={<ModelExplorer />} />
-          <Route path="/models/:slug" element={<ModelDetail />} />
-          <Route
-            path="/models/:modelSlug/on/:gpuSlug"
-            element={<ModelOnHardware />}
-          />
-          <Route path="/results" element={<ResultExplorer />} />
-          <Route path="/results/:runId" element={<ResultDetail />} />
-          <Route path="/compare" element={<Compare />} />
-          <Route path="/dataset" element={<DatasetExplorer />} />
-          <Route path="/methodology" element={<Methodology />} />
-          <Route path="/compatibility" element={<CompatibilityMatrix />} />
-          <Route path="/docs" element={<Docs />} />
-          <Route path="/community" element={<Community />} />
-          <Route path="/hardware-needed" element={<HardwareNeeded />} />
-          <Route path="/planned/enterprise" element={<Planned kind="enterprise" />} />
-          <Route
-            path="/planned/certification"
-            element={<Planned kind="certification" />}
-          />
-          <Route path="/about" element={<About />} />
-          <Route path="*" element={<NotFound />} />
-    </Routes>
+    <div className="route-loading" role="status" aria-live="polite">
+      <span className="visually-hidden">Loading page</span>
+      <span className="route-loading-bar" aria-hidden="true" />
+    </div>
   )
 }
 
-/**
- * Layout plus routes, without a router.
- *
- * The browser wraps this in a BrowserRouter; the prerenderer wraps the same
- * tree in a StaticRouter. Keeping the router out of here is what lets one
- * component tree serve both.
- */
+export function AppRoutes() {
+  if (useEager()) {
+    return <Routes>{eagerRouteElements(ROUTES)}</Routes>
+  }
+  return (
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>{lazyRouteElements(ROUTES)}</Routes>
+    </Suspense>
+  )
+}
+
 /** Routes rendered bare, with none of the site's own chrome. */
 function EmbedRoutes() {
+  if (useEager()) {
+    return <Routes>{eagerRouteElements(EMBED_ROUTES)}</Routes>
+  }
   return (
-    <Routes>
-      <Route path="/embed/result/:runId" element={<EmbedResult />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>{lazyRouteElements(EMBED_ROUTES)}</Routes>
+    </Suspense>
   )
 }
 

@@ -10,6 +10,11 @@ export default defineConfig({
   build: {
     sourcemap: true,
     chunkSizeWarningLimit: 500,
+    // The prerenderer reads this to emit a <link rel="modulepreload"> for the
+    // route chunk each page needs. Without it hydration discovers the chunk
+    // only after the entry script has parsed, which is a request the browser
+    // could have started at the same time as the entry.
+    manifest: true,
   },
   test: {
     environment: 'jsdom',

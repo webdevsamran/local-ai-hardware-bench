@@ -23,7 +23,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from ..gguf import read_gguf_identity
+from ..gguf import read_gguf_identity, read_gguf_tokenizer
 from ..telemetry import TelemetrySampler, current_vram_mb, wait_for_vram_release
 from .base import (
     BackendError,
@@ -424,6 +424,9 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             # different quantizations agreed about it.
             **read_gguf_identity(model_path),
             "checksum": f"sha256:{checksum}",
+            # See `gguf.tokenizer_identity`: a strict comparability field
+            # that no backend had ever written.
+            "tokenizer": read_gguf_tokenizer(model_path),
         },
         "metrics": metrics,
         "telemetry": sampler.provenance(),

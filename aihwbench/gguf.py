@@ -29,6 +29,8 @@ __all__ = [
     "read_gguf_identity",
     "read_gguf_license",
     "read_gguf_attention",
+    "read_gguf_tokenizer",
+    "tokenizer_identity",
     "GGUF_MAGIC",
     "FILE_TYPES",
 ]
@@ -281,3 +283,57 @@ def read_gguf_attention(path: str | Path) -> dict[str, Any]:
         "head_dim": head_dim,
         "context_length": _int("context_length"),
     }
+
+
+#: Header keys that identify a tokenizer, in the order they appear in the
+#: identity string.
+_TOKENIZER_KEYS = (
+    "tokenizer.ggml.model",
+    "tokenizer.ggml.pre",
+    "tokenizer.ggml.bos_token_id",
+    "tokenizer.ggml.eos_token_id",
+)
+
+
+def tokenizer_identity(fields: dict[str, Any]) -> str | None:
+    """A comparable tokenizer identity from tokenizer metadata.
+
+    `model.tokenizer` is in the comparison-safety classifier's strict set, and
+    it has been null in every result this project has ever published: the
+    schema has the field, the classifier reads it, and no backend ever wrote
+    one. `_same(None, None)` is True, so two runs whose tokenizers differ have
+    always agreed about their tokenizers.
+
+    That is the hole this closes. Changing a tokenizer changes what a token
+    *is*, so tokens per second stops meaning the same thing -- and unlike a
+    quantization change it leaves no trace in the model's name.
+
+    The identity is built from fields both a GGUF header and Ollama's API
+    expose, and which agree with each other on the same weights, so the same
+    model measured through two runtimes produces one identity rather than two
+    that falsely read as different tokenizers.
+
+    What it catches: a different tokenizer family, a different pre-tokenizer,
+    a changed beginning- or end-of-sequence token. What it does not catch: an
+    edited vocabulary with identical metadata. The vocabulary itself is not
+    used because Ollama's API does not serve it, and an identity that only one
+    runtime could compute would split the corpus in two.
+
+    Returns None when the source states no tokenizer at all, which is honest:
+    an identity assembled from missing parts would be a constant, and a
+    constant in a strict field is worse than a null.
+    """
+    parts: list[str] = []
+    for key in _TOKENIZER_KEYS:
+        value = fields.get(key)
+        if value is None or value == "":
+            continue
+        label = key.rsplit(".", 1)[-1].replace("_token_id", "")
+        parts.append(str(value) if label in ("model", "pre") else f"{label}:{value}")
+    return "/".join(parts) if parts else None
+
+
+def read_gguf_tokenizer(path: str | Path) -> str | None:
+    """Tokenizer identity from a GGUF header, for `model.tokenizer`."""
+    metadata = read_gguf_header(path, wanted=set(_TOKENIZER_KEYS))
+    return tokenizer_identity(metadata)

@@ -5,6 +5,31 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Fixed — a strict comparability field that had never once discriminated
+
+- **`model.tokenizer` was null in every result this project has published.**
+  The schema declares it, `comparability._STRICT` reads it, and no backend
+  ever wrote one. `_same(None, None)` is True by design, so two runs whose
+  tokenizers differed have always agreed about their tokenizers.
+
+  This is the same shape as `model.quantization`, which was hardcoded to None
+  while Ollama's API had been returning it all along. It matters because
+  changing a tokenizer changes what a token *is*, so tokens per second stops
+  meaning the same thing -- and unlike a quantization change, it leaves no
+  trace in the model's name.
+
+  Both generative backends now record an identity built from fields a GGUF
+  header and Ollama's API both expose, and which agree with each other on the
+  same weights: `gpt2/qwen2/bos:151643/eos:151645` for the reference model,
+  identical through either runtime. It catches a different tokenizer family, a
+  different pre-tokenizer and changed special tokens. It deliberately does not
+  hash the vocabulary, which a GGUF file carries and Ollama's API nulls:
+  an identity only one runtime could compute would split the corpus in half.
+
+  Results published before this carry no tokenizer, so a new result and an old
+  one now differ on a strict field. That errs toward NOT_COMPARABLE, which is
+  the safe direction and the same trade already accepted for quantization.
+
 ### Added — KV-cache quantization, measured as memory rather than speed
 
 - **`aihwbench kv-cache` and the `cache_type_k`/`cache_type_v` sweep axes.**

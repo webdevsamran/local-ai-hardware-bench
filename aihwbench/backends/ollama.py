@@ -105,6 +105,20 @@ def model_license(model: str) -> dict[str, Any]:
     }
 
 
+def model_tokenizer(model: str) -> str | None:
+    """Tokenizer identity as Ollama reports it.
+
+    Built from the same header fields `gguf.read_gguf_tokenizer` uses, so the
+    same weights measured through Ollama and through llama.cpp yield one
+    identity. Ollama nulls the vocabulary array in its response, which is why
+    the identity does not depend on it.
+    """
+    from ..gguf import tokenizer_identity
+
+    doc = _api_show(model)
+    return tokenizer_identity((doc or {}).get("model_info") or {})
+
+
 def detect() -> BackendInfo:
     """Detect a locally installed Ollama runtime."""
     code, out = run_command(["ollama", "--version"], timeout=10.0)
@@ -353,6 +367,10 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "name": config.model,
             **identity,
             "checksum": model_digest(config.model),
+            # In the classifier's strict set, and null in every result
+            # published before this: a tokenizer change alters what a
+            # token is, so tokens per second stops meaning the same thing.
+            "tokenizer": model_tokenizer(config.model),
         },
         "metrics": metrics,
         "telemetry": sampler.provenance(),

@@ -5,6 +5,38 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Added — a desktop shell, and everything for the DOI except the account
+
+- **Tauri desktop scaffold** (`desktop/`). Deliberately thin: every command
+  shells out to `aihwbench` and returns its JSON unchanged, and the command
+  that ran is returned to the UI so a result can be reproduced by hand. A GUI
+  that computed its own metrics would be a second implementation of the
+  benchmark, drifting in the direction nobody checks -- because the GUI is what
+  people use and the CLI is what has tests. The frontend is the existing
+  `web/dist`, not a second copy of the UI.
+
+  Subcommands reachable from the renderer are allowlisted. A text field wired
+  to a subprocess is an arbitrary-execution hole.
+
+  **It has not been compiled.** Rust 1.98.1 is installed on the reference
+  machine and `link.exe` fails: the Visual Studio "C++ build tools" workload is
+  absent. The tests check that the config parses, that its paths resolve to the
+  real dashboard build, that the version matches the package, and that the Rust
+  source shells out rather than computing anything. A valid configuration is
+  not a working binary, and the README says so.
+
+- **DOI runbook and Zenodo metadata** (`.zenodo.json`,
+  `docs/research/minting-a-doi.md`). Minting needs the maintainer's Zenodo
+  account, so everything up to that point is prepared: valid metadata, the
+  precondition that the corpus should span more than one hardware class before
+  a DOI invites citation as representative, and the instruction to cite the
+  *version* DOI rather than the concept DOI -- the concept DOI resolves to the
+  newest snapshot and reintroduces exactly the mutability a DOI removes.
+
+  A test asserts no DOI is claimed anywhere until one exists, because a
+  placeholder in `CITATION.cff` would be copied into a bibliography and resolve
+  to nothing.
+
 ### Added — non-text modalities, each in its own unit
 
 - **`aihwbench modalities`** says which of embedding, reranking,

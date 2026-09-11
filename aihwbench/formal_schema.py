@@ -9,6 +9,8 @@ Formal schemas ship in ``schemas/``:
 
 - ``result-1.0.schema.json`` — published schema 1.0 documents
 - ``result-2.0.schema.json`` — schema 2.0 (protocol/workload versions)
+- ``result-2.1.schema.json`` — schema 2.1, which additionally *requires*
+  the fields the comparison-safety classifier must read
 
 Requires the optional ``jsonschema`` package. ``validate_formal``
 fails closed: when the validator is unavailable it raises instead of
@@ -25,7 +27,11 @@ from typing import Any
 __all__ = ["FORMAL_VERSIONS", "load_formal_schema", "validate_formal"]
 
 _SCHEMA_DIR = Path(__file__).resolve().parent.parent / "schemas"
-_FILES = {"1.0": "result-1.0.schema.json", "2.0": "result-2.0.schema.json"}
+_FILES = {
+    "1.0": "result-1.0.schema.json",
+    "2.0": "result-2.0.schema.json",
+    "2.1": "result-2.1.schema.json",
+}
 FORMAL_VERSIONS = tuple(_FILES)
 
 

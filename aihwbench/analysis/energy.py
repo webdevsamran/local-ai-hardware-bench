@@ -10,7 +10,12 @@ from __future__ import annotations
 
 from typing import Any
 
-__all__ = ["compute_energy_metrics", "MIN_ROBUST_INCREMENTAL_SHARE"]
+__all__ = [
+    "compute_energy_metrics",
+    "carbon_estimate",
+    "MIN_ROBUST_INCREMENTAL_SHARE",
+    "JOULES_PER_KWH",
+]
 
 #: Below this share of gross power, the incremental figure is mostly the
 #: choice of baseline rather than the workload.
@@ -26,6 +31,11 @@ __all__ = ["compute_energy_metrics", "MIN_ROBUST_INCREMENTAL_SHARE"]
 #: withholding it would hide a real measurement, while publishing it bare
 #: invites exactly the false comparison this project exists to prevent.
 MIN_ROBUST_INCREMENTAL_SHARE = 0.10
+
+#: Joules in a kilowatt-hour. Named because the conversion appears in three
+#: places and a wrong constant here would be invisible: every figure derived
+#: from it would still be internally consistent.
+JOULES_PER_KWH = 3_600_000.0
 
 
 def compute_energy_metrics(
@@ -127,6 +137,14 @@ def compute_energy_metrics(
         "energy_joules_per_1k_tokens": (
             round(j_per_token * 1000.0, 4) if j_per_token is not None else None
         ),
+        # The same measurement in the units people actually plan with. A
+        # joule-per-token figure is correct and unusable for "how many tokens
+        # can I generate for a kilowatt-hour", which is the form the question
+        # takes when someone is comparing against a cloud bill or a battery.
+        "tokens_per_kwh": (round(JOULES_PER_KWH / j_per_token) if j_per_token else None),
+        "watt_hours_per_1k_tokens": (
+            round(j_per_token * 1000.0 / 3600.0, 4) if j_per_token is not None else None
+        ),
         "incremental_share_of_gross": share,
         # How much the idle baseline moved while being measured. Published
         # because it bounds how precise the incremental figure can be.
@@ -142,4 +160,65 @@ def compute_energy_metrics(
             "generation_tokens_per_second": generation_tokens_per_second is not None,
             "requests_per_second": requests_per_second is not None,
         },
+    }
+
+
+def carbon_estimate(
+    energy: dict[str, Any] | None,
+    grid_intensity_g_co2_per_kwh: float | None = None,
+) -> dict[str, Any]:
+    """Grams of CO2 per 1000 tokens, when the caller states their grid.
+
+    Carbon is energy multiplied by a number this project cannot measure. Grid
+    intensity varies by country, by season, and by hour: the same run in France
+    and in Poland differs by roughly a factor of ten. A published figure using
+    a global average would be a confident number that is wrong nearly
+    everywhere, and wrong in a direction nobody could see.
+
+    So the intensity is required rather than defaulted, the same way
+    `analysis.cost` requires an electricity price instead of assuming one. With
+    no intensity this returns the energy in kWh and says what is missing --
+    which is still useful, because kWh is the input every published grid figure
+    takes.
+    """
+    energy = energy or {}
+    j_per_token = energy.get("energy_joules_per_token")
+    if not isinstance(j_per_token, int | float) or j_per_token <= 0:
+        return {
+            "grams_co2_per_1k_tokens": None,
+            "kwh_per_1k_tokens": None,
+            "grid_intensity_g_co2_per_kwh": grid_intensity_g_co2_per_kwh,
+            "unresolved": "no energy-per-token measurement to convert",
+        }
+
+    kwh_per_1k = (float(j_per_token) * 1000.0) / JOULES_PER_KWH
+
+    if not isinstance(grid_intensity_g_co2_per_kwh, int | float) or (
+        grid_intensity_g_co2_per_kwh <= 0
+    ):
+        return {
+            "grams_co2_per_1k_tokens": None,
+            "kwh_per_1k_tokens": round(kwh_per_1k, 9),
+            "grid_intensity_g_co2_per_kwh": None,
+            "unresolved": (
+                "no grid carbon intensity was supplied. It varies by country, "
+                "season and hour -- roughly tenfold between the cleanest and "
+                "dirtiest European grids -- so this project will not assume "
+                "one. Supply the figure your grid operator publishes; the kWh "
+                "above is what it multiplies."
+            ),
+        }
+
+    return {
+        "grams_co2_per_1k_tokens": round(kwh_per_1k * float(grid_intensity_g_co2_per_kwh), 6),
+        "kwh_per_1k_tokens": round(kwh_per_1k, 9),
+        "grid_intensity_g_co2_per_kwh": float(grid_intensity_g_co2_per_kwh),
+        # The energy is measured; the carbon is arithmetic on someone else's
+        # number, and saying so is the difference between a measurement and an
+        # estimate presented as one.
+        "basis": (
+            "measured energy multiplied by a caller-supplied grid intensity; "
+            "the energy is measured on this machine, the intensity is not"
+        ),
+        "unresolved": None,
     }

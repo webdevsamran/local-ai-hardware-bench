@@ -130,6 +130,12 @@ shipped-but-unreachable is not done.
 - [x] Written dispute process for published results
       ([docs/disputes.md](docs/disputes.md))
 - [x] Versioned dataset snapshot manifests
+- [x] Schema 2.1 requires every field the comparison-safety classifier
+      reads, so a result that cannot be compared is refused on arrival
+      rather than compared anyway
+- [x] Energy in kWh terms, and carbon from a caller-supplied grid intensity
+- [x] Numeric quality delta per quantization against the highest-precision
+      scored variant
 - [x] Tokenizer-identity check: a strict comparability field that no
       backend had ever written, so silent tokenizer drift was invisible
 - [x] KV-cache quantization matrix, reported as memory rather than speed

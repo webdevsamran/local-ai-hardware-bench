@@ -98,5 +98,49 @@ def test_error_rate_bounded_0_1():
 
 
 def test_supported_versions_constant():
+    """Pinned so a schema bump is a decision, not a side effect.
+
+    Every historical version stays supported: results published under 1.0
+    remain readable forever, which is the promise that makes the corpus worth
+    contributing to.
+    """
     assert "1.0" in SUPPORTED_SCHEMA_VERSIONS
-    assert CURRENT_SCHEMA_VERSION == "2.0"
+    assert "2.0" in SUPPORTED_SCHEMA_VERSIONS
+    assert CURRENT_SCHEMA_VERSION == "2.1"
+
+
+def test_every_supported_version_has_a_formal_schema():
+    """A version readers accept but no schema describes cannot be validated.
+
+    `validate --formal` would silently have nothing to check it against.
+    """
+    from aihwbench.formal_schema import load_formal_schema
+
+    for version in SUPPORTED_SCHEMA_VERSIONS:
+        assert load_formal_schema(version), f"no formal schema for {version}"
+
+
+def test_a_multi_step_migration_records_where_the_document_came_from():
+    """1.0 -> 2.1 passes through 2.0, and each step used to overwrite the
+    origin -- so the finished document claimed to have come from 2.0.
+
+    The origin is the interesting half of the provenance.
+    """
+    doc = {
+        "schema_version": "1.0",
+        "run_id": "r1",
+        "timestamp": "2026-01-01T00:00:00Z",
+        "system": {},
+        "runtime": {"name": "ollama", "backend": "x", "device": "cuda"},
+        "model": {"name": "m"},
+        "metrics": {},
+        "reproducibility": {"iterations": 8, "warmup_runs": 3},
+    }
+    migrated = migrate(doc)
+    assert migrated["schema_version"] == "2.1"
+    assert migrated["migration"]["from_version"] == "1.0"
+    assert migrated["migration"]["to_version"] == "2.1"
+    assert migrated["migration"]["migrators"] == [
+        "aihwbench.migrations._migrate_1_to_2",
+        "aihwbench.migrations._migrate_2_0_to_2_1",
+    ]

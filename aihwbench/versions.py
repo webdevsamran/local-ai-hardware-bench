@@ -5,7 +5,7 @@ All consumers must import these constants from this module (never re-declare
 their own), so the writer version, reader support and protocol identity can
 never drift.
 
-Writers emit ``CURRENT_SCHEMA_VERSION`` (currently 2.0). Readers accept every
+Writers emit ``CURRENT_SCHEMA_VERSION`` (currently 2.1). Readers accept every
 version in ``SUPPORTED_SCHEMA_VERSIONS`` and migrate older documents forward
 (see ``aihwbench/migrations``).
 
@@ -19,12 +19,12 @@ from __future__ import annotations
 PACKAGE_VERSION = "0.2.0"
 
 # Result-document schema version: the CURRENT writer version.
-CURRENT_SCHEMA_VERSION = "2.0"
+CURRENT_SCHEMA_VERSION = "2.1"
 
 # Every schema version the reader can parse without migration.
 # Anything older is migrated forward; anything newer is rejected with
 # a clear "written by a newer version" error.
-SUPPORTED_SCHEMA_VERSIONS: tuple[str, ...] = ("1.0", "2.0")
+SUPPORTED_SCHEMA_VERSIONS: tuple[str, ...] = ("1.0", "2.0", "2.1")
 
 # Backwards-compatible alias kept for older imports. This is the historical
 # schema version that early documents carry, NOT the current writer version.

@@ -11,6 +11,7 @@ from typing import Any
 
 from ..analysis import analyze_bottlenecks, estimate_model_fit, recommend_configuration
 from ..analysis.cost import compare_local_vs_cloud, compute_cost_metrics
+from ..analysis.energy import carbon_estimate
 from ..comparability import NOT_COMPARABLE
 from ..compare import compare_results, render_comparison
 from ..exit_codes import (
@@ -221,6 +222,13 @@ def cmd_cost(args: argparse.Namespace) -> int:
             years=args.years,
         ),
     }
+    # Carbon rides alongside cost because it is the same shape of question --
+    # measured energy multiplied by a rate the caller supplies, never one this
+    # project assumes. `carbon_estimate` reports the kWh even without a rate,
+    # since kWh is what every published grid figure multiplies.
+    if args.result:
+        report["carbon"] = carbon_estimate(result.get("energy"), args.grid_intensity)
+
     if args.tokens_per_month is not None and args.cloud_price is not None:
         report["local_vs_cloud"] = compare_local_vs_cloud(
             tokens_per_month=args.tokens_per_month,
@@ -328,6 +336,17 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     )
     cost_p.add_argument("--hardware-cost", type=float, default=None, help="USD")
     cost_p.add_argument("--electricity-price", type=float, default=None, help="USD per kWh")
+    cost_p.add_argument(
+        "--grid-intensity",
+        type=float,
+        default=None,
+        help=(
+            "Grams of CO2 per kWh for your electricity. Required for a carbon "
+            "figure and deliberately not defaulted: it varies roughly tenfold "
+            "between the cleanest and dirtiest grids, so an assumed value "
+            "would be wrong nearly everywhere. Your grid operator publishes it."
+        ),
+    )
     cost_p.add_argument("--power-watts", type=float, default=None, help="Overrides the result")
     cost_p.add_argument(
         "--tokens-per-second", type=float, default=None, help="Overrides the result"

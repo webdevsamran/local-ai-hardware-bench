@@ -2,8 +2,12 @@
 
 **Status: PARTLY SHIPPED — read this as a design note, not as status.**
 
-Schema 2.0 is implemented and is what the writer emits
-(`aihwbench/versions.py` sets `CURRENT_SCHEMA_VERSION = "2.0"`;
+Schema 2.0 is implemented and readable forever, but it is no longer what the
+writer emits: `aihwbench/versions.py` sets `CURRENT_SCHEMA_VERSION = "2.1"`,
+which adds no fields and *requires* the ones the comparison-safety classifier
+reads (see `schemas/result-2.1.schema.json`). Under 2.0 an empty document
+validated, and the classifier read two absent fields as agreement.
+(Historically, `aihwbench/versions.py` set `CURRENT_SCHEMA_VERSION = "2.0"`;
 `schemas/result-2.0.schema.json` ships and is enforced by
 `aihwbench validate --formal`). Every result committed to
 `results/published/` so far predates it and carries `schema_version` 1.0,

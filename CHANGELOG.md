@@ -5,6 +5,62 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Added — schema 2.1, which requires what the classifier has to read
+
+- **Schema 2.0 accepted `{}` as a valid result.** `model` had no `required`
+  and `additionalProperties: true`; `reproducibility` was a nullable object
+  with two optional properties. So a document could omit every field the
+  comparison-safety classifier reads and still validate -- and the classifier
+  treats two absent fields as agreement, which made two empty documents
+  compare as STRICTLY_COMPARABLE with zero reasons.
+
+  `comparability._REQUIRED_PRESENT` closes that at comparison time. Schema 2.1
+  closes it at the door: it requires model name, runtime name/backend/device
+  and the iteration counts, rejects nulls and empty strings in them, and
+  refuses a null `reproducibility` block -- which would otherwise satisfy any
+  `required` list inside it, since JSON Schema applies `required` only to
+  objects. `tests/test_schema_2_1.py` asserts the schema's requirements
+  against the classifier's gate, so the two cannot drift.
+
+  It requires nothing beyond that gate: a machine with no power sensor, no
+  container and no evaluator still produces a publishable result.
+
+- **Energy in the units people plan with, and carbon that says whose grid.**
+  `tokens_per_kwh` and `watt_hours_per_1k_tokens` alongside joules per token,
+  and `aihwbench cost --grid-intensity` for carbon. The intensity is required
+  rather than defaulted, as `analysis.cost` already requires an electricity
+  price: the same run in France and Poland differs roughly tenfold, so an
+  assumed figure would be confidently wrong nearly everywhere. With no
+  intensity the report still gives the kWh, which is what every published grid
+  figure multiplies.
+
+- **A numeric quality delta per quantization.** `same_output_as_reference`
+  answers yes/no, which is the right question for a determinism check and the
+  wrong one for choosing a quantization: every useful quantization answers
+  "no" and the answer carries no magnitude. `quality_delta_vs_reference` gives
+  the size of the gap against the highest-precision *scored* variant -- chosen
+  separately from the output-hash reference, since a run may carry one and not
+  the other.
+
+### Fixed — two migration defects, one latent and one live
+
+- **`validate --formal` had never passed on a migrated 1.0 result.** Schema
+  2.0 requires `protocol_version` and the 1.0 -> 2.0 migration did not supply
+  it, so every migrated 1.0 document failed formal validation on a field the
+  migration was meant to add. It now states protocol 1 -- a statement of fact
+  rather than a default, since protocol 1 is the only one that has existed.
+
+- **A migrator stamped `CURRENT_SCHEMA_VERSION` instead of its own target.**
+  Harmless while 2.0 was current; the moment it was not, the 1.0 -> 2.0 step
+  would have jumped straight to 2.1, `migrate` would have seen the target
+  reached, and the intervening migration would never have run. Each migrator
+  now stamps the version it produces.
+
+- **A multi-step migration erased where the document came from.** Each step
+  overwrote `from_version`, so a 1.0 document migrated to 2.1 claimed to have
+  come from 2.0. The origin is written once and kept, and every migrator that
+  touched the document is listed in order.
+
 ### Fixed — a strict comparability field that had never once discriminated
 
 - **`model.tokenizer` was null in every result this project has published.**

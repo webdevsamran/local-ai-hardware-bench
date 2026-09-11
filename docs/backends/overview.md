@@ -16,6 +16,7 @@ Runtime, OpenVINO, ...). Each backend:
 | `llama.cpp` | llama-server | Win/Linux/macOS | Requires llama-server binary |
 | `onnxruntime` | ONNX Runtime | Win/Linux/macOS | DirectML/CUDA/CPU providers |
 | `openvino` | OpenVINO | Win/Linux | CPU + Intel GPU devices |
+| `openvino_genai` | OpenVINO GenAI | Win/Linux | Measured LLM pipeline; CPU/GPU/NPU, one device per run |
 | `tensorrt` | TensorRT | Linux/Win | HARDWARE_REQUIRED until validated |
 | `rocm` | ROCm | Linux | HARDWARE_REQUIRED until validated |
 | `qnn` | Qualcomm QNN | Windows ARM64 | HARDWARE_REQUIRED until validated |

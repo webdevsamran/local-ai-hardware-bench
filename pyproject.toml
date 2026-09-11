@@ -45,6 +45,10 @@ Changelog = "https://github.com/webdevsamran/local-ai-hardware-bench/blob/main/C
 parquet = ["pyarrow>=14"]
 telemetry = ["psutil>=5.9"]
 schema = ["jsonschema>=4"]
+# Not a core dependency: it pulls the OpenVINO runtime, which is a large
+# install and useful only on Intel silicon. The backend detects its absence
+# and says what to install rather than failing at import.
+openvino = ["openvino>=2025.0", "openvino-genai>=2025.0"]
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",

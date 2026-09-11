@@ -22,6 +22,8 @@ from .base import (
     RuntimeStatus,
     file_sha256,
     new_run_id,
+    openvino_core,
+    openvino_devices,
     resolve_input_specs,
     resolved_device,
 )
@@ -51,11 +53,10 @@ def detect() -> BackendInfo:
             "pip install openvino; Intel NPU benchmarking additionally needs "
             "an Intel Core Ultra class CPU with the NPU driver installed",
         )
-    try:
-        core = openvino.Core()
-        devices = list(core.get_available_devices())
-    except Exception:  # noqa: BLE001 - any runtime failure means unusable
-        devices = []
+    # The shared process Core: a fresh one re-initialises the GPU plugins and
+    # costs about 900ms on first enumeration, which this backend was paying on
+    # every detection alongside `openvino_genai` doing the same.
+    devices = openvino_devices()
     detail = f"devices: {', '.join(devices)}" if devices else "no devices enumerated"
     return BackendInfo(
         "openvino",
@@ -97,10 +98,10 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     if not model_path or not Path(model_path).is_file():
         raise BackendError("openvino backend requires --model-path pointing to a local .onnx file")
 
-    import openvino as ov
-
-    core = ov.Core()
-    available = list(core.get_available_devices())
+    core = openvino_core()
+    if core is None:
+        raise BackendError("openvino is not importable")
+    available = openvino_devices()
     target_device = _resolve_device(config.device, available)
 
     load_start = time.perf_counter()

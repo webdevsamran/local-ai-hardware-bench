@@ -95,6 +95,51 @@ _RESOLVED_DEVICE_NAMES = {
 }
 
 
+#: The one OpenVINO Core for this process, built on first use.
+_openvino_core: Any = None
+
+
+def openvino_core() -> Any:
+    """The process's OpenVINO `Core`, or None when OpenVINO is not installed.
+
+    One Core, deliberately. Constructing one is free -- about a millisecond --
+    but the first `get_available_devices()` on each costs around 900ms on the
+    reference machine, because that is where the GPU plugins initialise. A
+    fresh Core per call pays it every time: measured at roughly 220ms per
+    `detect()` afterwards, in two backends, on every `aihwbench detect`,
+    `runtimes` and `doctor`.
+
+    Two module-level caches would not have fixed it. The cost is per Core, so
+    the `openvino` and `openvino_genai` backends each keeping their own would
+    still enumerate twice; it has to be one Core for the process.
+
+    Held for the process lifetime, which means a device attached or disabled
+    mid-run is not noticed. That is the right trade for a CLI that runs for
+    seconds: re-enumerating on every detection to catch a GPU being unplugged
+    during a benchmark buys nothing anyone needs.
+    """
+    global _openvino_core
+    if _openvino_core is None:
+        try:
+            import openvino as ov
+
+            _openvino_core = ov.Core()
+        except Exception:  # noqa: BLE001 - not installed, or no usable runtime
+            return None
+    return _openvino_core
+
+
+def openvino_devices() -> list[str]:
+    """Devices visible to OpenVINO; empty when it is unavailable."""
+    core = openvino_core()
+    if core is None:
+        return []
+    try:
+        return list(core.get_available_devices())
+    except Exception:  # noqa: BLE001 - detection must never raise
+        return []
+
+
 def resolved_device(name: str | None) -> str | None:
     """Map what actually ran to the device vocabulary results record.
 

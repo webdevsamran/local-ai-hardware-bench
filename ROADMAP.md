@@ -70,7 +70,12 @@ shipped-but-unreachable is not done.
 - [x] llama.cpp backend (`llama-server`)
 - [x] ONNX Runtime backend (CPU + DirectML EPs)
 - [x] OpenVINO backend (CPU + GPU devices)
-- [ ] OpenVINO GenAI LLM pipeline
+- [x] OpenVINO GenAI LLM pipeline: a measured `LLMPipeline` over an IR
+      model, reporting the runtime's own TTFT/TPOT alongside the
+      caller's wall-clock view, with quantization read out of the IR
+      rather than inferred from a filename. `--device auto` is refused,
+      because OpenVINO's AUTO plugin does not report the device it chose
+      and `runtime.device` is in the classifier's strict set
 - [ ] TensorRT / TensorRT-LLM backend (needs per-GPU engine builds)
 - [ ] ROCm backend (Linux; needs AMD hardware)
 - [ ] Lemonade / Ryzen AI backend (needs Ryzen AI hardware)
@@ -193,7 +198,12 @@ shipped-but-unreachable is not done.
 - [x] CodeQL workflow
 - [x] SBOM generation in release flow (CycloneDX)
 - [x] Release SHA256SUMS checksums
-- [ ] Artifact attestation (provenance) via GitHub artifact attestations
+- [x] Artifact attestation (provenance) via GitHub artifact attestations:
+      `actions/attest-build-provenance` signs every released wheel and
+      sdist in `.github/workflows/release.yml`, verifiable with
+      `gh attestation verify`. This box was unticked while the feature
+      was shipped, and `docs/security/supply-chain.md` still listed it
+      as planned
 - [x] Action-pin verification script (scripts/verify_action_pins.py)
 
 ## Track 8 — Research / Standards
@@ -222,7 +232,11 @@ shipped-but-unreachable is not done.
 
 - [x] Vendor collaboration policy (no guaranteed outcomes; disclosure)
 - [ ] First vendor-supplied evaluation unit processed end-to-end
-- [ ] Independent reproducible benchmark report template
+- [x] Independent reproducible benchmark report template
+      ([docs/reports/TEMPLATE.md](docs/reports/TEMPLATE.md)), with nine
+      filled-in reports beside it. This box was unticked while the
+      template was in use -- the second stale entry found in one pass,
+      after artifact attestation
 
 ## Track 10 — Platform Expansion (top-50 transformation)
 

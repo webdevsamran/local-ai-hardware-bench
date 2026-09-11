@@ -1,0 +1,151 @@
+{
+  "kind": "device-comparison",
+  "$comment": "The same OpenVINO IR model run on three devices in one machine, in one process, back to back. The CPU and the integrated GPU are indistinguishable here -- their 95% intervals overlap almost entirely -- and routing the same model to the discrete NVIDIA GPU through OpenVINO is about four times slower while drawing nearly twice the power. That last figure is a statement about OpenVINO's generic GPU path, NOT about the card: llama.cpp reaches this GPU through CUDA and is far faster on it. Absolute throughput here is not publishable -- background CPU was above this project's 20% threshold for part of the run -- but the discrete-GPU gap is an order of magnitude outside that noise, and the determinism finding does not depend on timing at all.",
+  "runtime": {
+    "name": "openvino_genai",
+    "version": "2026.3.1.0-3290-56d9685302d",
+    "openvino": "2026.3.1-22476-759c5a6ab8c-releases/2026/3"
+  },
+  "system": {
+    "os": "Windows 11",
+    "os_version": "10.0.26200",
+    "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+    "cpu_cores_physical": 14,
+    "cpu_cores_logical": 20,
+    "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+    "gpu_vram_mb": 16384,
+    "gpu_driver_version": "610.74",
+    "npu": null,
+    "ram_gb": 31.7,
+    "platform_name": "Predator PT516-52s",
+    "topology": {
+      "numa_nodes": null,
+      "sockets": 1,
+      "unified_memory": null,
+      "cpu_features": [],
+      "gpu_count": 1
+    },
+    "gpus": [
+      {
+        "vendor": "NVIDIA",
+        "name": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "driver_version": "610.74",
+        "vram_mb": 16384,
+        "index": 0,
+        "pcie_gen": 4,
+        "pcie_width": 16,
+        "compute_capability": "8.6"
+      }
+    ]
+  },
+  "model": {
+    "name": "Qwen2.5-Coder-0.5B-Instruct-int4-ov",
+    "format": "openvino-ir",
+    "parameters": null,
+    "checksum": "bdffb86766b3da0a24c9de9f9da92ed79acb2b59fc93a5dd12cae6b2d1d48d04",
+    "tokenizer": "openvino_tokenizer.bin:6e3a56216ade1ed29c7744b5e6bc27ffdc85038747766e838b3d881713fc0633",
+    "quantization": "int4_asym",
+    "quantization_group_size": "128",
+    "quantization_ratio": "1.0",
+    "quantization_awq": "False",
+    "converted_by": "1.26.0.dev0+3c8e4ba",
+    "ir_built_with_openvino": "2025.2.0-19140-c01cd93e24d-releases/2025/2"
+  },
+  "protocol": {
+    "prompt": "Explain what a token is in large language models, in two sentences.",
+    "max_tokens": 64,
+    "temperature": 0.0,
+    "decoding": "greedy",
+    "warmup_runs": 1,
+    "iterations": 5,
+    "order": "cpu, GPU.0, GPU.1 -- consecutive, one process, no reload between devices",
+    "command": "aihwbench benchmark --runtime openvino_genai --model-path <ir-dir> --device {cpu|GPU.0|GPU.1}"
+  },
+  "devices": [
+    {
+      "openvino_device": "CPU",
+      "device_name": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "generation_tokens_per_second": 74.98,
+      "gen_tps_ci95": [
+        71.27,
+        78.68
+      ],
+      "ttft_ms": 62.03,
+      "itl_p50_ms": 13.22,
+      "load_time_ms": 3731.29,
+      "peak_vram_mb": 0.0,
+      "avg_gpu_util_percent": 0.0,
+      "average_power_watts": 28.76,
+      "greedy_output_deterministic": true,
+      "contention_cpu_percent_before": 16.9,
+      "contention_cpu_percent_after": 13.8,
+      "vram_note": null
+    },
+    {
+      "openvino_device": "GPU.0",
+      "device_name": "Intel(R) Iris(R) Xe Graphics (iGPU)",
+      "generation_tokens_per_second": 75.97,
+      "gen_tps_ci95": [
+        68.94,
+        83.0
+      ],
+      "ttft_ms": 72.35,
+      "itl_p50_ms": 12.47,
+      "load_time_ms": 7499.86,
+      "peak_vram_mb": null,
+      "avg_gpu_util_percent": null,
+      "average_power_watts": 29.3,
+      "greedy_output_deterministic": false,
+      "contention_cpu_percent_before": 5.2,
+      "contention_cpu_percent_after": 25.9,
+      "vram_note": "the run used Intel(R) Iris(R) Xe Graphics (iGPU) but telemetry samples NVIDIA GeForce RTX 3080 Ti Laptop GPU; that device's memory and utilisation say nothing about this run, and an Intel iGPU allocates from shared system RAM where nvidia-smi cannot see it"
+    },
+    {
+      "openvino_device": "GPU.1",
+      "device_name": "NVIDIA GeForce RTX 3080 Ti Laptop GPU (dGPU)",
+      "generation_tokens_per_second": 19.64,
+      "gen_tps_ci95": [
+        17.38,
+        21.9
+      ],
+      "ttft_ms": 332.23,
+      "itl_p50_ms": 44.65,
+      "load_time_ms": 9093.97,
+      "peak_vram_mb": 658.0,
+      "avg_gpu_util_percent": 38.5,
+      "average_power_watts": 50.16,
+      "greedy_output_deterministic": true,
+      "contention_cpu_percent_before": 27.6,
+      "contention_cpu_percent_after": 21.6,
+      "vram_note": null
+    }
+  ],
+  "findings": [
+    {
+      "claim": "The CPU and the integrated GPU are indistinguishable for this model.",
+      "evidence": "74.98 tok/s CI95 [71.27, 78.68] on the CPU against 75.97 tok/s CI95 [68.94, 83.0] on the iGPU; the intervals overlap across almost their whole width.",
+      "not_concluded": "That one is faster than the other. An earlier pass of this same sweep, taken while two unrelated test suites were running, appeared to show the CPU ahead by 15%. It was noise."
+    },
+    {
+      "claim": "Greedy decoding is not reproducible on the Intel iGPU, and is on the CPU.",
+      "evidence": "Six greedy generations from the same prompt: 1 distinct output on the CPU, 4 distinct outputs on GPU.0.",
+      "why_it_matters": "Greedy decoding picks the highest-probability token, so it is deterministic by definition. Different outputs mean the device's kernels are producing slightly different logits run to run -- parallel reductions need not sum in the same order -- and near-ties flip the argmax. Any quality comparison that assumes a fixed seed and greedy decoding gives one answer is wrong on this device, and nothing in the run reports it.",
+      "independent_of_timing": true
+    },
+    {
+      "claim": "Reaching the discrete GPU through OpenVINO is roughly four times slower than the CPU and draws nearly twice the power.",
+      "evidence": "19.64 tok/s at 50.16 W, against 74.98 tok/s at 28.76 W on the CPU. Time to first token 332.23 ms against 62.03 ms.",
+      "not_concluded": "That this GPU is slow at inference. OpenVINO reaches it through a generic path rather than CUDA. The comparison that would settle what the card can do is llama.cpp with a CUDA build, which is a different runtime and a different model quantization -- so it is not quoted here as a number."
+    },
+    {
+      "claim": "Memory use on the integrated GPU was not measured.",
+      "evidence": "the run used Intel(R) Iris(R) Xe Graphics (iGPU) but telemetry samples NVIDIA GeForce RTX 3080 Ti Laptop GPU; that device's memory and utilisation say nothing about this run, and an Intel iGPU allocates from shared system RAM where nvidia-smi cannot see it",
+      "why_it_matters": "Reported as absent rather than as 0.0. The figure nvidia-smi returns belongs to an idle discrete card, and publishing it against an iGPU run would say this model needs no memory."
+    }
+  ],
+  "caveats": [
+    "Background CPU ranged from 5% to 28% across the three runs, against this project's 20% publish threshold. These are not published results and do not enter the dataset.",
+    "One model, one size (0.5B), one quantization (int4_asym, group 128). A larger model changes the memory picture and may change the ordering.",
+    "The NPU was not tested: the reference machine has none."
+  ]
+}

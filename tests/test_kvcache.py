@@ -358,3 +358,74 @@ def test_the_note_does_not_blame_flash_attention_when_it_was_already_requested()
     ]
     assert "--flash-attn on" not in note
     assert "already requested" in note
+
+
+# --- flash attention decides whether the cache arithmetic holds -------------
+
+
+def _flash_measurement() -> dict:
+    import json
+    from pathlib import Path
+
+    path = Path("results/measurements/kv-cache-flash-attention-vram.json")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_with_flash_attention_on_the_analytic_model_holds_everywhere():
+    """Nine configurations, all within 30 MiB of the computed cache size.
+
+    This is what validates the analytic column: it is not checked against one
+    convenient point but against every combination of K and V dtype, on an
+    idle card, with the offsets consistent rather than scattered.
+    """
+    doc = _flash_measurement()
+    deviations = [
+        row["measured_device_vram_mib_flash_on"] - row["predicted_device_vram_mib"]
+        for row in doc["configurations"]
+    ]
+    assert len(deviations) == 9
+    assert max(abs(d) for d in deviations) <= 30
+
+
+def test_auto_declines_flash_attention_exactly_where_k_is_quantized_and_v_is_not():
+    """The two cases, and only those two.
+
+    Everywhere else `auto` already chooses `on`, which is why the default looks
+    harmless until the one time it is not.
+    """
+    doc = _flash_measurement()
+    disagreeing = {
+        (row["cache_type_k"], row["cache_type_v"])
+        for row in doc["configurations"]
+        if row["flash_auto_chose_off"]
+    }
+    assert disagreeing == {("q8_0", "f16"), ("q4_0", "f16")}
+    for row in doc["configurations"]:
+        quantized_k = row["cache_type_k"] != "f16"
+        v_is_f16 = row["cache_type_v"] == "f16"
+        assert row["flash_auto_chose_off"] == (quantized_k and v_is_f16)
+
+
+def test_the_penalty_is_the_same_size_in_both_cases():
+    """910 MiB twice is an allocation, not measurement scatter."""
+    doc = _flash_measurement()
+    penalties = [
+        row["measured_device_vram_mib_flash_auto"] - row["measured_device_vram_mib_flash_on"]
+        for row in doc["configurations"]
+        if row["flash_auto_chose_off"]
+    ]
+    assert penalties == [940, 940]
+
+
+def test_the_measurement_records_that_the_card_was_idle():
+    """A VRAM reading taken beside another process measures both."""
+    doc = _flash_measurement()
+    assert doc["gpu_idle_before_and_after_mib"] == 0
+    assert "no reading includes a leftover" in doc["method"]
+
+
+def test_the_measurement_does_not_claim_to_be_a_benchmark():
+    """No tokens were generated, so it must not read as a throughput result."""
+    doc = _flash_measurement()
+    assert doc["kind"] == "memory-measurement"
+    assert "no throughput was measured" in doc["$comment"]

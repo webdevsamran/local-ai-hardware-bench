@@ -51,43 +51,48 @@ MiB against 384 — and used **836 MiB more** device memory. `q4_0`/`f16` is the
 same story: 138 MiB less cache, 788 MiB more memory.
 
 The cause is `--flash-attn`, whose default is `auto`, and **auto is not a
-synonym for on**. llama.cpp declines flash attention for kernel combinations
-it does not cover, and the fallback path allocates far more. Measured directly
-on an idle card:
+synonym for on**. llama.cpp declines flash attention for kernel combinations it
+does not cover, and the fallback path allocates far more.
 
-| K | V | `--flash-attn` | device VRAM |
-|---|---|---|---|
-| f16 | f16 | auto | 1022 MiB |
-| q8_0 | f16 | auto | 1842 MiB |
-| q8_0 | f16 | **on** | **902 MiB** |
-| q8_0 | f16 | off | 1834 MiB |
-| q8_0 | q8_0 | on | 844 MiB |
+All nine configurations, measured directly on an idle card (0 MiB before and
+after), at the default and with flash attention forced on. Raw data:
+[`results/measurements/kv-cache-flash-attention-vram.json`](../../results/measurements/kv-cache-flash-attention-vram.json).
 
-**940 MiB from one flag.** At the default, quantizing the K cache to save
-memory spends nearly a gigabyte instead. With `-fa on` the same configuration
-uses 902 MiB — 120 MiB *below* the f16 baseline, which is what the cache
-arithmetic says it should be, to within the same 30 MiB the analytic model is
-conservative by elsewhere.
+| K | V | cache | predicted VRAM | `auto` | `on` |
+|---|---|---|---|---|---|
+| q4_0 | q4_0 | 108 MiB | 746 | 748 | 748 |
+| q8_0 | q4_0 | 156 MiB | 794 | 764 | 764 |
+| q4_0 | q8_0 | 156 MiB | 794 | 764 | 764 |
+| q8_0 | q8_0 | 204 MiB | 842 | 844 | 844 |
+| f16 | q4_0 | 246 MiB | 884 | 854 | 854 |
+| **q4_0** | **f16** | 246 MiB | 884 | **1794** | **854** |
+| f16 | q8_0 | 294 MiB | 932 | 902 | 902 |
+| **q8_0** | **f16** | 294 MiB | 932 | **1842** | **902** |
+| f16 | f16 | 384 MiB | 1022 | 1022 | 1022 |
 
-`auto` and `off` land within 8 MiB of each other, so at these settings `auto`
-is choosing `off`. It chooses `on` for the symmetric cases: `q8_0`/`q8_0`
-reads 844 MiB whether flash attention is requested or left to `auto`.
+Two things fall out of this table.
 
-So the practical advice is two lines, not one:
+**With `-fa on`, the analytic model holds everywhere.** Every configuration
+lands within 30 MiB of the size computed from the model's attention geometry —
+a consistent offset from compute buffers, not noise, and it is +2 MiB for the
+two dtypes with fast native CUDA paths.
+
+**`auto` disagrees with `on` in exactly two of nine cases**, and they are
+precisely the two where K is quantized and V is not. Each costs **910 MiB**
+more than the arithmetic predicts. Everywhere else `auto` already chooses `on`,
+which is why the setting looks harmless until it isn't.
+
+So the practical advice is two lines:
 
 - Use the same dtype for K and V.
 - If you use a mismatched pair anyway, pass `--flash-attn on` explicitly, or
   measure what your build's `auto` decided — because it may not be what you
-  assumed, and the cost is not small.
+  assumed, and the cost is close to a gigabyte.
 
 This is a property of this llama.cpp build and this GPU, not of KV-cache
-quantization as an idea. It is also exactly the kind of thing that only shows
-up if you measure: the cache arithmetic says `q8_0`/`f16` saves 90 MiB, and
-the arithmetic is right about the cache and wrong about the machine.
-
-Confirmed across two independent full sweeps, which reported 1858 and 1858 MiB
-for `q8_0`/`f16` at the default, and one direct `llama-server` measurement on
-an otherwise idle GPU, which reported 1842.
+quantization as an idea. It is also the kind of thing only measurement finds:
+the cache arithmetic says `q8_0`/`f16` saves 90 MiB, and it is right about the
+cache and wrong about the machine.
 
 ## Finding 2: a quantized V that does not match K costs about 60% of throughput
 
@@ -168,10 +173,12 @@ have it. The command above is here so you can check your own machine rather
 than cite this one.
 
 **Nothing about what `--flash-attn on` does to throughput.** Finding 1's
-memory measurements were taken directly and are clean. The matching
-throughput sweep was interrupted by an unrelated GPU job on the same machine
-and has been discarded rather than published; the throughput column above is
-at the default `auto`.
+memory measurements were taken directly on an idle card and are clean. The
+matching throughput sweep was interrupted by an unrelated GPU job on the same
+machine and has been discarded rather than published, and the machine has not
+since been quiet enough to repeat it: the throughput column above is at the
+default `auto`. Memory and speed are separate questions here, and only the
+memory one has been answered for `-fa on`.
 
 **Nothing about longer contexts than 32768.** The cache column extrapolates
 exactly; the device column does not, and Finding 1's penalty was not measured

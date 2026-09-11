@@ -29,6 +29,7 @@ from ..backends import (
     resolve,
 )
 from ..capacity import CapacityConfig, run_capacity_ladder
+from ..devices import device_inventory
 from ..exit_codes import EXIT_OK, EXIT_USAGE_ERROR, EXIT_VALIDATION_ERROR
 from ..gguf import read_gguf_attention
 from ..manifests import ExperimentError, load_experiment
@@ -228,6 +229,14 @@ def cmd_sweep(args: argparse.Namespace) -> int:
         axes["threads"] = tuple(int(v) for v in args.threads_list.split(","))
     if getattr(args, "batch_list", None):
         axes["batch_size"] = tuple(int(v) for v in args.batch_list.split(","))
+    for name in ("tensor_split", "split_mode", "rpc_servers"):
+        raw = getattr(args, f"{name}_list", None)
+        if raw:
+            # Semicolon-separated: a tensor split is itself comma-separated,
+            # so commas cannot also separate the axis values.
+            axes[name] = tuple(v.strip() for v in raw.split(";") if v.strip())
+    if getattr(args, "main_gpu_list", None):
+        axes["main_gpu"] = tuple(int(v) for v in args.main_gpu_list.split(","))
     if not axes:
         fail(
             "provide at least one sweep axis (--max-tokens-list/"
@@ -514,6 +523,17 @@ def cmd_perplexity(args: argparse.Namespace) -> int:
     return EXIT_OK if report.get("perplexity") is not None else EXIT_VALIDATION_ERROR
 
 
+def cmd_devices(args: argparse.Namespace) -> int:
+    """List the devices the runtime can offload to.
+
+    Not the devices the machine has. A CUDA build of llama.cpp offloads to the
+    NVIDIA card and not the integrated one, so a split planned from the
+    hardware inventory asks for something the runtime cannot do.
+    """
+    echo_json(device_inventory(rpc_servers=args.rpc))
+    return EXIT_OK
+
+
 def _load_matrix(path: Path) -> list[dict[str, Any]] | None:
     """Read a sweep matrix, tolerating either the file or a bare array."""
     try:
@@ -745,6 +765,34 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
         default=None,
         help="Comma-separated logical batch sizes, e.g. 128,512,2048.",
     )
+    sweep_p.add_argument(
+        "--tensor-split-list",
+        default=None,
+        help=(
+            "Semicolon-separated tensor splits, e.g. '0.5,0.5;0.7,0.3'. One "
+            "fraction per device in the order `aihwbench devices` lists them. "
+            "Semicolons because a split is itself comma-separated."
+        ),
+    )
+    sweep_p.add_argument(
+        "--split-mode-list",
+        default=None,
+        help="Semicolon-separated split modes: none, layer, row.",
+    )
+    sweep_p.add_argument(
+        "--rpc-servers-list",
+        default=None,
+        help=(
+            "Semicolon-separated --rpc values, e.g. '127.0.0.1:50052'. An RPC "
+            "server joins the device list, which is what makes a two-device "
+            "split measurable on a one-GPU machine."
+        ),
+    )
+    sweep_p.add_argument(
+        "--main-gpu-list",
+        default=None,
+        help="Comma-separated main-GPU indices (used with split-mode none).",
+    )
     for which in ("k", "v"):
         sweep_p.add_argument(
             f"--cache-type-{which}-list",
@@ -846,6 +894,17 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     ppl_p.add_argument("--chunks", type=int, default=None, help="Default: the whole corpus")
     ppl_p.add_argument("--gpu-layers", type=int, default=99)
     ppl_p.set_defaults(func=cmd_perplexity)
+
+    dev_p = sub.add_parser(
+        "devices",
+        help="Devices the runtime can offload to, in tensor-split order",
+    )
+    dev_p.add_argument(
+        "--rpc",
+        default=None,
+        help="Comma-separated RPC servers to include, e.g. 127.0.0.1:50052",
+    )
+    dev_p.set_defaults(func=cmd_devices)
 
     ctx_p = sub.add_parser(
         "context-scaling",

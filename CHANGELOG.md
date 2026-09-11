@@ -37,6 +37,82 @@ Format based on Keep a Changelog; versioning is SemVer.
   there would not stay local — the classifier would go on to rank a silently-CPU
   result against a GPU one. The error names the visible devices instead.
 
+### Fixed — running the prerenderer twice published 53 copies of the home page
+
+- **`composePage` matched the *empty* root div literally**, so on a template
+  that had already been rendered into the substitution found nothing — and
+  `String.replace` with a needle that is not there returns the input unchanged
+  and says nothing. The prerenderer read `dist/index.html` as its template, and
+  after one run that file *is* the rendered home page.
+
+  The result: every route written with the home page's markup, and a normal
+  success message. Each page kept its own `<title>`, description and canonical
+  URL, because those come from a different code path — so the output looked
+  correct in exactly the places anyone would check. Only the body was wrong,
+  and only a crawler reads that.
+
+  `npm run prerender` is a documented script and this is what happens the
+  second time anyone runs it. Hit while verifying something else, which is
+  precisely how a developer iterating on the prerenderer would hit it.
+
+  Substitutions now throw when they match nothing, with a message naming the
+  cause and the fix. The prerenderer also refuses to finish if every route
+  rendered identical markup — the specific mechanism is guarded, but "all the
+  pages came out the same" is the class of failure, and it is invisible from
+  outside.
+
+- **The accessibility gate had been passing on 54 copies of one page** without
+  anything noticing, because a corrupted `dist/` is still 54 valid HTML files.
+  What surfaced it was the summary line: it reported "29 axe rules passed per
+  page" for every page, a suspiciously round uniformity that only became
+  visible after that line was changed to print a range rather than one page's
+  number as though it were everyone's. It now reads 17–44, which is what
+  genuinely different pages look like.
+
+### Added — moderation guidelines for a benchmark project's discussions
+
+- **The failures a conduct policy does not cover**, because they are not
+  misconduct: a number quoted with no run behind it, a vendor claim held to a
+  lower evidence bar than anyone else's, hardware tribalism, and a settled
+  dispute reopened without new evidence.
+  [docs/contributing/moderation.md](docs/contributing/moderation.md).
+
+  One rule underneath: moderate claims, not conclusions. Someone arguing
+  bluntly that a result is wrong is doing the project's work; someone asserting
+  a figure with no measurement behind it is not, however politely. A moderator
+  who reverses that makes the discussions worse than having none.
+
+  Every action is explained in the thread except deletion, where restating the
+  content is the harm. Moderation nobody can see a reason for is
+  indistinguishable from moderation with no reason, in a project whose whole
+  argument is that it shows its working.
+
+### Fixed — `aihwbench runtimes` took 24 seconds, 16 of them waiting for nothing
+
+- **A TCP pre-flight before each HTTP-server probe.** Four backends — Ollama,
+  vLLM, SGLang and LM Studio — probe a local HTTP server to detect it, and on
+  the reference machine a connect to a *closed* port on 127.0.0.1 takes 2.0
+  seconds before it refuses. `localhost` resolves to two addresses, so each
+  absent server cost about four seconds, and the common case is that most of
+  them are absent.
+
+  A connect, not a shorter HTTP timeout. Cutting the HTTP timeout would also
+  cut off a server that is running and busy loading a model, reporting it
+  absent at the moment it is doing the most work. Accepting a connection is not
+  something a loading server stops doing, so this separates "nothing is there"
+  from "it is slow to answer" and leaves the real request its full patience.
+
+  The check sits inside each backend's `_api_get`, not in its `detect()`. The
+  first attempt put it in the caller, which worked and broke a test that mocked
+  `_api_get` to stand for a running server — the right signal rather than a
+  nuisance: if that function is where "talk to the server" lives, it is where
+  "is the server there" belongs, and callers keep one seam instead of two.
+
+  Detection across all 21 backends went from **about 24 seconds to about 9**
+  (8.0–9.3s over three runs). What remains is genuine work — `llama-server
+  --version`, `vulkaninfo`, and OpenVINO's one-time plugin initialisation —
+  rather than waiting on nothing.
+
 ### Fixed — OpenVINO detection re-initialised the GPU plugins every time
 
 - **One `Core` for the process, not one per call.** Constructing an OpenVINO

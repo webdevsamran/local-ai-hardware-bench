@@ -26,6 +26,13 @@ Vendors are welcome here. In return we ask that no vendor (or their
 representatives) pressure maintainers to alter published results. Findings
 stand as measured; responses may be published alongside them.
 
+## Moderating discussions
+
+This page covers conduct. How moderators handle the things that go wrong in a
+benchmark project's discussions specifically -- unsourced numbers, vendor
+claims, hardware tribalism -- is in
+[docs/contributing/moderation.md](docs/contributing/moderation.md).
+
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be

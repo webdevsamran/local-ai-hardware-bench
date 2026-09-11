@@ -1,0 +1,65 @@
+{
+  "kind": "negative-finding",
+  "$comment": "Speculative decoding was configured correctly and did not run. The draft model loaded, no warning was raised, requests were served normally, and every speculative counter stayed at zero. A user would conclude speculation was working and be getting none of it.",
+  "runtime": {
+    "name": "llama.cpp",
+    "version": "0.2.0-dev (build 10578, commit 369e1cd61)"
+  },
+  "system": {
+    "os": "Windows 11",
+    "os_version": "10.0.26200",
+    "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+    "cpu_cores_physical": 14,
+    "cpu_cores_logical": 20,
+    "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+    "gpu_vram_mb": 16384,
+    "gpu_driver_version": "610.74",
+    "npu": null,
+    "ram_gb": 31.7,
+    "platform_name": "Predator PT516-52s",
+    "topology": {
+      "numa_nodes": null,
+      "sockets": 1,
+      "unified_memory": null,
+      "cpu_features": [],
+      "gpu_count": 1
+    },
+    "gpus": [
+      {
+        "vendor": "NVIDIA",
+        "name": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "driver_version": "610.74",
+        "vram_mb": 16384,
+        "index": 0,
+        "pcie_gen": 4,
+        "pcie_width": 16,
+        "compute_capability": "8.6"
+      }
+    ]
+  },
+  "pair": {
+    "target": "qwen2.5:1.5b-instruct-q4_K_M",
+    "draft": "qwen2.5:0.5b-instruct-q4_K_M",
+    "target_tokenizer": "gpt2/qwen2/bos:151643/eos:151645",
+    "draft_tokenizer": "gpt2/qwen2/bos:151643/eos:151645",
+    "tokenizers_match": true
+  },
+  "what_was_tried": [
+    "--model-draft with --spec-draft-n-max 6 and 8",
+    "--spec-draft-n-min 1 and --spec-draft-p-min 0.0",
+    "-ngld 99 so the draft model was also on the GPU",
+    "-np 1, in case speculation is skipped with multiple slots",
+    "a per-request `speculative` block on /completion",
+    "both /v1/chat/completions and /completion"
+  ],
+  "observed": {
+    "draft_model_loaded": true,
+    "warning_raised": false,
+    "llamacpp:spec_decode_num_draft_tokens_total": 0,
+    "llamacpp:spec_decode_num_accepted_tokens_total": 0,
+    "llamacpp:spec_decode_num_drafts_total": 0,
+    "props_default_generation_settings_speculative_keys": []
+  },
+  "why_it_matters": "The acceptance rate is what decides whether speculative decoding helps, and it is undefined here because nothing was drafted. Reporting this as an acceptance rate of 0% would say the draft model is useless and send someone to find a better one; the fault is in the runtime configuration. `analysis.speculative.acceptance_report` distinguishes the two states for exactly this reason.",
+  "not_concluded": "This is not a claim that llama.cpp's speculative decoding is broken. It is a claim about this build, through these flags, on this machine -- and that it fails silently, which is the part that generalises."
+}

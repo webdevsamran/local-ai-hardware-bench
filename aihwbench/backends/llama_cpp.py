@@ -101,6 +101,13 @@ TUNABLE_AXES: tuple[str, ...] = (
     "tensor_split",
     "split_mode",
     "main_gpu",
+    "draft_model",
+    "draft_n_max",
+    "draft_n_min",
+    "draft_p_min",
+    "draft_gpu_layers",
+    "cache_type_k_draft",
+    "cache_type_v_draft",
 )
 
 #: KV-cache dtypes llama.cpp accepts. Quantizing the cache is a *memory*
@@ -299,6 +306,36 @@ class LlamaServerHandle:
         main_gpu = self.config.extra.get("main_gpu")
         if main_gpu is not None:
             cmd.extend(["--main-gpu", str(int(main_gpu))])
+        # Speculative decoding. The draft model must share the target's
+        # tokenizer; a mismatched pair either fails to load or drafts tokens
+        # the target cannot accept, which reads as a terrible acceptance rate
+        # rather than as the configuration error it is.
+        draft = self.config.extra.get("draft_model")
+        if draft:
+            cmd.extend(["--model-draft", str(draft)])
+            cmd.extend(["--metrics"])  # the acceptance counters live here
+            for key, flag in (
+                ("draft_n_max", "--spec-draft-n-max"),
+                ("draft_n_min", "--spec-draft-n-min"),
+                ("draft_gpu_layers", "--spec-draft-ngl"),
+            ):
+                value = self.config.extra.get(key)
+                if value is not None:
+                    cmd.extend([flag, str(int(value))])
+            p_min = self.config.extra.get("draft_p_min")
+            if p_min is not None:
+                cmd.extend(["--spec-draft-p-min", str(float(p_min))])
+            for which in ("k", "v"):
+                cache_type = self.config.extra.get(f"cache_type_{which}_draft")
+                if cache_type is not None:
+                    value = str(cache_type).lower()
+                    if value not in KV_CACHE_TYPES:
+                        raise BackendError(
+                            f"unknown draft KV cache type {cache_type!r} for "
+                            f"{which.upper()}; llama.cpp accepts: "
+                            f"{', '.join(KV_CACHE_TYPES)}"
+                        )
+                    cmd.extend([f"--cache-type-{which}-draft", value])
         self.proc = subprocess.Popen(
             cmd,
             stdout=subprocess.DEVNULL,
@@ -512,6 +549,15 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "tensor_split": config.extra.get("tensor_split"),
             "split_mode": _split_mode(config),
             "main_gpu": config.extra.get("main_gpu"),
+            # Speculative configuration. Without these a speculative result
+            # cannot be told apart from a plain one, and the two are not
+            # comparable: one ran a second model.
+            "draft_model": config.extra.get("draft_model"),
+            "draft_n_max": config.extra.get("draft_n_max"),
+            "draft_n_min": config.extra.get("draft_n_min"),
+            "draft_p_min": config.extra.get("draft_p_min"),
+            "cache_type_k_draft": config.extra.get("cache_type_k_draft"),
+            "cache_type_v_draft": config.extra.get("cache_type_v_draft"),
             "command": (f"aihwbench benchmark --runtime llama.cpp --model-path {model_path}"),
         },
         "iterations": iterations,

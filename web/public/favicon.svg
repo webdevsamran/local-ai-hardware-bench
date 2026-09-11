@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="AIHWBench">
+  <!--
+    Three bars of unequal height: the shape of a comparison, which is what the
+    project is for. Drawn at 32 and legible at 16, so the bars are thick and
+    the gaps wide rather than a scaled-down detailed mark.
+
+    The accent tracks the reader's theme the same way the site does. A tab
+    strip is dark in dark mode, and the light-mode blue loses contrast against
+    it; browsers re-evaluate this media query when the system theme changes,
+    so the icon follows rather than being stamped once.
+  -->
+  <style>
+    .bar { fill: #2456d6; }
+    .plate { fill: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      .bar { fill: #6ea8ff; }
+      .plate { fill: #161b22; }
+    }
+  </style>
+  <rect class="plate" x="0" y="0" width="32" height="32" rx="7" />
+  <rect class="bar" x="6" y="19" width="5" height="8" rx="1.5" />
+  <rect class="bar" x="13.5" y="11" width="5" height="16" rx="1.5" />
+  <rect class="bar" x="21" y="5" width="5" height="22" rx="1.5" />
+</svg>

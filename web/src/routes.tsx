@@ -17,7 +17,7 @@
 
 import { lazy } from 'react'
 import type { ComponentType } from 'react'
-import { Route } from 'react-router-dom'
+import { Route, matchPath } from 'react-router-dom'
 
 // Page components have different prop shapes -- most take none, `Planned`
 // takes a `kind`. The table is heterogeneous by nature, so the prop type is
@@ -115,6 +115,40 @@ export async function preloadRoutes(): Promise<void> {
   )
 }
 
+/**
+ * The route that serves `pathname`, or undefined for the catch-all.
+ *
+ * `matchPath` is React Router's own matcher, so this cannot disagree with the
+ * route the renderer goes on to pick -- a hand-rolled pattern check here would
+ * be a second source of truth that drifts on the first parameterised route.
+ */
+export function routeForPath(pathname: string): RouteDef | undefined {
+  // BASE_URL carries the deploy sub-path ('/' locally). `location.pathname`
+  // includes it; the route table does not.
+  const base = import.meta.env.BASE_URL || '/'
+  const relative = pathname.startsWith(base) ? '/' + pathname.slice(base.length) : pathname
+  return [...ROUTES, ...EMBED_ROUTES].find(
+    ({ path }) => path !== '*' && matchPath(path, relative) !== null,
+  )
+}
+
+/**
+ * Load the one route component `pathname` needs, and nothing else.
+ *
+ * This is what makes hydration possible. `hydrateRoot` compares the tree it
+ * renders against the prerendered HTML, and a `React.lazy` component has not
+ * arrived on the first render -- it renders the Suspense fallback instead, so
+ * every hydration would mismatch and React would throw the static HTML away.
+ * Awaiting the current route's chunk first (the browser has already started
+ * fetching it, from the modulepreload the prerenderer emitted) lets the first
+ * render match. Every *other* route stays split.
+ */
+export async function preloadRoute(pathname: string): Promise<void> {
+  const route = routeForPath(pathname)
+  if (!route || resolved.has(route.importer)) return
+  resolved.set(route.importer, (await route.importer()).default as PageComponent)
+}
+
 /** Route elements backed by already-loaded components. For prerendering. */
 export function eagerRouteElements(defs: RouteDef[] = ROUTES) {
   return defs.map(({ path, importer, props }) => {
@@ -133,7 +167,13 @@ const lazyCache = new Map<Importer, PageComponent>()
 /** Route elements backed by `React.lazy`. For the browser. */
 export function lazyRouteElements(defs: RouteDef[] = ROUTES) {
   return defs.map(({ path, importer, props }) => {
-    let Component = lazyCache.get(importer)
+    // An already-resolved module is rendered directly rather than through
+    // `lazy`. On the route being hydrated that is the whole point: `lazy`
+    // suspends on its first render even when the chunk is in memory, which
+    // would put the fallback where the prerendered content is and cost us the
+    // hydration. Routes reached later are still lazy, so navigation still
+    // fetches one chunk at a time.
+    let Component = resolved.get(importer) ?? lazyCache.get(importer)
     if (!Component) {
       Component = lazy(importer) as unknown as PageComponent
       lazyCache.set(importer, Component)

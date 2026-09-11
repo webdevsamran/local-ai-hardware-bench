@@ -256,3 +256,12 @@ shipped-but-unreachable is not done.
       submissions (`scripts/validate_pr_results.py`)
 - [x] React + TypeScript production dashboard (20 routes) deployed to
       GitHub Pages from generated static dataset
+- [x] The prerendered HTML actually reaches readers: the client hydrates it
+      instead of calling `createRoot`, which had been discarding 53 static
+      pages on every visit and falling back to a loading skeleton. Guarded by
+      a hydration test that was first made to fail on the bug it describes
+- [x] axe-core over all 54 prerendered pages as a CI gate, reporting what it
+      could not evaluate rather than counting it as a pass; found the embed
+      pages shipping with no landmark and no heading
+- [x] Lighthouse 100/100/100/100 on four routes, measured and recorded with
+      its conditions ([docs/research/dashboard-performance.md](docs/research/dashboard-performance.md))

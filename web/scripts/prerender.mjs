@@ -142,6 +142,16 @@ function preloadForRoute(manifest, base, routePath, routeModules) {
   return `<link rel="modulepreload" href="${escapeHtml(href)}" />`
 }
 
+/**
+ * Names the one page whose markup does not describe its own URL.
+ *
+ * Kept in step with `web/src/main.tsx`, which reads it to decide between
+ * hydrating and rendering; `tests/test_frontend_hydration.py` asserts the two
+ * spellings still match, because a typo here is silent on every page that is
+ * prerendered and wrong on every page that is not.
+ */
+const FALLBACK_MARKER = 'aihwbench-fallback'
+
 function buildHead(meta, siteUrl, extraJsonLd) {
   const canonical = urlFor(siteUrl, meta.path)
   const tags = [
@@ -268,12 +278,21 @@ async function main() {
   // GitHub Pages has no server-side rewrite: a deep link that was not
   // prerendered would 404. Serving the home shell from 404.html lets the
   // client router recover the route.
+  //
+  // The marker matters now that the client hydrates. This one file is served
+  // at URLs it does not describe -- its body is the home page, the address bar
+  // says /results/whatever -- so it is the one prerendered document the client
+  // must NOT adopt. Without the marker every deep link to an unpublished route
+  // would hydrate home's markup against a different route's render, mismatch,
+  // and recover by doing what the marker asks for directly, with a console
+  // error on the way.
   const notFoundMeta = metaForPath('/', dataset)
   writeFileSync(
     join(DIST, '404.html'),
     composePage(
       template,
-      buildHead(notFoundMeta, siteUrl, null),
+      buildHead(notFoundMeta, siteUrl, null) +
+        `\n  <meta name="${FALLBACK_MARKER}" content="1" />`,
       render('/', dataset),
     ),
     'utf-8',

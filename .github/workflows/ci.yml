@@ -139,6 +139,13 @@ jobs:
       - name: Production build
         working-directory: web
         run: npm run build
+      # After the build, not instead of it: this runs axe over the prerendered
+      # HTML in dist/, which is the artifact a crawler and a screen reader
+      # actually receive. A component that passes its unit test and ships a
+      # broken landmark structure would clear every step above this one.
+      - name: Accessibility (axe-core over prerendered pages)
+        working-directory: web
+        run: npm run a11y
 
   dependencies:
     # NOT renamed to mention pip-audit, though it now runs it: this exact

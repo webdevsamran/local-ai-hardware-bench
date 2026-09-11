@@ -44,8 +44,12 @@ export async function prepare(): Promise<void> {
 export function render(url: string, dataset: Dataset): string {
   seedDataset(dataset)
   return renderToString(
+    // `eager` explicitly, not inferred. The components are all loaded by
+    // `prepare()`, and `renderToString` cannot suspend -- but saying so here
+    // is also what lets a test render this exact tree, rather than a tree that
+    // merely resembles it because jsdom happens to define `window`.
     <StaticRouter location={url}>
-      <AppShell />
+      <AppShell eager />
     </StaticRouter>,
   )
 }

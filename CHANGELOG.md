@@ -5,6 +5,30 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Added — the flash-attention memory matrix, measured on an idle card
+
+- **All nine KV-dtype configurations, at `--flash-attn auto` and `on`**
+  ([`results/measurements/kv-cache-flash-attention-vram.json`](results/measurements/kv-cache-flash-attention-vram.json)).
+  Two results fall out of it.
+
+  With flash attention on, **the analytic cache model holds everywhere**: every
+  configuration lands within 30 MiB of the size computed from the model's
+  attention geometry, and the offset is consistent rather than scattered. The
+  arithmetic is validated against the whole matrix rather than one convenient
+  point.
+
+  `auto` disagrees with `on` in **exactly two of nine** cases, and they are
+  precisely the two where K is quantized and V is not. Each costs **940 MiB**
+  more than the arithmetic predicts. Everywhere else `auto` already chooses
+  `on`, which is why the default looks harmless until the one time it is not.
+
+  Recorded as a memory measurement rather than a benchmark: no tokens were
+  generated, because the question is how much memory a configuration needs.
+  VRAM is a deterministic allocation -- repeated readings were identical to the
+  MiB -- which is why it is trustworthy while a throughput figure taken on the
+  same machine at the same time would not be. The throughput half is still
+  unmeasured for `-fa on`, and the study says so.
+
 ### Added — a multiple-choice evaluator that refuses to guess
 
 - **`multiple_choice`, for MMLU-shaped sets.** The scoring is a string

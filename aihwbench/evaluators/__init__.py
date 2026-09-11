@@ -328,6 +328,8 @@ class MultipleChoiceEvaluator:
         )
 
 
+from ..sql_execution import SqlExecutionEvaluator  # noqa: E402
+
 _REGISTRY: dict[str, Evaluator] = {
     ExactMatchEvaluator.name: ExactMatchEvaluator(),
     JsonValidityEvaluator.name: JsonValidityEvaluator(),
@@ -335,6 +337,10 @@ _REGISTRY: dict[str, Evaluator] = {
     RougeLEvaluator.name: RougeLEvaluator(),
     TokenF1Evaluator.name: TokenF1Evaluator(),
     MultipleChoiceEvaluator.name: MultipleChoiceEvaluator(),
+    # Execution accuracy for text-to-SQL. Registered without a default
+    # database: Spider asks each question against a different one, so the
+    # dataset names it per row.
+    SqlExecutionEvaluator.name: SqlExecutionEvaluator(),
 }
 _PLUGINS_DISCOVERED = False
 

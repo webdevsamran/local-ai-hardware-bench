@@ -130,6 +130,11 @@ shipped-but-unreachable is not done.
 - [x] Written dispute process for published results
       ([docs/disputes.md](docs/disputes.md))
 - [x] Versioned dataset snapshot manifests
+- [x] Perplexity over a caller-supplied corpus, refusing comparisons across
+      different tokenizers, corpora or run shapes
+- [x] Text-to-SQL execution accuracy (Spider-shaped), read-only
+- [x] Mixture-of-experts resident-vs-active memory and expert offload traffic
+- [x] Cloud instance profiles as a TCO baseline (specs cited, prices not bundled)
 - [x] Flash-attention on/off memory deltas across the KV-dtype matrix:
       `auto` is not `on`, and the difference is 940 MB in two of nine
       configurations

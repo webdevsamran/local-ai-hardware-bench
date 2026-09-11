@@ -5,6 +5,57 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Added — the dashboard quality bar: code splitting, three chart shapes, print
+
+- **Routes are code-split.** 34 routes shared one 372 KB bundle, so someone
+  landing on `/about` downloaded the offload-cliff chart, the TCO calculator
+  and the KV-cache page before anything appeared. The entry is now 252 KB
+  across 37 chunks.
+
+  The hard part was keeping the static site intact. `renderToString` cannot
+  suspend, so a `React.lazy` route would write its loading fallback into the
+  prerendered HTML — the one copy a crawler and a first-time visitor read, and
+  the copy that looks fine while carrying nothing. Both renderers are derived
+  from one route table: the prerenderer awaits every import and renders
+  synchronously, the browser takes the split chunks. Two hand-written lists
+  would have worked and then drifted, so a route in one and not the other is a
+  page that works when clicked and 404s when shared.
+
+  Each prerendered page now also carries a `modulepreload` for its own chunk,
+  so hydration does not wait for the entry script to parse before discovering
+  it. One per page, not all of them — preloading thirty chunks would undo the
+  splitting.
+
+- **Area, heatmap and violin charts**, still hand-rolled SVG with no runtime
+  dependency. The heatmap is wired into the KV-cache page, where nine cells
+  over K and V dtype put both memory inversions in one column; the table reads
+  a row at a time and the grid shows the pattern. Every chart carries the
+  numbers behind it for anyone who cannot see the picture, and an unmeasured
+  cell reads `—` rather than taking the colour of a minimum.
+
+- **`prefers-contrast: more` and print styles.** Tints that carry meaning
+  become outlines for a reader who asked for more contrast. On paper the
+  navigation and theme toggle go, link destinations are spelled out, and the
+  table behind each chart is revealed — on paper the numbers are the artifact,
+  and hovering a cell is not available.
+
+### Fixed — a heatmap that failed WCAG AA in dark mode
+
+- **The darkest cell measured 3.4:1 against its text in dark mode**, under the
+  4.5:1 AA needs for normal text; light mode passed at 5.0:1. The accent sits
+  brighter against a dark surface, so one tint cap cannot serve both themes.
+
+  Underneath it was a cascade bug: the light default was declared *after* the
+  dark override, and `:root` and `[data-theme='dark']` have equal specificity,
+  so source order silently won and the dark cap did nothing. Both themes now
+  measure 5.0:1 and 7.3:1, and `tests/test_heatmap_contrast.py` recomputes the
+  blend from the tokens rather than trusting that someone checked.
+
+- **The reduced-motion rule named the animations it stopped, one at a time.**
+  Every new animation therefore shipped moving until somebody remembered to
+  add it, and the person who needed it stopped was the last to find out. It is
+  a blanket rule now, covering transitions, animations and smooth scrolling.
+
 ### Added — a desktop shell, and everything for the DOI except the account
 
 - **Tauri desktop scaffold** (`desktop/`). Deliberately thin: every command

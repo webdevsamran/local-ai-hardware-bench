@@ -166,6 +166,11 @@ shipped-but-unreachable is not done.
 - [x] Model zoo manifest: licence terms read from the artifact, checksums
       that state what they hash, and a download helper that deletes a
       mismatched file ([docs/models/zoo.md](docs/models/zoo.md))
+- [x] Per-route code splitting that keeps static prerendering intact, with
+      a per-page modulepreload for the chunk that route needs
+- [x] Area, heatmap and violin charts; the heatmap renders the KV-cache
+      matrix, where both inversions fall in one column
+- [x] prefers-contrast, print styles, and a blanket reduced-motion rule
 - [x] Desktop shell (Tauri) wrapping the same CLI and dashboard; scaffolded
       and config-tested, not yet compiled (needs a C++ linker)
 - [ ] Zenodo DOI for versioned dataset snapshots: metadata and runbook

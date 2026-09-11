@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useDataset } from '../lib/useDataset'
 import { Loading, ErrorState } from '../components/States'
+import { Heatmap } from '../components/Distributions'
 import { fmtNum } from '../lib/format'
 import type { KvCacheConfiguration } from '../lib/types'
 
@@ -187,6 +188,24 @@ export default function KvCache() {
                 </tbody>
               </table>
             </div>
+            {/* The same nine numbers as a grid. The table reads one row at a
+                time; the grid shows that both outliers sit in one column,
+                which is the finding -- K quantized against V at f16. */}
+            <Heatmap
+              cells={report.configurations.map((c) => ({
+                row: `K ${c.cache_type_k}`,
+                column: `V ${c.cache_type_v}`,
+                value: c.peak_vram_mb,
+                note: c.costs_more_than_baseline
+                  ? 'uses more memory than the f16 default despite a smaller cache'
+                  : undefined,
+              }))}
+              rowLabel="K"
+              columnLabel="V"
+              unit="device VRAM, MiB"
+              lowerIsBetter
+            />
+
             <p className="muted note">
               ≈ marks a throughput difference inside the run-to-run noise floor:
               indistinguishable from the default, which is not the same as equal

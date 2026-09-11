@@ -13,7 +13,9 @@ from __future__ import annotations
 
 import enum
 import hashlib
+import socket
 import subprocess
+import urllib.parse
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -93,6 +95,46 @@ _RESOLVED_DEVICE_NAMES = {
     "npu": "npu",
     "auto": "auto",
 }
+
+
+#: How long to wait for a local TCP connect before deciding nothing is there.
+#:
+#: Generous for the thing being measured: a server listening on loopback
+#: accepts in well under a millisecond, so this is a margin of hundreds of
+#: times over. It is short because the *absent* case is the common one --
+#: most people run one of these servers, not five.
+LOCAL_PROBE_TIMEOUT = 0.4
+
+
+def server_is_listening(url: str, timeout: float = LOCAL_PROBE_TIMEOUT) -> bool:
+    """Whether anything accepts a TCP connection at `url`'s host and port.
+
+    A pre-flight for the HTTP-server backends, which is worth its existence
+    because of how slowly this machine says "no". A connect to a closed port on
+    127.0.0.1 takes **2.0 seconds** here before refusing, and `localhost`
+    resolves to two addresses, so each unanswered probe costs about four --
+    `aihwbench runtimes` spent 16 of its 24 seconds waiting for four servers
+    that were not running.
+
+    It is a TCP connect rather than a short HTTP timeout on purpose. Shortening
+    the HTTP timeout would also cut off a server that *is* running and busy
+    loading a model, reporting it as absent at the moment it is doing the most
+    work. Accepting a connection is not something a loading server stops doing,
+    so this separates "nothing is there" from "it is slow to answer" and leaves
+    the real request its full patience.
+    """
+    parsed = urllib.parse.urlsplit(url if "//" in url else f"//{url}")
+    host = parsed.hostname
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    if not host:
+        return False
+    try:
+        # create_connection resolves and tries each address, so a host that
+        # answers on ::1 but not 127.0.0.1 is still found.
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
 
 
 #: The one OpenVINO Core for this process, built on first use.

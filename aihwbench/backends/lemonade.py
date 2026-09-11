@@ -24,6 +24,7 @@ from .base import (
     BenchmarkMetadata,
     RuntimeStatus,
     run_command,
+    server_is_listening,
 )
 
 LEMONADE_PORT = 8000
@@ -40,7 +41,14 @@ METADATA = BenchmarkMetadata(
 
 
 def _health(port: int = LEMONADE_PORT, timeout: float = 2.0) -> dict[str, Any] | None:
-    """One health probe against the local Lemonade server; None if down."""
+    """One health probe against the local Lemonade server; None if down.
+
+    The TCP pre-flight is what makes "down" cheap: a connect to a closed local
+    port takes 2 seconds to refuse on the reference machine, and the server
+    being absent is the ordinary case on a machine without Ryzen AI.
+    """
+    if not server_is_listening(f"http://127.0.0.1:{port}"):
+        return None
     try:
         with urllib.request.urlopen(
             f"http://127.0.0.1:{port}/api/v1/health", timeout=timeout

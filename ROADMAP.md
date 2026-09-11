@@ -119,7 +119,11 @@ shipped-but-unreachable is not done.
 - [x] Governance document and contributor ladder
 - [x] Expanded CONTRIBUTING with per-platform setup
 - [x] First-time-contributor onboarding guide
-- [ ] Community discussion forums moderation guidelines
+- [x] Community discussion forums moderation guidelines
+      ([docs/contributing/moderation.md](docs/contributing/moderation.md)):
+      what to do about unsourced numbers, vendor claims held to a lower
+      evidence bar, and reopened disputes -- the failures a conduct
+      policy does not cover because they are not misconduct
 
 ## Track 5 — Dataset & Leaderboard
 

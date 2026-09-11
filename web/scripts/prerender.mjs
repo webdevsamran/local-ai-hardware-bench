@@ -178,6 +178,26 @@ function buildHead(meta, siteUrl, extraJsonLd) {
   return tags.join('\n    ')
 }
 
+/**
+ * Substitute `needle` once, or throw.
+ *
+ * `String.replace` with a needle that is not there returns the string
+ * unchanged and says nothing, which is how this prerenderer quietly published
+ * fifty-three copies of the home page. See `composePage`.
+ */
+function replaceOnce(text, needle, replacement, what) {
+  if (!text.includes(needle)) {
+    throw new Error(
+      `prerender: could not ${what} — the template does not contain ${JSON.stringify(needle)}.\n` +
+        'The template is dist/index.html as written by `vite build`. If you ran\n' +
+        '`npm run prerender` on its own, that file is no longer a template: the\n' +
+        'previous run replaced it with the rendered home page. Run `npm run build`,\n' +
+        'which rebuilds it first.',
+    )
+  }
+  return text.replace(needle, replacement)
+}
+
 /** Replace the template's placeholder head and inject the rendered body. */
 function composePage(template, headHtml, bodyHtml) {
   let out = template
@@ -186,10 +206,18 @@ function composePage(template, headHtml, bodyHtml) {
   out = out.replace(/<title>[\s\S]*?<\/title>\s*/i, '')
   out = out.replace(/<meta\s+name="description"[\s\S]*?\/>\s*/i, '')
 
-  out = out.replace('</head>', `  ${headHtml}\n  </head>`)
-  out = out.replace(
+  out = replaceOnce(out, '</head>', `  ${headHtml}\n  </head>`, 'insert the head')
+  // The empty root div, specifically. Matching it is also the check that this
+  // template has not already been rendered into: running the prerenderer twice
+  // used to leave every page with the home page's markup, because this
+  // substitution found nothing and returned the input unchanged. Every page
+  // still had the right <title> and the right canonical URL, so the output
+  // looked correct in exactly the places anyone would check.
+  out = replaceOnce(
+    out,
     '<div id="root"></div>',
     `<div id="root">${bodyHtml}</div>`,
+    'insert the rendered page',
   )
   return out
 }
@@ -265,6 +293,7 @@ async function main() {
   }
 
   let written = 0
+  const bodies = new Set()
   for (const routePath of routes) {
     const meta = metaForPath(routePath, dataset)
     const body = render(routePath, dataset)
@@ -272,7 +301,22 @@ async function main() {
       buildHead(meta, siteUrl, routePath === '/' ? datasetJsonLd(siteUrl) : null) +
       preloadForRoute(manifest, BASE, routePath, routeModules)
     writePage(routePath, composePage(template, head, body))
+    bodies.add(body)
     written += 1
+  }
+
+  // Defence in depth for the failure this whole file exists to avoid. The
+  // specific way it happened -- a substitution that silently matched nothing --
+  // is caught by replaceOnce, but "every page came out the same" is the class
+  // of bug, and it is invisible from outside: each page keeps its own title,
+  // description and canonical URL, so the output looks right everywhere anyone
+  // would look. Only the body is wrong, and only a crawler reads that.
+  if (routes.length > 1 && bodies.size === 1) {
+    throw new Error(
+      `prerender: all ${routes.length} routes rendered identical markup. ` +
+        'The static site would ship the same page at every URL, with correct ' +
+        'titles hiding it.',
+    )
   }
 
   // GitHub Pages has no server-side rewrite: a deep link that was not

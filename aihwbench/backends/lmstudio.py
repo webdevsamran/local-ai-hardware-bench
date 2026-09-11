@@ -25,12 +25,26 @@ from .base import (
     BenchmarkConfig,
     RuntimeStatus,
     new_run_id,
+    server_is_listening,
 )
 
 LMSTUDIO_HOST = "http://localhost:1234"
 
 
 def _api_get(path: str, timeout: float = 5.0) -> Any | None:
+    """One GET against the LM Studio server, or None if it is not there.
+
+    The TCP pre-flight sits here rather than in `detect()` so there is one seam,
+    not two. A connect to a closed local port takes 2 seconds to refuse on the
+    reference machine and `localhost` resolves to two addresses, so an absent
+    server cost about four seconds per probe. Putting the check in the caller
+    worked and broke a test that mocked this function to stand for a running
+    server -- which is the right signal: if this is where "talk to the server"
+    lives, it is where "is the server there" belongs too. On a server that *is*
+    listening the extra connect costs well under a millisecond.
+    """
+    if not server_is_listening(LMSTUDIO_HOST):
+        return None
     try:
         with urllib.request.urlopen(f"{LMSTUDIO_HOST}{path}", timeout=timeout) as resp:
             return json.loads(resp.read().decode("utf-8"))
@@ -39,7 +53,14 @@ def _api_get(path: str, timeout: float = 5.0) -> Any | None:
 
 
 def detect() -> BackendInfo:
-    """Detect a running LM Studio local server."""
+    """Detect a running LM Studio local server.
+
+    A TCP pre-flight first: on this machine a connect to a closed local port
+    takes 2 seconds to refuse, and `localhost` resolves to two addresses, so an
+    absent server cost about four seconds per detection. See
+    `base.server_is_listening` for why this is a connect rather than a shorter
+    HTTP timeout.
+    """
     data = _api_get("/v1/models")
     if isinstance(data, dict) and "data" in data:
         count = len(data.get("data", []))

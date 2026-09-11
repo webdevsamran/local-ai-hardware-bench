@@ -234,12 +234,107 @@ class CosineSimilarityEvaluator:
         return EvaluatorScore(self.name, dot / (na * nb))
 
 
+#: How an answer letter is stated when the model says so explicitly. Ordered
+#: most-specific first: an explicit marker beats a letter that merely happens
+#: to start the sentence.
+_ANSWER_MARKER = re.compile(
+    r"\b(?:answer|option|choice)s?\b"
+    # The copula, when the model writes one. Without it "the answer is B"
+    # does not match at all: the gap between marker and letter holds a word,
+    # and a gap defined as non-alphanumeric cannot cross one. That silently
+    # rejected the phrasing models most often use, so every such answer
+    # scored as unreadable rather than as an answer.
+    r"[\s:=,-]*(?:is|are|was|were|would\s+be|should\s+be|must\s+be)?[\s:=,-]*"
+    r"\(?([A-Za-z])\)?(?![A-Za-z0-9])",
+    re.IGNORECASE,
+)
+
+#: The whole response is one letter, with optional decoration: "B", "(B)", "B."
+_BARE_LETTER = re.compile(r"^[^A-Za-z0-9]*\(?([A-Za-z])\)?[.):\]]?[^A-Za-z0-9]*$")
+
+#: A letter opening the response and closed by a delimiter: "C) Paris".
+#:
+#: The delimiter is what makes this safe. Scanning for any capital letter would
+#: read "A bird can fly" as the answer "A", which is the classic way a
+#: multiple-choice scorer comes to measure the model's prose style.
+_LEADING_LETTER = re.compile(r"^[^A-Za-z0-9]*([A-Za-z])\s*[.):\]]\s+")
+
+
+class MultipleChoiceEvaluator:
+    """Scores a multiple-choice answer, as MMLU and its relatives are shaped.
+
+    The scoring is trivial; extracting the choice is not, and getting the
+    extraction wrong is how a benchmark ends up measuring output formatting
+    and calling it accuracy.
+
+    Three things this refuses to do:
+
+    **Scan for any letter.** "A bird can fly" does not answer "A". A letter
+    counts only when the model marked it as the answer, gave it alone, or put
+    a delimiter after it.
+
+    **Score an unparseable answer as wrong.** A model that answered in a shape
+    this cannot read gets ``None``, not ``0.0``. Zero says "answered
+    incorrectly", and conflating that with "answered unreadably" understates
+    every model whose formatting differs from the one the harness expected --
+    silently, and in a direction that looks like a quality difference.
+
+    **Guess between two candidates.** A response naming more than one distinct
+    letter as its answer has not chosen one, and picking the first would
+    reward verbosity.
+    """
+
+    name = "multiple_choice"
+
+    def _extract(self, response: str) -> tuple[str | None, str | None]:
+        """The chosen letter and, when there is none, why."""
+        text = (response or "").strip()
+        if not text:
+            return None, "empty response"
+
+        marked = {m.group(1).upper() for m in _ANSWER_MARKER.finditer(text)}
+        if len(marked) == 1:
+            return marked.pop(), None
+        if len(marked) > 1:
+            return None, f"response marks more than one answer: {sorted(marked)}"
+
+        bare = _BARE_LETTER.match(text)
+        if bare:
+            return bare.group(1).upper(), None
+
+        leading = _LEADING_LETTER.match(text)
+        if leading:
+            return leading.group(1).upper(), None
+
+        return None, "no answer letter could be read from the response"
+
+    def evaluate(self, response: str, expected: str | None = None) -> EvaluatorScore:
+        if expected is None:
+            return EvaluatorScore(self.name, None, "no expected value supplied")
+        wanted = expected.strip().strip("().[]").upper()
+        if len(wanted) != 1 or not wanted.isalpha():
+            return EvaluatorScore(
+                self.name, None, f"expected answer {expected!r} is not a single choice letter"
+            )
+
+        chosen, reason = self._extract(response)
+        if chosen is None:
+            # Unanswerable, not wrong. See the class docstring.
+            return EvaluatorScore(self.name, None, reason)
+        return EvaluatorScore(
+            self.name,
+            1.0 if chosen == wanted else 0.0,
+            None if chosen == wanted else f"chose {chosen}, expected {wanted}",
+        )
+
+
 _REGISTRY: dict[str, Evaluator] = {
     ExactMatchEvaluator.name: ExactMatchEvaluator(),
     JsonValidityEvaluator.name: JsonValidityEvaluator(),
     CosineSimilarityEvaluator.name: CosineSimilarityEvaluator(),
     RougeLEvaluator.name: RougeLEvaluator(),
     TokenF1Evaluator.name: TokenF1Evaluator(),
+    MultipleChoiceEvaluator.name: MultipleChoiceEvaluator(),
 }
 _PLUGINS_DISCOVERED = False
 

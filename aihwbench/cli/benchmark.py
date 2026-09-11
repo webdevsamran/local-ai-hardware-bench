@@ -33,6 +33,7 @@ from ..devices import device_inventory
 from ..exit_codes import EXIT_OK, EXIT_USAGE_ERROR, EXIT_VALIDATION_ERROR
 from ..gguf import read_gguf_attention
 from ..manifests import ExperimentError, load_experiment
+from ..modalities import measure_embedding_throughput, modality_inventory
 from ..rag import run_rag_pipeline
 from ..report import render_report
 from ..runner import run_benchmark, save_result
@@ -534,6 +535,19 @@ def cmd_devices(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def cmd_modalities(args: argparse.Namespace) -> int:
+    """What non-text modalities this machine can measure, and in what unit.
+
+    None of them reports tokens per second. A consumer that reads an ASR
+    real-time factor as a generation rate is comparing different quantities.
+    """
+    if args.embedding_model:
+        echo_json(measure_embedding_throughput(args.embedding_model))
+        return EXIT_OK
+    echo_json(modality_inventory())
+    return EXIT_OK
+
+
 def _load_matrix(path: Path) -> list[dict[str, Any]] | None:
     """Read a sweep matrix, tolerating either the file or a bare array."""
     try:
@@ -905,6 +919,20 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
         help="Comma-separated RPC servers to include, e.g. 127.0.0.1:50052",
     )
     dev_p.set_defaults(func=cmd_devices)
+
+    mod_p = sub.add_parser(
+        "modalities",
+        help="Non-text modalities this machine can measure, and their units",
+    )
+    mod_p.add_argument(
+        "--embedding-model",
+        default=None,
+        help=(
+            "Measure embedding throughput across batch sizes with this model "
+            "instead of listing modalities."
+        ),
+    )
+    mod_p.set_defaults(func=cmd_modalities)
 
     ctx_p = sub.add_parser(
         "context-scaling",

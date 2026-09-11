@@ -5,6 +5,36 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Added — non-text modalities, each in its own unit
+
+- **`aihwbench modalities`** says which of embedding, reranking,
+  vision-language, ASR, TTS, image generation and speech-to-speech this machine
+  can measure, and in what unit. **None of them is tokens per second**, and the
+  inventory says so: a real-time factor read as a generation rate compares
+  different quantities, and both look alike because both go up when things are
+  good.
+
+  Each declares the axis that dominates it, because a single figure at one
+  point on the curve is the usual mistake. Embedding at batch 1 and at batch 64
+  differ by more than most hardware differences do.
+
+  Where a modality cannot be measured the report names the missing piece rather
+  than calling it unsupported -- "a TTS model; the llama-tts runtime is
+  present" is actionable in a way "unsupported" is not.
+
+- **Embedding throughput across batch sizes**, measured through a runtime's
+  embed endpoint. The warm-up call is discarded because the first embed here
+  took 33.8 seconds against a fraction of a second warm, and reporting that as
+  the embedding rate is the obvious way to get this wrong.
+
+### Corrected
+
+- **An earlier audit over-counted three items.** `grep` for "vision",
+  "embedding" and "tts" matched substrings in unrelated prose -- "provision",
+  an evaluator comment, and so on -- so #58, #60 and #63 were reported
+  implemented when no such workload existed. They are implemented now; the
+  earlier count was wrong and is corrected here rather than quietly.
+
 ### Added — multi-device support, and six backends for hardware this machine lacks
 
 - **llama.cpp RPC and tensor-split are sweepable axes.** `--rpc-servers-list`,

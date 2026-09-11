@@ -130,6 +130,11 @@ shipped-but-unreachable is not done.
 - [x] Written dispute process for published results
       ([docs/disputes.md](docs/disputes.md))
 - [x] Versioned dataset snapshot manifests
+- [x] Speculative decoding: draft acceptance rate, draft memory overhead and
+      net speedup, distinguishing "no drafts" from "nothing accepted"
+- [x] Non-text modality inventory (embedding, reranking, vision, ASR, TTS,
+      image generation, speech-to-speech), each reporting its own unit
+- [x] Embedding throughput across batch sizes
 - [x] llama.cpp RPC backend and multi-GPU tensor-split axes, with a split
       validated against the devices the runtime actually reports
 - [x] Vulkan, SYCL, WebGPU, ExLlamaV2, Jetson and ARM SBC backends:

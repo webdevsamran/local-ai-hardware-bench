@@ -970,3 +970,102 @@ def test_a_boolean_is_not_a_latency():
     from aihwbench.quality import _iteration_latencies
 
     assert _iteration_latencies([{"latency_ms": True}, {"latency_ms": 5.0}]) == [5.0]
+
+
+# --- energy in the units people plan with, and carbon that says whose ------
+
+
+def test_energy_is_reported_in_kwh_terms_as_well_as_joules():
+    """A joule-per-token figure is correct and unusable for planning.
+
+    "How many tokens can I generate for a kilowatt-hour" is the form the
+    question takes when someone is comparing against a cloud bill.
+    """
+    from aihwbench.analysis.energy import JOULES_PER_KWH, compute_energy_metrics
+
+    energy = compute_energy_metrics(
+        average_power_watts=72.42,
+        idle_power_watts=29.96,
+        generation_tokens_per_second=338.3,
+        requests_per_second=None,
+        telemetry_source="nvidia-smi",
+    )
+    j_per_token = energy["energy_joules_per_token"]
+    assert j_per_token > 0
+    assert energy["tokens_per_kwh"] == round(JOULES_PER_KWH / j_per_token)
+    # Same measurement, two units: 1 Wh is 3600 J. The tolerance is the
+    # field's own rounding (4 decimal places), not a judgement about accuracy.
+    assert energy["watt_hours_per_1k_tokens"] == pytest.approx(
+        energy["energy_joules_per_1k_tokens"] / 3600.0, abs=5e-5
+    )
+
+
+def test_no_energy_measurement_yields_no_derived_units():
+    from aihwbench.analysis.energy import compute_energy_metrics
+
+    energy = compute_energy_metrics(
+        average_power_watts=None,
+        idle_power_watts=None,
+        generation_tokens_per_second=None,
+        requests_per_second=None,
+    )
+    assert energy["tokens_per_kwh"] is None
+    assert energy["watt_hours_per_1k_tokens"] is None
+
+
+def test_carbon_refuses_to_assume_a_grid():
+    """The same run in France and Poland differs about tenfold.
+
+    A published figure using a global average would be confidently wrong
+    nearly everywhere, and wrong in a direction nobody could see.
+    """
+    from aihwbench.analysis.energy import carbon_estimate
+
+    report = carbon_estimate({"energy_joules_per_token": 0.1255})
+    assert report["grams_co2_per_1k_tokens"] is None
+    assert report["kwh_per_1k_tokens"] > 0
+    assert "will not assume one" in report["unresolved"]
+
+
+def test_carbon_is_computed_when_the_caller_states_their_grid():
+    from aihwbench.analysis.energy import carbon_estimate
+
+    energy = {"energy_joules_per_token": 0.1255}
+    clean = carbon_estimate(energy, 56.0)
+    dirty = carbon_estimate(energy, 660.0)
+    assert clean["grams_co2_per_1k_tokens"] < dirty["grams_co2_per_1k_tokens"]
+    # The spread is the argument for requiring the input.
+    # Carbon is linear in intensity, so the ratio is the ratio of the inputs
+    # -- to within the 6-decimal rounding the reported figure carries.
+    assert dirty["grams_co2_per_1k_tokens"] / clean["grams_co2_per_1k_tokens"] == pytest.approx(
+        660.0 / 56.0, rel=1e-3
+    )
+    assert clean["unresolved"] is None
+    assert "the intensity is not" in clean["basis"]
+
+
+def test_carbon_says_so_when_there_is_no_energy_to_convert():
+    from aihwbench.analysis.energy import carbon_estimate
+
+    assert carbon_estimate(None, 370.0)["grams_co2_per_1k_tokens"] is None
+    assert carbon_estimate({}, 370.0)["grams_co2_per_1k_tokens"] is None
+    assert "no energy-per-token measurement" in carbon_estimate({}, 370.0)["unresolved"]
+
+
+def test_a_nonsense_grid_intensity_is_refused_rather_than_used():
+    from aihwbench.analysis.energy import carbon_estimate
+
+    for bad in (0, -10, "very clean"):
+        report = carbon_estimate({"energy_joules_per_token": 0.1255}, bad)
+        assert report["grams_co2_per_1k_tokens"] is None
+
+
+def test_the_cost_command_exposes_carbon():
+    """The guard has to be reachable, not merely implemented."""
+    import inspect
+
+    from aihwbench.cli import reporting
+
+    source = inspect.getsource(reporting)
+    assert "carbon_estimate(" in source
+    assert "--grid-intensity" in source

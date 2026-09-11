@@ -81,6 +81,7 @@ def compare_quantizations(results: list[dict[str, Any]]) -> dict[str, Any]:
         # Sort by throughput where measured; unmeasured sink to the end.
         rows.sort(key=lambda x: x["generation_tokens_per_second"] is not None, reverse=True)
         _annotate_output_agreement(rows)
+        _annotate_quality_delta(rows)
         out["families"][family] = rows
     out["quality_signal"] = {
         "rows": sum(len(rows) for rows in out["families"].values()),
@@ -143,6 +144,45 @@ def _annotate_output_agreement(rows: list[dict[str, Any]]) -> None:
             row["same_output_as_reference"] = None
         else:
             row["same_output_as_reference"] = row["output_hash"] == reference["output_hash"]
+
+
+def _annotate_quality_delta(rows: list[dict[str, Any]]) -> None:
+    """How much output quality each quantization gives up against the best one.
+
+    `same_output_as_reference` answers a yes/no question: did this variant say
+    exactly the same thing? That is the right question for a deterministic
+    check and the wrong one for choosing a quantization, because every useful
+    quantization answers "no" and the answer carries no magnitude. A reader
+    deciding between `q8_0` and `q4_k_m` needs to know whether the gap is
+    0.002 or 0.2.
+
+    The reference is chosen separately from the output-hash reference, among
+    the rows that carry a *score* rather than a hash. A run may have one and
+    not the other, and taking the highest-precision hashed row as the score
+    baseline would silently compare against a row with no score.
+
+    The delta is signed and stated in the evaluator's own units, which are not
+    comparable between evaluators -- so `quality_reference_quantization` names
+    what it was measured against rather than leaving the number to float free.
+    """
+    scored = [r for r in rows if isinstance(r.get("quality_mean_score"), int | float)]
+    if not scored:
+        for row in rows:
+            row["quality_reference_quantization"] = None
+            row["quality_delta_vs_reference"] = None
+        return
+
+    reference = min(scored, key=lambda r: _precision_rank(r.get("quantization")))
+    baseline = float(reference["quality_mean_score"])
+    for row in rows:
+        row["quality_reference_quantization"] = reference.get("quantization")
+        score = row.get("quality_mean_score")
+        if not isinstance(score, int | float):
+            # Unknown, not "no difference". A missing score compared as zero
+            # would rank an unevaluated variant alongside the reference.
+            row["quality_delta_vs_reference"] = None
+        else:
+            row["quality_delta_vs_reference"] = round(float(score) - baseline, 6)
 
 
 def has_quality_signal(comparison: dict[str, Any]) -> bool:

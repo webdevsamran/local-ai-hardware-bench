@@ -175,7 +175,7 @@ export default function Submit() {
               rows={8}
               spellCheck={false}
               value={raw}
-              placeholder='{ "schema_version": "2.0", "run_id": "..." }'
+              placeholder='{ "schema_version": "2.1", "run_id": "..." }'
               onChange={(e) => {
                 setRaw(e.target.value)
                 setParseError(null)

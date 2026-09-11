@@ -250,7 +250,7 @@ flowchart TB
     CAP[backends/capabilities<br/>what this runtime can do] --> LOAD
 
     LOAD --> PROV[provenance/<br/>CPU · GPU · driver · RAM ·<br/>runtime version · model checksum ·<br/>seed · git commit]
-    PROV --> RESULT[result JSON<br/>schema 2.0, validated on write]
+    PROV --> RESULT[result JSON<br/>schema 2.1, validated on write]
 
     RESULT --> EVAL[evaluators/<br/>accuracy + quality checks]
     RESULT --> ANALYSIS[analysis/<br/>comparison-safety classifier]

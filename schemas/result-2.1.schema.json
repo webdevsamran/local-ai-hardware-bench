@@ -1,0 +1,921 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/webdevsamran/local-ai-hardware-bench/schemas/result-2.1.schema.json",
+  "title": "AIHWBench result 2.1",
+  "description": "Schema 2.1 differs from 2.0 in one way: it requires the fields the comparison-safety classifier must read in order to say anything. In 2.0 a document could omit every one of them and still validate, and the classifier treated two absent fields as agreement -- so two empty documents compared as STRICTLY_COMPARABLE. The runtime gate (comparability._REQUIRED_PRESENT) closes that at comparison time; this closes it at the door. The required lists below are asserted against that gate by tests/test_schema_2_1.py, so the two cannot drift.",
+  "type": "object",
+  "required": [
+    "metrics",
+    "model",
+    "protocol_version",
+    "reproducibility",
+    "run_id",
+    "runtime",
+    "schema_version",
+    "system",
+    "timestamp"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "2.1"
+    },
+    "protocol_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "git_commit": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "trust_state": {
+      "enum": [
+        "unreviewed",
+        "verified",
+        "community_validated",
+        "flagged",
+        "invalidated",
+        "superseded"
+      ]
+    },
+    "system": {
+      "type": "object",
+      "properties": {
+        "os": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "os_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cpu": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cpu_cores_physical": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "cpu_cores_logical": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "gpu": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gpu_vram_mb": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "gpu_driver_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "npu": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ram_gb": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "platform_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "backend": {
+          "type": "string",
+          "minLength": 1
+        },
+        "device": {
+          "type": "string",
+          "minLength": 1
+        },
+        "device_requested": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The device the caller asked for. `device` records the one that actually ran: `auto` and `cpu` naming the same silicon must not make two results incomparable."
+        }
+      },
+      "required": [
+        "backend",
+        "device",
+        "name"
+      ],
+      "additionalProperties": true
+    },
+    "model": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "format": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "quantization": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "parameters": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "checksum": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tokenizer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "family": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Architecture family as the runtime reports it. Not a comparison key: two models of the same family are still two different models."
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "name"
+      ]
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "load_time_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "ttft_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "prompt_tokens_per_second": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "generation_tokens_per_second": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "total_latency_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "p50_latency_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "p90_latency_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "p95_latency_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "p99_latency_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "latency_stddev_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "peak_ram_mb": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "peak_vram_mb": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "avg_cpu_util_percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "avg_gpu_util_percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_temperature_c": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "average_power_watts": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "performance_per_watt": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "throughput_inferences_per_second": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "energy_joules_per_token": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "itl_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "itl_p50_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "itl_p90_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "itl_p99_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "itl_max_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "tpot_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "time_to_second_token_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "decode_duration_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "inter_token_samples": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "cold_start_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "warm_load_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "cold_start_penalty_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "cold_start_measured": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "reproducibility": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "container": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "Container and image identity. `image_digest` is null unless the digest was passed into the container, because Docker does not expose it to the running process. A tag is not an identity: two results naming the same tag may have measured different software.",
+          "properties": {
+            "in_container": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "detected_by": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "image": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "image_digest": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "digest_note": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "machine_contention": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "CPU load sampled immediately before the run. A benchmark measures hardware only when the hardware is available to it: a result taken under contention describes the contention. `busy: null` means load could not be measured, which is not the same as the machine being quiet.",
+          "properties": {
+            "cpu_percent": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "busy": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "threshold_percent": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Measured iterations. At least one, because a run with none measured nothing; the published minimum for a comparable result is five."
+        },
+        "warmup_runs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Discarded warm-up iterations. Zero is legal and meaningful -- it says the first, coldest iteration is included in the reported figures."
+        }
+      },
+      "required": [
+        "iterations",
+        "warmup_runs"
+      ]
+    },
+    "iterations": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "telemetry": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "energy": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Derived energy analysis from measured power and an idle baseline. Absent inputs yield null fields; nothing is estimated.",
+      "additionalProperties": true,
+      "properties": {
+        "gross_average_power_watts": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "idle_baseline_power_watts": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "incremental_power_watts": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "energy_joules_per_token": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "energy_joules_per_request": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "energy_joules_per_1k_tokens": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "telemetry_source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "incremental_share_of_gross": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Fraction of gross average power attributable to the workload rather than the machine's idle draw."
+        },
+        "incremental_is_robust": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "False when the incremental figure is mostly baseline, so per-token energy is dominated by the machine state the baseline was measured in and is not comparable across runs. Not a claim that the measurement is wrong."
+        },
+        "caveat": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Human-readable reason the energy figures need qualifying, if any."
+        },
+        "idle_baseline": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "The idle power sample and the machine state it was taken in (utilization, resident VRAM). Resident VRAM matters: a card still holding a model from an earlier run idles far higher than the same card after eviction, which changes per-token energy by orders of magnitude without any hardware difference."
+        },
+        "idle_power_spread_watts": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Range the idle baseline moved across while being sampled. A card at rest is not at a constant draw, and an incremental figure smaller than this is inside the noise of what was subtracted."
+        }
+      }
+    },
+    "thermal": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Derived thermal behaviour from the telemetry trace: time to throttle, temperature trend, peak and final temperature.",
+      "additionalProperties": true,
+      "properties": {
+        "samples": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "duration_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "max_temperature_c": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "final_temperature_c": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "temperature_slope_c_per_min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "time_to_throttle_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "throttle_threshold_c": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "throttled": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "quality": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Output-fidelity probe. determinism and output_hash are measured on every generative run; evaluator scores stay null until a reference dataset is supplied.",
+      "additionalProperties": true,
+      "properties": {
+        "output_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deterministic": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "distinct_outputs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "iterations_captured": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "output_chars": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "mean_score": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "battery": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Battery discharge measured during the run. Only populated when the machine was unplugged and discharged enough for the gauge to resolve a rate; otherwise `measured` is false and `reason` says why.",
+      "additionalProperties": true,
+      "properties": {
+        "measured": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "samples": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "start_percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "end_percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "discharged_percent": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "rate_percent_per_hour": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "projected_runtime_hours": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "workload": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "The registered workload this run executed, when the caller named one. Absent for runs driven by a bare prompt. Identity matters because two runs can share hardware, runtime and model and still measure different things: a long-form generation workload reaches a steady decode rate, while a short chat prompt measures mostly ramp-up.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "osl_tokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "isl_tokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "npu": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "NPU presence and telemetry. Metric fields are null until a vendor exposes a portable counter; `npu_telemetry_source` says whether the machine has no NPU or has one nothing can read, so 'not measured' is never mistaken for 'measured zero'.",
+      "properties": {
+        "npu_device": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "npu_telemetry_source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "npu_util_percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "npu_power_watts": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "npu_memory_used_mb": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

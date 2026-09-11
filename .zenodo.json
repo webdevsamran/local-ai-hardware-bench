@@ -1,29 +1,31 @@
 {
-  "title": "AIHWBench: vendor-neutral benchmarking of local AI runtimes",
-  "description": "AIHWBench is a local-first, offline-capable, zero-dependency Python framework for benchmarking local AI inference runtimes (Ollama, llama.cpp, ONNX Runtime, OpenVINO, LM Studio and others) across CPUs, GPUs and NPUs. It records measured metrics only — unavailable metrics stay null, never estimated — with schema-validated result documents, reproducibility metadata, privacy scanning, provenance bundles and comparability classification.",
+  "title": "AIHWBench: vendor-neutral local AI hardware benchmarks",
+  "description": "Measured benchmarks of local AI runtimes on consumer and edge hardware, with a comparison-safety classifier that states when two results cannot honestly be compared. Every published result carries the environment it was measured in, the machine load at the time, and a trust state.",
+  "upload_type": "dataset",
+  "access_right": "open",
+  "license": "apache-2.0",
+  "keywords": [
+    "local AI",
+    "benchmarking",
+    "LLM inference",
+    "llama.cpp",
+    "Ollama",
+    "ONNX Runtime",
+    "OpenVINO",
+    "reproducibility",
+    "energy efficiency"
+  ],
   "creators": [
     {
       "name": "webdevsamran"
     }
   ],
-  "license": "Apache-2.0",
-  "upload_type": "software",
-  "access_right": "open",
-  "keywords": [
-    "benchmark",
-    "llm",
-    "inference",
-    "onnxruntime",
-    "openvino",
-    "npu",
-    "gpu",
-    "edge-ai"
-  ],
   "related_identifiers": [
     {
       "identifier": "https://github.com/webdevsamran/local-ai-hardware-bench",
       "relation": "isSupplementTo",
-      "resource_type": "software"
+      "scheme": "url"
     }
-  ]
+  ],
+  "notes": "The DOI covers a dataset snapshot, not the tool. Snapshots are produced by `aihwbench snapshot`, which records the result set and its hashes, so a citation resolves to an exact set of measurements rather than to whatever the repository holds today."
 }

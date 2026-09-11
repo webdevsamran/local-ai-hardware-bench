@@ -166,7 +166,11 @@ shipped-but-unreachable is not done.
 - [x] Model zoo manifest: licence terms read from the artifact, checksums
       that state what they hash, and a download helper that deletes a
       mismatched file ([docs/models/zoo.md](docs/models/zoo.md))
-- [ ] Zenodo DOI for versioned dataset snapshots (when dataset matures)
+- [x] Desktop shell (Tauri) wrapping the same CLI and dashboard; scaffolded
+      and config-tested, not yet compiled (needs a C++ linker)
+- [ ] Zenodo DOI for versioned dataset snapshots: metadata and runbook
+      prepared ([docs/research/minting-a-doi.md](docs/research/minting-a-doi.md));
+      minting needs the maintainer's Zenodo account
 
 ## Track 6 — Enterprise Foundations
 

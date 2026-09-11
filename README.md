@@ -382,6 +382,7 @@ labeled in the issue tracker. See also:
 | Hardware | [Hardware overview](docs/hardware/overview.md) |
 | Measured studies | [Offload cliff](docs/results/offload-cliff-rtx3080ti.md) — throughput against GPU layers · [KV-cache quantization](docs/results/kv-cache-rtx3080ti.md) — what it costs in memory, and the two configurations that cost more than they save |
 | Models | [Model zoo](docs/models/zoo.md) — licences, checksums, how to obtain each |
+| Desktop app | [desktop/README.md](desktop/README.md) — a thin Tauri shell over the same CLI |
 
 ## Vendor collaboration
 

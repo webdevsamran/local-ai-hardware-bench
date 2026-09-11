@@ -11,6 +11,7 @@ const NAV = [
   { to: '/matchmaker', label: 'Matchmaker' },
   { to: '/local-vs-cloud', label: 'Local vs cloud' },
   { to: '/offload-cliff', label: 'Offload cliff' },
+  { to: '/kv-cache', label: 'KV cache' },
   { to: '/frontiers', label: 'Frontiers' },
   { to: '/hardware', label: 'Hardware' },
   { to: '/runtimes', label: 'Runtimes' },

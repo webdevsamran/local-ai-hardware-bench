@@ -148,6 +148,15 @@ CI fails if the committed generated data drifts from `results/published/`.
 # Parameter sweep producing a structured matrix (JSON + CSV)
 aihwbench sweep --runtime ollama --model <tag> --context-list 1024,2048,4096
 
+# KV-cache dtype matrix: how much context fits, not how fast it runs
+aihwbench sweep --runtime llama.cpp --model-path model.gguf   --cache-type-k-list f16,q8_0,q4_0 --cache-type-v-list f16,q8_0,q4_0   --context-list 32768 --output-name sweep-llama.cpp-kvcache
+aihwbench kv-cache results/sweeps/sweep-llama.cpp-kvcache.json   --model-path model.gguf
+
+# What was benchmarked: licence, checksum, and how to obtain it
+aihwbench zoo list
+aihwbench zoo verify
+aihwbench zoo fetch qwen2.5-0.5b-instruct-q4_k_m
+
 # Declarative experiment manifest (JSON/TOML/YAML)
 aihwbench run experiments/my-experiment.json
 
@@ -366,6 +375,8 @@ labeled in the issue tracker. See also:
 | Researcher | [Reproducibility](docs/research/reproducibility.md) · [Citation](docs/research/citation.md) |
 | Security/compliance | [Privacy](docs/security/privacy.md) · [Supply chain](docs/security/supply-chain.md) |
 | Hardware | [Hardware overview](docs/hardware/overview.md) |
+| Measured studies | [Offload cliff](docs/results/offload-cliff-rtx3080ti.md) — throughput against GPU layers · [KV-cache quantization](docs/results/kv-cache-rtx3080ti.md) — what it costs in memory, and the two configurations that cost more than they save |
+| Models | [Model zoo](docs/models/zoo.md) — licences, checksums, how to obtain each |
 
 ## Vendor collaboration
 

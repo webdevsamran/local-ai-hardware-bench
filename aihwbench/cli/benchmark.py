@@ -13,6 +13,7 @@ from typing import Any
 from ..agentic import AGENTIC_SCRIPTS, run_agentic_loop
 from ..analysis.cliff import find_offload_cliff
 from ..analysis.context import analyze_context_scaling
+from ..analysis.kvcache import analyze_kv_cache_matrix
 from ..analysis.tune import (
     TUNING_AXES,
     UnsupportedAxisError,
@@ -27,7 +28,8 @@ from ..backends import (
     resolve,
 )
 from ..capacity import CapacityConfig, run_capacity_ladder
-from ..exit_codes import EXIT_OK, EXIT_USAGE_ERROR
+from ..exit_codes import EXIT_OK, EXIT_USAGE_ERROR, EXIT_VALIDATION_ERROR
+from ..gguf import read_gguf_attention
 from ..manifests import ExperimentError, load_experiment
 from ..rag import run_rag_pipeline
 from ..report import render_report
@@ -192,6 +194,16 @@ def cmd_suite(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _sweep_axes(path: Path) -> dict[str, Any] | None:
+    """The axes a saved sweep covers, or None if there is no readable sweep."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    axes = data.get("axes") if isinstance(data, dict) else None
+    return axes if isinstance(axes, dict) else None
+
+
 def cmd_sweep(args: argparse.Namespace) -> int:
     """Run a parameter sweep over one runtime/model (#5)."""
     axes: dict[str, tuple[Any, ...]] = {}
@@ -205,10 +217,22 @@ def cmd_sweep(args: argparse.Namespace) -> int:
         axes["device"] = tuple(args.device_list.split(","))
     if args.gpu_layers_list:
         axes["gpu_layers"] = tuple(int(v) for v in args.gpu_layers_list.split(","))
+    for which in ("k", "v"):
+        raw = getattr(args, f"cache_type_{which}_list", None)
+        if raw:
+            axes[f"cache_type_{which}"] = tuple(v.strip().lower() for v in raw.split(","))
+    if getattr(args, "flash_attn_list", None):
+        axes["flash_attn"] = tuple(v.strip().lower() for v in args.flash_attn_list.split(","))
+    if getattr(args, "threads_list", None):
+        axes["threads"] = tuple(int(v) for v in args.threads_list.split(","))
+    if getattr(args, "batch_list", None):
+        axes["batch_size"] = tuple(int(v) for v in args.batch_list.split(","))
     if not axes:
         fail(
             "provide at least one sweep axis (--max-tokens-list/"
-            "--iterations-list/--context-list/--device-list/--gpu-layers-list)"
+            "--iterations-list/--context-list/--device-list/--gpu-layers-list/"
+            "--cache-type-k-list/--cache-type-v-list/--flash-attn-list/"
+            "--threads-list/--batch-list)"
         )
         return EXIT_USAGE_ERROR
     # Refuse an axis the backend will not apply, for the same reason the tuner
@@ -229,6 +253,24 @@ def cmd_sweep(args: argparse.Namespace) -> int:
     # uninterpretable, since where throughput collapses depends entirely on
     # how big the model is.
     model_identity = args.model or (Path(args.model_path).name if args.model_path else "")
+    out_dir = Path(args.output)
+    stem = getattr(args, "output_name", None) or f"sweep-{args.runtime}"
+    out_path = out_dir / f"{stem}.json"
+
+    # Refuse before measuring, not after. The output name is derived from the
+    # runtime alone, so a second sweep of the same runtime lands on the first
+    # one's file -- and the first may be published data somebody has cited. A
+    # re-run of the *same* axes is a re-measurement and overwrites happily;
+    # different axes are a different experiment and need their own name.
+    existing_axes = _sweep_axes(out_path)
+    if existing_axes is not None and set(existing_axes) != set(axes):
+        fail(
+            f"{out_path} already holds a sweep over {sorted(existing_axes)}, and "
+            f"this one sweeps {sorted(axes)}. Writing would destroy it. Pass "
+            f"--output-name to give this sweep its own file."
+        )
+        return EXIT_USAGE_ERROR
+
     spec = SweepSpec(axes=axes, base={"runtime": args.runtime, "model": model_identity})
 
     def run_fn(point: dict[str, Any]) -> dict[str, Any]:
@@ -245,9 +287,7 @@ def cmd_sweep(args: argparse.Namespace) -> int:
         return run_benchmark(point["runtime"], config)
 
     matrix = run_sweep(spec, run_fn)
-    out_dir = Path(args.output)
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"sweep-{args.runtime}.json"
     out_path.write_text(
         json.dumps(
             {
@@ -269,7 +309,7 @@ def cmd_sweep(args: argparse.Namespace) -> int:
         encoding="utf-8",
     )
     csv_rows = matrix_to_csv_rows(matrix)
-    csv_path = out_dir / f"sweep-{args.runtime}.csv"
+    csv_path = out_dir / f"{stem}.csv"
     with open(csv_path, "w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=list(csv_rows[0].keys()))
         writer.writeheader()
@@ -377,6 +417,81 @@ def cmd_cliff(args: argparse.Namespace) -> int:
     if matrix is None:
         return EXIT_USAGE_ERROR
     echo_json(find_offload_cliff(matrix, axis=args.axis))
+    return EXIT_OK
+
+
+def cmd_kv_cache(args: argparse.Namespace) -> int:
+    """Report what KV-cache quantization costs in memory, and what it buys.
+
+    Leads with bytes, because that is what the setting actually changes. A
+    throughput column appears with its noise floor attached; a difference
+    inside that floor is not a difference.
+    """
+    try:
+        data = json.loads(Path(args.sweep).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        fail(str(exc))
+        return EXIT_USAGE_ERROR
+    if not isinstance(data, dict) or not isinstance(data.get("matrix"), list):
+        fail(f"{args.sweep}: expected a sweep file with a 'matrix' array")
+        return EXIT_USAGE_ERROR
+
+    geometry = read_gguf_attention(args.model_path) if args.model_path else None
+    if args.model_path and not (geometry or {}).get("block_count"):
+        # Without geometry the analytic column is absent, and the analytic
+        # column is the point. Say so rather than printing a table that
+        # quietly answers a smaller question.
+        fail(
+            f"{args.model_path}: no attention geometry in this GGUF header, so "
+            "the cache size cannot be computed. The measured VRAM column alone "
+            "cannot separate the cache from everything else on the device."
+        )
+        return EXIT_VALIDATION_ERROR
+
+    report = analyze_kv_cache_matrix(data, geometry, args.context)
+    if getattr(args, "json", False):
+        echo_json(report)
+        return EXIT_OK
+
+    if report.get("unresolved"):
+        print(report["unresolved"])
+        return EXIT_VALIDATION_ERROR
+
+    context = report.get("context_length")
+    print(f"KV-cache quantization at {context or '?'} tokens of context")
+    print()
+    print(
+        f"{'K':<6} {'V':<6} {'cache MiB':>10} {'saved':>8} {'VRAM MiB':>9} {'tok/s':>9} {'vs f16':>8}"
+    )
+    for entry in report["configurations"]:
+        cache = entry.get("kv_cache_mb")
+        saved = entry.get("kv_cache_saved_percent")
+        vram = entry.get("peak_vram_mb")
+        tps = entry.get("generation_tokens_per_second")
+        change = entry.get("throughput_change_percent")
+        marker = "" if entry.get("throughput_distinguishable") else " ~"
+        # A setting reached for to save memory that spends it instead is the
+        # one row a reader must not skim past.
+        warn = " !" if entry.get("costs_more_than_baseline") else "  "
+        print(
+            f"{entry['cache_type_k']:<6} {entry['cache_type_v']:<6} "
+            f"{cache if cache is not None else '-':>10} "
+            f"{(f'{saved:.0f}%' if saved is not None else '-'):>8} "
+            f"{vram if vram is not None else '-':>9}{warn}"
+            f"{(f'{tps:.1f}' if tps is not None else '-'):>9} "
+            f"{(f'{change:+.1f}%{marker}' if change is not None else '-'):>8}"
+        )
+    print()
+    print("~ inside the run-to-run noise floor: indistinguishable, not equal")
+    inverted = [c for c in report["configurations"] if c.get("costs_more_than_baseline")]
+    if inverted:
+        print("! uses MORE memory than the baseline despite a smaller cache:")
+        for entry in inverted:
+            print(
+                f"    {entry['cache_type_k']}/{entry['cache_type_v']}: {entry['measurement_note']}"
+            )
+    print()
+    print(report["framing"])
     return EXIT_OK
 
 
@@ -592,6 +707,46 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
         ),
     )
     sweep_p.add_argument(
+        "--flash-attn-list",
+        default=None,
+        help=(
+            "Comma-separated flash-attention modes: on,off,auto. The llama.cpp "
+            "default is auto, and auto is not on: it declines flash attention "
+            "for kernel combinations it does not cover, and the fallback can "
+            "cost far more memory than the setting you were tuning saves."
+        ),
+    )
+    sweep_p.add_argument(
+        "--threads-list",
+        default=None,
+        help="Comma-separated CPU thread counts, e.g. 4,8,14.",
+    )
+    sweep_p.add_argument(
+        "--batch-list",
+        default=None,
+        help="Comma-separated logical batch sizes, e.g. 128,512,2048.",
+    )
+    for which in ("k", "v"):
+        sweep_p.add_argument(
+            f"--cache-type-{which}-list",
+            default=None,
+            help=(
+                f"Comma-separated KV-cache dtypes for {which.upper()}, e.g. "
+                "f16,q8_0,q4_0. Quantizing the cache is a memory setting, not "
+                "a speed one: it decides how much context fits. Analyse with "
+                "`aihwbench kv-cache`."
+            ),
+        )
+    sweep_p.add_argument(
+        "--output-name",
+        default=None,
+        help=(
+            "Filename stem for this sweep, without extension. Defaults to "
+            "sweep-<runtime>, which collides when one runtime is swept over "
+            "more than one set of axes."
+        ),
+    )
+    sweep_p.add_argument(
         "--output",
         default="results/sweeps",
         help="Directory; the matrix and its CSV are written as sweep-<runtime>.*",
@@ -630,6 +785,29 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     cliff_p.add_argument("sweep", help="Path to a sweep-*.json produced by `aihwbench sweep`")
     cliff_p.add_argument("--axis", default="gpu_layers")
     cliff_p.set_defaults(func=cmd_cliff)
+
+    kv_p = sub.add_parser(
+        "kv-cache",
+        help="What KV-cache quantization costs in memory, and what context it buys",
+    )
+    kv_p.add_argument("sweep", help="Sweep file produced by `aihwbench sweep`")
+    kv_p.add_argument(
+        "--model-path",
+        default=None,
+        help=(
+            "GGUF file whose attention geometry sizes the cache. Without it "
+            "only the measured device VRAM is reported, which cannot separate "
+            "the cache from anything else resident."
+        ),
+    )
+    kv_p.add_argument(
+        "--context",
+        type=int,
+        default=None,
+        help="Context length to size the cache for (default: the sweep's own)",
+    )
+    kv_p.add_argument("--json", action="store_true", help="Emit the report as JSON")
+    kv_p.set_defaults(func=cmd_kv_cache)
 
     ctx_p = sub.add_parser(
         "context-scaling",

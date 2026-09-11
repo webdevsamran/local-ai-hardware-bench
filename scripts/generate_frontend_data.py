@@ -556,6 +556,72 @@ def _attach_zoo(models: dict[str, dict]) -> None:
         }
 
 
+def _kv_cache_studies() -> dict[str, object]:
+    """KV-cache quantization matrices, reported as memory rather than speed.
+
+    A sweep over cache dtypes is not an offload curve and has no cliff, so it
+    is read separately. The analytic cache size needs the model's attention
+    geometry, which lives in the GGUF header -- absent on a machine that no
+    longer holds the file, in which case only the measured column is shown
+    rather than a guessed one.
+    """
+    from aihwbench.analysis.kvcache import analyze_kv_cache_matrix
+    from aihwbench.gguf import read_gguf_attention
+    from aihwbench.modelzoo import ZooError, entry_for_checksum, load_zoo
+
+    try:
+        zoo = load_zoo(REPO / "models" / "zoo.json")
+    except ZooError:
+        zoo = []
+
+    studies = []
+    if SWEEPS_DIR.is_dir():
+        for path in sorted(SWEEPS_DIR.glob("sweep-*.json")):
+            sweep = json.loads(path.read_text(encoding="utf-8"))
+            axes = sweep.get("axes") or {}
+            if not ({"cache_type_k", "cache_type_v"} & set(axes)):
+                continue
+            environment = sweep.get("environment") or {}
+            model_name = environment.get("model") or ""
+
+            # The zoo carries the attention geometry, read from the artifact
+            # when the entry was made. Taking it from there rather than from a
+            # local file means this builds identically in CI, where the
+            # weights are not present and never will be.
+            entry = entry_for_checksum(zoo, model_name)
+            geometry = entry.attention if entry else None
+            if geometry is None and entry is not None:
+                local = REPO / "models" / f"{entry.key}.{entry.format}"
+                if local.is_file():
+                    geometry = read_gguf_attention(local)
+
+            context = (axes.get("context_length") or [None])[0]
+            report = analyze_kv_cache_matrix(sweep, geometry, context)
+            studies.append(
+                {
+                    "source": path.name,
+                    "runtime": environment.get("runtime"),
+                    "model": entry.name if entry else model_name,
+                    "model_key": entry.key if entry else None,
+                    "gpu": (environment.get("system") or {}).get("gpu"),
+                    "gpu_vram_mb": (environment.get("system") or {}).get("gpu_vram_mb"),
+                    "timestamp": environment.get("timestamp"),
+                    "report": report,
+                }
+            )
+    return {
+        "studies": studies,
+        "note": (
+            "Quantizing the KV cache is a memory setting, not a speed one: it "
+            "decides how much context fits. Throughput is shown with the "
+            "measured run-to-run noise floor attached, because a difference "
+            "inside that floor is not a difference. Configurations marked as "
+            "costing more than the baseline were measured using more device "
+            "memory than f16 despite holding a smaller cache."
+        ),
+    }
+
+
 def build(results: list[dict]) -> dict[str, object]:
     hardware: dict[str, dict] = {}
     runtimes: dict[str, dict] = {}
@@ -759,6 +825,7 @@ def build(results: list[dict]) -> dict[str, object]:
         "comparability": _comparability_rules(results),
         "privacy": _privacy_patterns(),
         "cliff": _offload_cliffs(),
+        "kvcache": _kv_cache_studies(),
         "tco": _tco_constants(),
         "pareto": _pareto_views(results),
         "recommend": _recommendation_constants(results),

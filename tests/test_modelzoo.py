@@ -355,3 +355,43 @@ def test_obtainable_is_about_the_manifest_not_the_disk():
     entry = ZooEntry(key="k", name="n", format="gguf", source={"kind": "unavailable"})
     assert entry.obtainable is False
     assert ZooEntry(key="k", name="n", format="gguf", source={"kind": "ollama"}).obtainable is True
+
+
+# --- attention geometry ---------------------------------------------------
+
+
+def test_a_partial_geometry_is_rejected(tmp_path):
+    """Half a geometry yields a confident wrong cache size, not no answer.
+
+    `kv_cache_bytes_per_token` returns None when a field is missing, so a
+    manifest carrying two of the three would silently produce nothing where a
+    reader expects a number -- or worse, be "fixed" later by defaulting the
+    missing one.
+    """
+    path = _write(tmp_path, _entry(attention={"block_count": 24, "head_count_kv": 2}))
+    with pytest.raises(ZooError, match="head_dim"):
+        load_zoo(path)
+
+
+def test_geometry_is_optional_because_not_every_format_states_it(tmp_path):
+    """ONNX carries no attention metadata, and is not thereby broken."""
+    path = _write(tmp_path, _entry(attention=None))
+    assert load_zoo(path)[0].attention is None
+
+
+def test_the_recorded_geometry_sizes_the_cache_the_measurements_confirmed():
+    """The zoo's geometry must reproduce the published KV-cache study.
+
+    The dashboard computes cache sizes from this manifest rather than from the
+    weights, because the weights are the one thing that cannot be shipped.
+    A wrong geometry here would put wrong numbers on the site with nothing to
+    catch them.
+    """
+    from aihwbench.analysis.kvcache import BYTES_PER_MB, kv_cache_bytes
+
+    entry = next(e for e in load_zoo(ZOO) if e.key == "qwen2.5-0.5b-instruct-q4_k_m")
+    assert entry.attention is not None
+    at_f16 = kv_cache_bytes(entry.attention, 32768, "f16", "f16")
+    at_q4 = kv_cache_bytes(entry.attention, 32768, "q4_0", "q4_0")
+    assert round(at_f16 / BYTES_PER_MB, 1) == 384.0
+    assert round(at_q4 / BYTES_PER_MB, 1) == 108.0

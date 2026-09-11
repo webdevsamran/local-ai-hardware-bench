@@ -101,6 +101,7 @@ _ALLOWED_KEYS = {
     "source",
     "size_bytes",
     "notes",
+    "attention",
 }
 
 _ALLOWED_SOURCE_KEYS = {"kind", "ref", "url"}
@@ -125,6 +126,14 @@ class ZooEntry:
     quantization: str | None = None
     size_bytes: int | None = None
     notes: str | None = None
+    #: Attention geometry: layers, KV heads, head width, declared context.
+    #:
+    #: Recorded because it is what sizes the KV cache, and the KV cache is the
+    #: memory cost that grows with the conversation rather than the model. It
+    #: lets anyone compute that cost for any context length without holding
+    #: the weights -- which matters, since the weights are the part nobody can
+    #: redistribute. Read from the artifact like the licence, never guessed.
+    attention: dict[str, Any] | None = None
     #: Other checksum strings, of other kinds, that denote this same model.
     #: This is how the corpus's llama.cpp and Ollama results are tied to one
     #: entry despite recording different hashes of different things.
@@ -147,6 +156,7 @@ class ZooEntry:
             "source": dict(self.source),
             "size_bytes": self.size_bytes,
             "notes": self.notes,
+            "attention": dict(self.attention) if self.attention else None,
         }
 
     @property
@@ -217,6 +227,21 @@ def _parse_entry(data: Any, index: int, source_name: str) -> ZooEntry:
             "licence claim cannot be checked against the artifact."
         )
 
+    attention = data.get("attention")
+    if attention is not None:
+        if not isinstance(attention, dict):
+            raise ZooError(f"{where}: 'attention' must be an object")
+        missing = [
+            key
+            for key in ("block_count", "head_count_kv", "head_dim")
+            if not isinstance(attention.get(key), int)
+        ]
+        if missing:
+            raise ZooError(
+                f"{where}: attention is missing {missing}. A partial geometry "
+                "produces a confident, wrong cache size rather than no answer."
+            )
+
     aliases = data.get("aliases") or []
     if not isinstance(aliases, list) or not all(isinstance(a, str) for a in aliases):
         raise ZooError(f"{where}: 'aliases' must be a list of strings")
@@ -236,6 +261,7 @@ def _parse_entry(data: Any, index: int, source_name: str) -> ZooEntry:
         quantization=data.get("quantization"),
         size_bytes=data.get("size_bytes"),
         notes=data.get("notes"),
+        attention=data.get("attention"),
         aliases=tuple(aliases),
     )
 

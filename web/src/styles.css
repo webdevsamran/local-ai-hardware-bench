@@ -514,6 +514,29 @@ label.filter-label {
 /* A caveat attached to the figure above it, not a standalone paragraph. */
 .note { margin: 10px 0 0; font-size: 0.9rem; line-height: 1.5; }
 
+/* KV-cache page.
+
+   A configuration that uses more memory than the default despite holding a
+   smaller cache is the one row a reader must not skim past, so it is marked
+   in the row itself as well as called out below the table -- colour alone
+   would not survive a greyscale print or a colour-vision difference, hence
+   the glyph beside it. */
+.kv-inverted { background: color-mix(in srgb, var(--warn) 12%, transparent); }
+.kv-warn { color: var(--warn); font-weight: 700; }
+
+.kv-verdict {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border-left: 4px solid var(--accent);
+  background: var(--surface-2);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.kv-budget { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.kv-budget h3 { margin: 0 0 10px; }
+.kv-budget label { display: block; margin-bottom: 6px; }
+.kv-budget input[type='range'] { width: 100%; max-width: 28rem; margin-bottom: 12px; }
+
 .notice {
   border-left: 4px solid var(--warn);
   background: color-mix(in srgb, var(--warn) 8%, var(--surface));

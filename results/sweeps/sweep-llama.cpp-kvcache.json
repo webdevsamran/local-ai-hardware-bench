@@ -1,0 +1,323 @@
+{
+  "axes": {
+    "max_tokens": [
+      128
+    ],
+    "iterations": [
+      8
+    ],
+    "context_length": [
+      32768
+    ],
+    "cache_type_k": [
+      "f16",
+      "q8_0",
+      "q4_0"
+    ],
+    "cache_type_v": [
+      "f16",
+      "q8_0",
+      "q4_0"
+    ]
+  },
+  "environment": {
+    "runtime": "llama.cpp",
+    "model": "sha256-c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515",
+    "system": {
+      "os": "Windows 11",
+      "os_version": "10.0.26200",
+      "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+      "cpu_cores_physical": 14,
+      "cpu_cores_logical": 20,
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "gpu_vram_mb": 16384,
+      "gpu_driver_version": "610.74",
+      "npu": null,
+      "ram_gb": 31.7,
+      "platform_name": "Predator PT516-52s",
+      "topology": {
+        "numa_nodes": null,
+        "sockets": 1,
+        "unified_memory": null,
+        "cpu_features": [],
+        "gpu_count": 1
+      },
+      "gpus": [
+        {
+          "vendor": "NVIDIA",
+          "name": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+          "driver_version": "610.74",
+          "vram_mb": 16384,
+          "index": 0,
+          "pcie_gen": 4,
+          "pcie_width": 16,
+          "compute_capability": "8.6"
+        }
+      ]
+    },
+    "timestamp": "2026-09-11T05:57:50Z"
+  },
+  "matrix": [
+    {
+      "params": {
+        "runtime": "llama.cpp",
+        "model": "sha256-c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515",
+        "cache_type_k": "f16",
+        "cache_type_v": "f16",
+        "context_length": 32768,
+        "iterations": 8,
+        "max_tokens": 128
+      },
+      "metrics": {
+        "generation_tokens_per_second": 382.32,
+        "ttft_ms": 12.2,
+        "total_latency_ms": 89.86,
+        "peak_vram_mb": 1022.0,
+        "average_power_watts": 34.06,
+        "generation_tps_cv": 0.0448,
+        "gen_tps_ci95": [
+          370.45,
+          394.19
+        ],
+        "gen_tps_min": 338.12,
+        "gen_tps_max": 395.53,
+        "performance_per_watt": 11.224897240164415,
+        "prompt_tokens_per_second": null
+      },
+      "run_id": "llamacpp-1789106135-4cd09d75",
+      "error": null
+    },
+    {
+      "params": {
+        "runtime": "llama.cpp",
+        "model": "sha256-c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515",
+        "cache_type_k": "f16",
+        "cache_type_v": "q8_0",
+        "context_length": 32768,
+        "iterations": 8,
+        "max_tokens": 128
+      },
+      "metrics": {
+        "generation_tokens_per_second": 132.99,
+        "ttft_ms": 24.21,
+        "total_latency_ms": 250.06,
+        "peak_vram_mb": 902.0,
+        "average_power_watts": 32.96,
+        "generation_tps_cv": 0.0412,
+        "gen_tps_ci95": [
+          129.19,
+          136.79
+        ],
+        "gen_tps_min": 124.45,
+        "gen_tps_max": 139.32,
+        "performance_per_watt": 4.034890776699029,
+        "prompt_tokens_per_second": null
+      },
+      "run_id": "llamacpp-1789106153-a6adb409",
+      "error": null
+    },
+    {
+      "params": {
+        "runtime": "llama.cpp",
+        "model": "sha256-c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515",
+        "cache_type_k": "f16",
+        "cache_type_v": "q4_0",
+        "context_length": 32768,
+        "iterations": 8,
+        "max_tokens": 128
+      },
+      "metrics": {
+        "generation_tokens_per_second": 129.74,
+        "ttft_ms": 23.34,
+        "total_latency_ms": 273.71,
+        "peak_vram_mb": 854.0,
+        "average_power_watts": 33.53,
+        "generation_tps_cv": 0.0728,
+        "gen_tps_ci95": [
+          123.2,
+          136.29
+        ],
+        "gen_tps_min": 116.78,
+        "gen_tps_max": 140.93,
+        "performance_per_watt": 3.8693707127945127,
+        "prompt_tokens_per_second": null
+      },
+      "run_id": "llamacpp-1789106171-3f4c3e1d",
+      "error": null
+    },
+    {
+      "params": {
+        "runtime": "llama.cpp",
+        "model": "sha256-c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515",
+        "cache_type_k": "q8_0",
+        "cache_type_v": "f16",
+        "context_length": 32768,
+        "iterations": 8,
+        "max_tokens": 128
+      },
+      "metrics": {
+        "generation_tokens_per_second": 358.36,
+        "ttft_ms": 11.67,
+        "total_latency_ms": 78.72,
+        "peak_vram_mb": 1858.0,
+        "average_power_watts": 33.57,
+        "generation_tps_cv": 0.0286,
+        "gen_tps_ci95": [
+          351.27,
+          365.45
+        ],
+        "gen_tps_min": 336.06,
+        "gen_tps_max": 368.97,
+        "performance_per_watt": 10.67500744712541,
+        "prompt_tokens_per_second": null
+      },
+      "run_id": "llamacpp-1789106186-ce122985",
+      "error": null
+    },
+    {
+      "params": {
+        "runtime": "llama.cpp",
+        "model": "sha256-c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515",
+        "cache_type_k": "q8_0",
+        "cache_type_v": "q8_0",
+        "context_length": 32768,
+        "iterations": 8,
+        "max_tokens": 128
+      },
+      "metrics": {
+        "generation_tokens_per_second": 373.47,
+        "ttft_ms": 11.12,
+        "total_latency_ms": 97.47,
+        "peak_vram_mb": 844.0,
+        "average_power_watts": 35.46,
+        "generation_tps_cv": 0.0099,
+        "gen_tps_ci95": [
+          370.9,
+          376.04
+        ],
+        "gen_tps_min": 368.48,
+        "gen_tps_max": 381.1,
+        "performance_per_watt": 10.532148900169206,
+        "prompt_tokens_per_second": null
+      },
+      "run_id": "llamacpp-1789106201-8b98439d",
+      "error": null
+    },
+    {
+      "params": {
+        "runtime": "llama.cpp",
+        "model": "sha256-c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515",
+        "cache_type_k": "q8_0",
+        "cache_type_v": "q4_0",
+        "context_length": 32768,
+        "iterations": 8,
+        "max_tokens": 128
+      },
+      "metrics": {
+        "generation_tokens_per_second": 145.05,
+        "ttft_ms": 23.05,
+        "total_latency_ms": 189.44,
+        "peak_vram_mb": 764.0,
+        "average_power_watts": 34.29,
+        "generation_tps_cv": 0.0218,
+        "gen_tps_ci95": [
+          142.86,
+          147.24
+        ],
+        "gen_tps_min": 140.58,
+        "gen_tps_max": 150.62,
+        "performance_per_watt": 4.230096237970254,
+        "prompt_tokens_per_second": null
+      },
+      "run_id": "llamacpp-1789106217-c8b24361",
+      "error": null
+    },
+    {
+      "params": {
+        "runtime": "llama.cpp",
+        "model": "sha256-c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515",
+        "cache_type_k": "q4_0",
+        "cache_type_v": "f16",
+        "context_length": 32768,
+        "iterations": 8,
+        "max_tokens": 128
+      },
+      "metrics": {
+        "generation_tokens_per_second": 346.81,
+        "ttft_ms": 11.38,
+        "total_latency_ms": 132.93,
+        "peak_vram_mb": 1810.0,
+        "average_power_watts": 40.74,
+        "generation_tps_cv": 0.0115,
+        "gen_tps_ci95": [
+          344.04,
+          349.57
+        ],
+        "gen_tps_min": 340.54,
+        "gen_tps_max": 354.55,
+        "performance_per_watt": 8.512763868433971,
+        "prompt_tokens_per_second": null
+      },
+      "run_id": "llamacpp-1789106233-f8245721",
+      "error": null
+    },
+    {
+      "params": {
+        "runtime": "llama.cpp",
+        "model": "sha256-c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515",
+        "cache_type_k": "q4_0",
+        "cache_type_v": "q8_0",
+        "context_length": 32768,
+        "iterations": 8,
+        "max_tokens": 128
+      },
+      "metrics": {
+        "generation_tokens_per_second": 141.5,
+        "ttft_ms": 24.29,
+        "total_latency_ms": 200.25,
+        "peak_vram_mb": 764.0,
+        "average_power_watts": 34.44,
+        "generation_tps_cv": 0.0326,
+        "gen_tps_ci95": [
+          138.31,
+          144.7
+        ],
+        "gen_tps_min": 130.69,
+        "gen_tps_max": 147.39,
+        "performance_per_watt": 4.1085946573751455,
+        "prompt_tokens_per_second": null
+      },
+      "run_id": "llamacpp-1789106249-edb8257f",
+      "error": null
+    },
+    {
+      "params": {
+        "runtime": "llama.cpp",
+        "model": "sha256-c5396e06af294bd101b30dce59131a76d2b773e76950acc870eda801d3ab0515",
+        "cache_type_k": "q4_0",
+        "cache_type_v": "q4_0",
+        "context_length": 32768,
+        "iterations": 8,
+        "max_tokens": 128
+      },
+      "metrics": {
+        "generation_tokens_per_second": 382.37,
+        "ttft_ms": 11.28,
+        "total_latency_ms": 63.41,
+        "peak_vram_mb": 748.0,
+        "average_power_watts": 29.8,
+        "generation_tps_cv": 0.0476,
+        "gen_tps_ci95": [
+          369.75,
+          394.99
+        ],
+        "gen_tps_min": 335.75,
+        "gen_tps_max": 395.48,
+        "performance_per_watt": 12.831208053691276,
+        "prompt_tokens_per_second": null
+      },
+      "run_id": "llamacpp-1789106263-8acb7a72",
+      "error": null
+    }
+  ]
+}

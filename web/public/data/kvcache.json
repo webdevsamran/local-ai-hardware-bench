@@ -1,0 +1,170 @@
+{
+  "note": "Quantizing the KV cache is a memory setting, not a speed one: it decides how much context fits. Throughput is shown with the measured run-to-run noise floor attached, because a difference inside that floor is not a difference. Configurations marked as costing more than the baseline were measured using more device memory than f16 despite holding a smaller cache.",
+  "studies": [
+    {
+      "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "gpu_vram_mb": 16384,
+      "model": "Qwen2.5 0.5B Instruct (Q4_K_M)",
+      "model_key": "qwen2.5-0.5b-instruct-q4_k_m",
+      "report": {
+        "baseline": {
+          "cache_type_k": "f16",
+          "cache_type_v": "f16",
+          "generation_tokens_per_second": 382.32,
+          "kv_cache_mb": 384.0,
+          "peak_vram_mb": 1022.0
+        },
+        "configurations": [
+          {
+            "cache_type_k": "q4_0",
+            "cache_type_v": "q4_0",
+            "generation_tokens_per_second": 382.37,
+            "is_baseline": false,
+            "kv_cache_mb": 108.0,
+            "kv_cache_saved_mb": 276.0,
+            "kv_cache_saved_percent": 71.9,
+            "measured_vram_saved_mb": 274.0,
+            "peak_vram_mb": 748.0,
+            "run_id": "llamacpp-1789106263-8acb7a72",
+            "throughput_change_percent": 0.0,
+            "throughput_distinguishable": false,
+            "throughput_note": "within the 10% run-to-run noise floor: indistinguishable from the baseline, not equal to it"
+          },
+          {
+            "cache_type_k": "q8_0",
+            "cache_type_v": "q4_0",
+            "generation_tokens_per_second": 145.05,
+            "is_baseline": false,
+            "kv_cache_mb": 156.0,
+            "kv_cache_saved_mb": 228.0,
+            "kv_cache_saved_percent": 59.4,
+            "measured_vram_saved_mb": 258.0,
+            "peak_vram_mb": 764.0,
+            "run_id": "llamacpp-1789106217-c8b24361",
+            "throughput_change_percent": -62.1,
+            "throughput_distinguishable": true
+          },
+          {
+            "cache_type_k": "q4_0",
+            "cache_type_v": "q8_0",
+            "generation_tokens_per_second": 141.5,
+            "is_baseline": false,
+            "kv_cache_mb": 156.0,
+            "kv_cache_saved_mb": 228.0,
+            "kv_cache_saved_percent": 59.4,
+            "measured_vram_saved_mb": 258.0,
+            "peak_vram_mb": 764.0,
+            "run_id": "llamacpp-1789106249-edb8257f",
+            "throughput_change_percent": -63.0,
+            "throughput_distinguishable": true
+          },
+          {
+            "cache_type_k": "q8_0",
+            "cache_type_v": "q8_0",
+            "generation_tokens_per_second": 373.47,
+            "is_baseline": false,
+            "kv_cache_mb": 204.0,
+            "kv_cache_saved_mb": 180.0,
+            "kv_cache_saved_percent": 46.9,
+            "measured_vram_saved_mb": 178.0,
+            "peak_vram_mb": 844.0,
+            "run_id": "llamacpp-1789106201-8b98439d",
+            "throughput_change_percent": -2.3,
+            "throughput_distinguishable": false,
+            "throughput_note": "within the 10% run-to-run noise floor: indistinguishable from the baseline, not equal to it"
+          },
+          {
+            "cache_type_k": "f16",
+            "cache_type_v": "q4_0",
+            "generation_tokens_per_second": 129.74,
+            "is_baseline": false,
+            "kv_cache_mb": 246.0,
+            "kv_cache_saved_mb": 138.0,
+            "kv_cache_saved_percent": 35.9,
+            "measured_vram_saved_mb": 168.0,
+            "peak_vram_mb": 854.0,
+            "run_id": "llamacpp-1789106171-3f4c3e1d",
+            "throughput_change_percent": -66.1,
+            "throughput_distinguishable": true
+          },
+          {
+            "cache_type_k": "q4_0",
+            "cache_type_v": "f16",
+            "costs_more_than_baseline": true,
+            "generation_tokens_per_second": 346.81,
+            "is_baseline": false,
+            "kv_cache_mb": 246.0,
+            "kv_cache_saved_mb": 138.0,
+            "kv_cache_saved_percent": 35.9,
+            "measured_vram_saved_mb": -788.0,
+            "measurement_note": "this configuration used 788 MB MORE than f16/f16, against a predicted saving of 138 MB. The cache is smaller and the device total is larger, so the cost is outside the cache. This run left --flash-attn at its default, which is `auto`, and auto is not `on`: on this machine the same dtype pair cost 940 MB more at `auto` than at `on`. Re-measure with --flash-attn on before concluding anything about the dtypes.",
+            "peak_vram_mb": 1810.0,
+            "run_id": "llamacpp-1789106233-f8245721",
+            "throughput_change_percent": -9.3,
+            "throughput_distinguishable": false,
+            "throughput_note": "within the 10% run-to-run noise floor: indistinguishable from the baseline, not equal to it"
+          },
+          {
+            "cache_type_k": "f16",
+            "cache_type_v": "q8_0",
+            "generation_tokens_per_second": 132.99,
+            "is_baseline": false,
+            "kv_cache_mb": 294.0,
+            "kv_cache_saved_mb": 90.0,
+            "kv_cache_saved_percent": 23.4,
+            "measured_vram_saved_mb": 120.0,
+            "peak_vram_mb": 902.0,
+            "run_id": "llamacpp-1789106153-a6adb409",
+            "throughput_change_percent": -65.2,
+            "throughput_distinguishable": true
+          },
+          {
+            "cache_type_k": "q8_0",
+            "cache_type_v": "f16",
+            "costs_more_than_baseline": true,
+            "generation_tokens_per_second": 358.36,
+            "is_baseline": false,
+            "kv_cache_mb": 294.0,
+            "kv_cache_saved_mb": 90.0,
+            "kv_cache_saved_percent": 23.4,
+            "measured_vram_saved_mb": -836.0,
+            "measurement_note": "this configuration used 836 MB MORE than f16/f16, against a predicted saving of 90 MB. The cache is smaller and the device total is larger, so the cost is outside the cache. This run left --flash-attn at its default, which is `auto`, and auto is not `on`: on this machine the same dtype pair cost 940 MB more at `auto` than at `on`. Re-measure with --flash-attn on before concluding anything about the dtypes.",
+            "peak_vram_mb": 1858.0,
+            "run_id": "llamacpp-1789106186-ce122985",
+            "throughput_change_percent": -6.3,
+            "throughput_distinguishable": false,
+            "throughput_note": "within the 10% run-to-run noise floor: indistinguishable from the baseline, not equal to it"
+          },
+          {
+            "cache_type_k": "f16",
+            "cache_type_v": "f16",
+            "generation_tokens_per_second": 382.32,
+            "is_baseline": true,
+            "kv_cache_mb": 384.0,
+            "kv_cache_saved_mb": 0.0,
+            "kv_cache_saved_percent": 0.0,
+            "measured_vram_saved_mb": 0.0,
+            "peak_vram_mb": 1022.0,
+            "run_id": "llamacpp-1789106135-4cd09d75",
+            "throughput_change_percent": 0.0,
+            "throughput_distinguishable": false,
+            "throughput_note": "within the 10% run-to-run noise floor: indistinguishable from the baseline, not equal to it"
+          }
+        ],
+        "context_length": 32768,
+        "framing": "KV-cache quantization is a memory setting. Read the cache-size column first: it is exact, it scales to context lengths nobody has measured, and it is what decides whether a conversation fits. Throughput is reported for completeness with its noise floor attached, and a difference inside that floor is not a difference.",
+        "geometry": {
+          "architecture": "qwen2",
+          "block_count": 24,
+          "context_length": 32768,
+          "head_count_kv": 2,
+          "head_dim": 64
+        },
+        "unresolved": null
+      },
+      "runtime": "llama.cpp",
+      "source": "sweep-llama.cpp-kvcache.json",
+      "timestamp": "2026-09-11T05:57:50Z"
+    }
+  ]
+}

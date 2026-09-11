@@ -130,6 +130,11 @@ shipped-but-unreachable is not done.
 - [x] Written dispute process for published results
       ([docs/disputes.md](docs/disputes.md))
 - [x] Versioned dataset snapshot manifests
+- [x] KV-cache quantization matrix, reported as memory rather than speed
+      ([docs/results/kv-cache-rtx3080ti.md](docs/results/kv-cache-rtx3080ti.md)):
+      the cache size is computed from the model's own attention geometry,
+      and two asymmetric configurations were measured to cost more memory
+      than they save
 - [x] Model zoo manifest: licence terms read from the artifact, checksums
       that state what they hash, and a download helper that deletes a
       mismatched file ([docs/models/zoo.md](docs/models/zoo.md))

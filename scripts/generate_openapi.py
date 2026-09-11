@@ -87,6 +87,21 @@ ENDPOINTS: dict[str, tuple[str, str, str]] = {
         "card, so these are for comparison against your own measurement "
         "rather than for citing.",
     ),
+    "kvcache": (
+        "KV-cache dtype matrices, reported as memory rather than speed.",
+        "unstable",
+        "What quantizing the KV cache costs, measured at every combination of "
+        "K and V dtype. Each configuration carries two figures that answer "
+        "different questions: the analytic cache size, computed from the "
+        "model's attention geometry and therefore exact at any context length, "
+        "and the measured device VRAM, which is real but includes everything "
+        "else the card is holding. Throughput carries the run-to-run noise "
+        "floor, so a difference inside it is marked indistinguishable rather "
+        "than reported as a result. A configuration flagged "
+        "`costs_more_than_baseline` was measured using more device memory than "
+        "the f16 default despite holding a smaller cache -- an inversion the "
+        "arithmetic alone does not predict.",
+    ),
     "privacy": (
         "The privacy scanner's pattern registry, with reference vectors.",
         "stable",

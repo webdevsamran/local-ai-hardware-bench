@@ -12,7 +12,10 @@ from __future__ import annotations
 from typing import Any
 
 from . import (
+    arm_sbc,
+    exllamav2,
     hailo,
+    jetson,
     lemonade,
     llama_cpp,
     lmstudio,
@@ -24,8 +27,11 @@ from . import (
     qnn,
     rocm,
     sglang,
+    sycl,
     tensorrt,
     vllm,
+    vulkan,
+    webgpu,
     windows_ml,
 )
 from .base import (
@@ -54,6 +60,12 @@ BACKENDS: dict[str, Any] = {
     "hailo": hailo,
     "vllm": vllm,
     "sglang": sglang,
+    "vulkan": vulkan,
+    "sycl": sycl,
+    "webgpu": webgpu,
+    "exllamav2": exllamav2,
+    "jetson": jetson,
+    "arm_sbc": arm_sbc,
 }
 
 ALIASES: dict[str, str] = {

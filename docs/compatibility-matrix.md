@@ -66,6 +66,12 @@ undocumented is one nobody knows to try.
 | `tensorrt` | Detection only | Not tested | Needs per-GPU engine builds; CUDA toolkit absent |
 | `hailo` | Detection only | Hardware Needed | No Hailo device |
 | `windows_ml` | Detection only | Experimental | Windows ML runtime |
+| `vulkan` | llama.cpp build variant | Experimental | Two Vulkan devices found here (Iris Xe, RTX 3080 Ti); this llama.cpp build is CUDA-only, so the limit is the build and not the hardware |
+| `sycl` | llama.cpp build variant | Experimental | Intel Iris Xe present; oneAPI absent, so nothing can reach it |
+| `webgpu` | Browser / Node 22+ | Planned | The sandbox exposes no power, VRAM or temperature, so a browser result cannot answer the energy questions asked elsewhere |
+| `exllamav2` | In-process (CUDA) | Detection only | Needs PyTorch+CUDA, `exllamav2` and EXL2 weights; its fractional bits-per-weight do not map onto GGUF quantization labels |
+| `jetson` | llama.cpp on L4T | Hardware Needed | aarch64 + Tegra; unified memory, and the `nvpmodel` power mode must be recorded or results are not comparable |
+| `arm_sbc` | llama.cpp CPU | Hardware Needed | Raspberry Pi and similar, identified by device-tree model; throttling and power-delivery flags recorded because both present as "slow board" |
 
 "Detection only" means the backend reports honestly whether the runtime is
 present and refuses to benchmark, rather than pretending. `aihwbench doctor

@@ -97,6 +97,10 @@ TUNABLE_AXES: tuple[str, ...] = (
     "flash_attn",
     "threads",
     "batch_size",
+    "rpc_servers",
+    "tensor_split",
+    "split_mode",
+    "main_gpu",
 )
 
 #: KV-cache dtypes llama.cpp accepts. Quantizing the cache is a *memory*
@@ -164,6 +168,44 @@ def _positive_int(config: BenchmarkConfig, key: str, flag: str) -> int | None:
             "configuration that was requested"
         )
     return value
+
+
+def _split_mode(config: BenchmarkConfig) -> str | None:
+    """How the model is divided across devices, validated before launch."""
+    from ..devices import SPLIT_MODES
+
+    requested = config.extra.get("split_mode")
+    if requested is None:
+        return None
+    value = str(requested).lower()
+    if value not in SPLIT_MODES:
+        raise BackendError(
+            f"unknown split mode {requested!r}; llama.cpp accepts: {', '.join(SPLIT_MODES)}"
+        )
+    return value
+
+
+def _tensor_split(config: BenchmarkConfig) -> str | None:
+    """`--tensor-split`, checked against the devices that actually exist.
+
+    llama.cpp does not refuse a split with the wrong number of entries: it
+    ignores extras and defaults the rest, so the run proceeds and measures a
+    configuration nobody asked for. Checking here turns a silently wrong
+    measurement into a refusal before any time is spent.
+    """
+    from ..devices import device_inventory, validate_tensor_split
+
+    requested = config.extra.get("tensor_split")
+    if requested is None:
+        return None
+    split = str(requested)
+    inventory = device_inventory(rpc_servers=config.extra.get("rpc_servers"))
+    count = inventory.get("device_count") or 0
+    if count:
+        verdict = validate_tensor_split(split, count)
+        if not verdict["valid"]:
+            raise BackendError(f"--tensor-split {split!r}: {verdict['reason']}")
+    return split
 
 
 def _cache_type(config: BenchmarkConfig, which: str) -> str | None:
@@ -242,6 +284,21 @@ class LlamaServerHandle:
         batch = _positive_int(self.config, "batch_size", "--batch-size")
         if batch is not None:
             cmd.extend(["--batch-size", str(batch)])
+        # RPC first: a remote device only joins the enumeration when the
+        # runtime was told where to find it, and --tensor-split is positional
+        # over that enumeration.
+        rpc = self.config.extra.get("rpc_servers")
+        if rpc:
+            cmd.extend(["--rpc", str(rpc)])
+        split_mode = _split_mode(self.config)
+        if split_mode is not None:
+            cmd.extend(["--split-mode", split_mode])
+        tensor_split = _tensor_split(self.config)
+        if tensor_split is not None:
+            cmd.extend(["--tensor-split", tensor_split])
+        main_gpu = self.config.extra.get("main_gpu")
+        if main_gpu is not None:
+            cmd.extend(["--main-gpu", str(int(main_gpu))])
         self.proc = subprocess.Popen(
             cmd,
             stdout=subprocess.DEVNULL,
@@ -448,6 +505,13 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "flash_attn": _flash_attn(config),
             "threads": _positive_int(config, "threads", "--threads"),
             "batch_size": _positive_int(config, "batch_size", "--batch-size"),
+            # How the model was divided, and over what. A throughput figure
+            # from a split run is not comparable with a single-device one, and
+            # without these the result cannot say which it was.
+            "rpc_servers": config.extra.get("rpc_servers"),
+            "tensor_split": config.extra.get("tensor_split"),
+            "split_mode": _split_mode(config),
+            "main_gpu": config.extra.get("main_gpu"),
             "command": (f"aihwbench benchmark --runtime llama.cpp --model-path {model_path}"),
         },
         "iterations": iterations,

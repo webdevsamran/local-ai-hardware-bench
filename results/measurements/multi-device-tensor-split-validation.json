@@ -1,0 +1,74 @@
+{
+  "kind": "code-path-validation",
+  "$comment": "Proof that the multi-device axes reach llama.cpp and change what it does. It is NOT a multi-GPU performance result and must never be read as one: both devices in this run are the SAME RTX 3080 Ti, the second reached through a ggml-rpc-server over TCP loopback. Any throughput ordering here is an artifact of that loopback and of a machine the contention guard reported as busy (CPU 29%). The throughput column is named to make it unusable by accident.",
+  "what_it_validates": [
+    "`--rpc` must precede `--list-devices`, or llama.cpp exits before reading it and the remote device is missing from a list that looks complete. That was a real bug in this code, caught here.",
+    "An RPC server joins the device enumeration as RPC0 alongside CUDA0.",
+    "`--tensor-split` reaches the spawned server and changes allocation: the three splits produced 799, 867 and 632 MiB of device memory, which a split that was being ignored could not do.",
+    "A split whose share count does not match the device count is refused before the run rather than silently defaulted by llama.cpp."
+  ],
+  "not_validated": [
+    "Multi-GPU scaling. That needs two physical GPUs the runtime can both reach, and this machine's second GPU is an Intel iGPU that a CUDA build of llama.cpp does not offload to.",
+    "Any throughput claim. The machine was busy and the split was loopback."
+  ],
+  "runtime": "llama.cpp",
+  "system": {
+    "os": "Windows 11",
+    "os_version": "10.0.26200",
+    "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
+    "cpu_cores_physical": 14,
+    "cpu_cores_logical": 20,
+    "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+    "gpu_vram_mb": 16384,
+    "gpu_driver_version": "610.74",
+    "npu": null,
+    "ram_gb": 31.7,
+    "platform_name": "Predator PT516-52s",
+    "topology": {
+      "numa_nodes": null,
+      "sockets": 1,
+      "unified_memory": null,
+      "cpu_features": [],
+      "gpu_count": 1
+    },
+    "gpus": [
+      {
+        "vendor": "NVIDIA",
+        "name": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "driver_version": "610.74",
+        "vram_mb": 16384,
+        "index": 0,
+        "pcie_gen": 4,
+        "pcie_width": 16,
+        "compute_capability": "8.6"
+      }
+    ]
+  },
+  "devices": [
+    {
+      "id": "CUDA0",
+      "description": "NVIDIA GeForce RTX 3080 Ti Laptop GPU"
+    },
+    {
+      "id": "RPC0",
+      "description": "127.0.0.1:50054 (the same GPU, over loopback)"
+    }
+  ],
+  "configurations": [
+    {
+      "tensor_split": "1.0,0.0",
+      "peak_vram_mib": 799.0,
+      "generation_tokens_per_second_NOT_A_RESULT": 302.93
+    },
+    {
+      "tensor_split": "0.5,0.5",
+      "peak_vram_mib": 867.0,
+      "generation_tokens_per_second_NOT_A_RESULT": 320.5
+    },
+    {
+      "tensor_split": "0.0,1.0",
+      "peak_vram_mib": 632.0,
+      "generation_tokens_per_second_NOT_A_RESULT": 404.92
+    }
+  ]
+}

@@ -5,6 +5,51 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Added — multi-device support, and six backends for hardware this machine lacks
+
+- **llama.cpp RPC and tensor-split are sweepable axes.** `--rpc-servers-list`,
+  `--tensor-split-list`, `--split-mode-list` and `--main-gpu-list`, plus
+  `aihwbench devices` to list what the *runtime* can offload to. That is a
+  different question from what the machine has: this laptop has an Intel Iris
+  Xe and an RTX 3080 Ti, Vulkan enumerates both, and a CUDA build of llama.cpp
+  offloads to one.
+
+  A split whose share count does not match the device count is refused before
+  the run. llama.cpp ignores extra fractions and defaults missing ones rather
+  than failing, so the alternative is a real measurement of a configuration
+  nobody requested.
+
+  Validated by running a two-device split against a local `ggml-rpc-server`,
+  which joins the enumeration as a second device. Recorded under
+  `results/measurements/` as a **code-path validation, not a performance
+  result**: both devices there are the same card over TCP loopback, so any
+  throughput ordering is an artifact. The three splits allocated 799, 867 and
+  632 MiB, which a flag being ignored could not do.
+
+- **Vulkan, SYCL, WebGPU, ExLlamaV2, Jetson and ARM SBC backends.** None can
+  run here, and each says why in terms the user can act on. Vulkan is the
+  example worth citing: two Vulkan devices are present and the build has no
+  Vulkan backend, so the report says the hardware is not the limitation and
+  names the CMake flag. "Not available" would have told the user their GPU was
+  unsupported, which is false.
+
+  Each refuses rather than falling back. A result labelled `sycl` that ran on
+  the CPU, or `vulkan` produced by CUDA, would be mislabelled in the one way
+  the comparison classifier is blind to: every field would agree while the
+  numbers came from different silicon.
+
+  Each also declares what its hardware does to a measurement — Jetson's
+  unified memory and `nvpmodel` power mode, an SBC's throttle and
+  power-delivery flags, ExLlamaV2's fractional bits per weight that do not map
+  onto GGUF quantization labels, and the fields a browser sandbox cannot
+  measure at all.
+
+### Fixed
+
+- **`--rpc` has to precede `--list-devices`.** llama.cpp acts on the list
+  request as it parses it and exits, so a later `--rpc` was never read and the
+  remote device was missing from a listing that looked complete.
+
 ### Added — four quality and capacity measurements that were missing
 
 - **Perplexity, with the reason most perplexity comparisons are void.**

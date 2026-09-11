@@ -130,6 +130,11 @@ shipped-but-unreachable is not done.
 - [x] Written dispute process for published results
       ([docs/disputes.md](docs/disputes.md))
 - [x] Versioned dataset snapshot manifests
+- [x] llama.cpp RPC backend and multi-GPU tensor-split axes, with a split
+      validated against the devices the runtime actually reports
+- [x] Vulkan, SYCL, WebGPU, ExLlamaV2, Jetson and ARM SBC backends:
+      honest detection that names the missing half rather than reporting
+      "unavailable", and no fallback to different silicon
 - [x] Perplexity over a caller-supplied corpus, refusing comparisons across
       different tokenizers, corpora or run shapes
 - [x] Text-to-SQL execution accuracy (Spider-shaped), read-only

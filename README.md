@@ -1,4 +1,4 @@
-# AIHWBench — Open Local AI Hardware Benchmark
+# AIHWBench — Local AI Hardware Benchmark for LLMs on CPU, GPU and NPU
 
 <!-- badges -->
 [![CI](https://github.com/webdevsamran/local-ai-hardware-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/webdevsamran/local-ai-hardware-bench/actions/workflows/ci.yml)
@@ -9,58 +9,153 @@
 [![Coverage floor](https://img.shields.io/badge/coverage%20floor-68%25-informational)](pyproject.toml)
 <!-- /badges -->
 
-**A vendor-neutral, reproducible framework for evaluating local AI runtimes across CPUs, GPUs, NPUs, AI PCs, workstations, mini PCs, and edge accelerators.**
+**Measure how fast a local LLM actually runs on your own machine — tokens per
+second, time to first token, VRAM use and watts — then find out whether your
+number can honestly be compared to anyone else's.**
 
-> Originally created by **[@webdevsamran](https://github.com/webdevsamran)** (Original Creator / Founder / Lead Maintainer) and developed with contributions from the open-source community.
+AIHWBench is a vendor-neutral, reproducible **local AI benchmark** for
+llama.cpp, Ollama, ONNX Runtime, OpenVINO, LM Studio, vLLM and fifteen more
+runtimes — 21 backends in all — across consumer GPUs, CPUs, integrated
+graphics, **NPUs in AI PCs**, workstations, mini PCs and edge accelerators. It runs offline, publishes the
+raw data, and refuses to print a comparison it cannot justify.
 
-The framework already exists. Your hardware is the missing test platform.
+> Created and maintained by **[@webdevsamran](https://github.com/webdevsamran)**
+> (Original Creator · Founder · Lead Maintainer), with contributions from the
+> open-source community. **[Sponsor this project](#sponsor-this-project)** ·
+> **[Lend hardware](docs/hardware-needed.md)** · **[Credits](CREDITS.md)**
 
-## Who is this for?
+**[Live dashboard and leaderboard →](https://webdevsamran.github.io/local-ai-hardware-bench/)**
 
-| Audience | Start here |
+---
+
+## Contents
+
+- [What AIHWBench answers](#what-aihwbench-answers)
+- [Install and run your first benchmark](#install-and-run-your-first-benchmark)
+- [How it compares to MLPerf Client, LocalScore and llama-bench](#how-it-compares-to-mlperf-client-localscore-and-llama-bench)
+- [What has actually been measured](#what-has-actually-been-measured)
+- [Supported runtimes and hardware](#supported-runtimes-and-hardware)
+- [Metrics captured](#metrics-captured)
+- [Comparison safety — the part nobody else does](#comparison-safety--the-part-nobody-else-does)
+- [Guides](#guides)
+- [Frequently asked questions](#frequently-asked-questions)
+- [Advanced workflows](#advanced-workflows)
+- [How a benchmark run is put together](#how-a-benchmark-run-is-put-together)
+- [Contributing](#contributing) · [Sponsor this project](#sponsor-this-project) · [Credits](#credits-and-acknowledgements)
+
+## What AIHWBench answers
+
+These are the questions people actually type into a search box before buying a
+graphics card or deploying a model. Each one links to a measured answer, not an
+estimate:
+
+| Question | Answer |
 | --- | --- |
-| Personal user / AI PC owner | [Quick start](#quick-start) → `aihwbench doctor` |
-| Developer choosing hardware | [Compatibility matrix](docs/compatibility-matrix.md) + published results |
-| Contributor | [CONTRIBUTING.md](CONTRIBUTING.md) · [good first issues](https://github.com/webdevsamran/local-ai-hardware-bench/issues?q=label%3A%22good+first+issue%22) |
-| Researcher | [Methodology](docs/methodology.md) · [Comparability rubric](docs/comparability-rubric.md) · [Dataset API](web/public/api/openapi.json) · [CITATION.cff](CITATION.cff) |
-| Reproducing a published run | [Model zoo](docs/models/zoo.md) — licences, checksums, and the command that obtains each model |
-| Runtime maintainer | [Plugin API](docs/guides/plugin-api.md) |
-| Hardware vendor | [Vendor collaboration](docs/vendor-collaboration.md) · [Hardware needed](docs/hardware-needed.md) |
-| Enterprise | [Enterprise overview](docs/enterprise/overview.md) (planned/future) |
+| **How many tokens per second will this model get on my GPU?** | [Run one benchmark](#install-and-run-your-first-benchmark), or browse the [leaderboard](https://webdevsamran.github.io/local-ai-hardware-bench/leaderboard) |
+| **How much VRAM do I need to run a 7B, 13B or 70B LLM?** | [Will it run on my PC?](https://webdevsamran.github.io/local-ai-hardware-bench/will-it-run) and `aihwbench fit` |
+| **What happens when the model does not fit in VRAM?** | [The offload cliff, measured](docs/results/offload-cliff-rtx3080ti.md) — **39.6% lost in one step**, 5.8× end to end |
+| **Does KV-cache quantization make inference faster?** | [No — it is a memory feature](docs/results/kv-cache-rtx3080ti.md). Nine configurations measured; two cost more than they save |
+| **Is a q4 quant actually worth it over q8?** | `aihwbench quantization` — and it [refuses to rank speed without a quality column](docs/methodology.md) |
+| **Is local inference cheaper than a cloud API?** | [Local vs cloud cost calculator](https://webdevsamran.github.io/local-ai-hardware-bench/local-vs-cloud), using measured watts |
+| **Which configuration is best on *my* machine?** | `aihwbench tune` and `aihwbench recommend`, with the evidence attached |
+| **Why do two benchmarks of the same GPU disagree?** | [Comparison safety](#comparison-safety--the-part-nobody-else-does) — usually they were never comparable |
 
-## What this project does
+## Install and run your first benchmark
 
-`aihwbench` detects your hardware and installed AI runtimes, executes real
-inference benchmarks locally, captures measured metrics (never estimates),
-validates results against a versioned schema, and produces reproducible
-reports.
+Requires Python 3.10 or newer. Works on Windows, Linux and macOS.
 
-## Why it exists
+```bash
+git clone https://github.com/webdevsamran/local-ai-hardware-bench.git
+cd local-ai-hardware-bench
+pip install -e ".[dev]"
+```
 
-- **Reproducibility.** Most local-AI benchmark numbers online cannot be
-  reproduced: unknown drivers, unknown quantization, unknown power state.
-  Every result here records the full environment.
-- **Compatibility.** A compatibility matrix that only contains genuinely
-  tested combinations — one honest row beats twenty fabricated ones.
-- **Performance per watt.** On laptops, mini PCs, and edge devices,
-  efficiency matters as much as raw speed.
-- **Engineering feedback.** Benchmarking exposes real bugs; we file them
-  upstream with minimal reproductions.
+Optional but recommended for richer telemetry: `pip install psutil`.
 
-## Hardware actually tested
+```bash
+# 1. What hardware and runtimes do I have? Any problems?
+aihwbench doctor
 
-Results are only claimed for machines where benchmarks genuinely ran.
+# 2. Which runtimes are usable right now?
+aihwbench runtimes
+
+# 3. Benchmark a real model (pull it first)
+ollama pull qwen2.5:0.5b-instruct-q4_K_M
+aihwbench benchmark --runtime ollama --model qwen2.5:0.5b-instruct-q4_K_M
+
+# 4. Check the environment noise around that number
+aihwbench self-test
+```
+
+A run takes a couple of minutes and writes a validated JSON document containing
+every number *and* the conditions that produced it. Nothing leaves your machine
+unless you choose to submit it.
+
+### Benchmark llama.cpp directly
+
+```bash
+aihwbench benchmark --runtime llama.cpp \
+    --model-path path/to/model-q4_k_m.gguf \
+    --device cuda
+```
+
+`--device` selects the accelerator; the requested device is recorded in the
+result, and the backend refuses rather than silently falling back to a CPU
+under an accelerator's name.
+
+## How it compares to MLPerf Client, LocalScore and llama-bench
+
+| | AIHWBench | MLPerf Client | LocalScore | llama-bench |
+| --- | --- | --- | --- | --- |
+| Your hardware, your model | **Yes** | Approved list only | Official models | Yes |
+| Consumer + edge + NPU | **Yes** | AI PC only | Consumer GPU | Any llama.cpp target |
+| Public raw dataset | **Yes** | Summary scores | Yes, composite score | No |
+| Says when two results are **not** comparable | **Yes** | No | No | No |
+| Energy, thermals, performance per watt | **Yes** | No | No | No |
+| Measures the HTTP serving path a user feels | **Yes** | No | Partly | No — in-process only |
+| Refuses to publish an unlabelled single run | **Yes** | n/a | No | No |
+
+> MLPerf Client certifies approved models on approved hardware. Bench360
+> measures serving engines on datacentre GPUs. LocalScore gives you one number.
+> **AIHWBench measures any backend on the hardware you actually own, publishes
+> the raw data, and tells you when two numbers cannot honestly be compared.**
+
+Nine projects are tracked in
+[`docs/competitive-analysis.md`](docs/competitive-analysis.md), regenerated from
+the GitHub API rather than hand-maintained, and committed to
+[`data/competitor-meta.json`](data/competitor-meta.json).
+
+## What has actually been measured
+
+Results are only claimed for machines where benchmarks genuinely ran. There are
+currently **9 published results** in [`results/published/`](results/published),
+all from one reference machine — which is exactly why more hardware is the
+project's single biggest need.
 
 | Platform | CPU | GPU | RAM | Status |
 | --- | --- | --- | --- | --- |
 | Acer Predator PT516-52s | Intel Core i9-12900H | NVIDIA RTX 3080 Ti Laptop (16 GB) | 32 GB | **Tested** |
 
-See [docs/compatibility-matrix.md](docs/compatibility-matrix.md) for the
+Three measured studies you can read without installing anything:
+
+- **[The offload cliff](docs/results/offload-cliff-rtx3080ti.md)** — throughput
+  against GPU layers. Generation runs **64.4 tok/s on CPU and 371.9 tok/s fully
+  offloaded**, but the curve is not smooth: one adjacent step costs 39.6%, and
+  `-ngl 24` on a 24-block model is *not* full offload.
+- **[KV-cache quantization](docs/results/kv-cache-rtx3080ti.md)** — nine K/V
+  dtype combinations at 32K context. `q4_0` for both caches cuts the cache
+  71.9% with no measurable throughput cost; every asymmetric configuration is
+  worse than both symmetric ones around it.
+- **[Three devices, one model](docs/results/openvino-three-devices.md)** — CPU,
+  integrated GPU and discrete GPU running the same OpenVINO IR, including the
+  device where greedy decoding did not reproduce.
+
+See [docs/compatibility-matrix.md](docs/compatibility-matrix.md) for the full
 runtime × platform matrix, including what is *not* tested yet.
 
-## Supported runtimes
+## Supported runtimes and hardware
 
-"Tested" means a real benchmark executed on our reference machine and a
+"Tested" means a real benchmark executed on the reference machine and a
 validated result file exists in [`results/published/`](results/published).
 
 | Runtime | Detection | Benchmarking |
@@ -94,64 +189,184 @@ have one of these machines, `aihwbench doctor` then `aihwbench benchmark
 trace, which is nearly as useful as a result. See
 [docs/hardware-needed.md](docs/hardware-needed.md).
 
-## Installation
+## Metrics captured
 
-Requires Python 3.10+.
+| Metric | Source | Notes |
+| --- | --- | --- |
+| Model load time | measured | where the runtime exposes it |
+| Time to first token (TTFT) | measured | first streamed token |
+| Prompt processing tok/s | measured | runtime-reported counts/durations |
+| Generation tok/s | measured | runtime-reported counts/durations |
+| Inter-token latency p50/p90/p99 | measured | a distribution, not a mean |
+| Latency mean/p50/p75/p90/p95/p99/p99.9, stddev, CV | measured | across iterations |
+| Peak RAM / VRAM | sampled | background telemetry thread |
+| CPU/GPU/NPU utilization | sampled | `psutil` / `nvidia-smi` / OS NPU counters |
+| Temperature, power draw | sampled | `nvidia-smi`; null elsewhere |
+| Energy per token, tokens per kWh | derived | from sampled power over the measured window |
+| Performance per watt | derived | throughput ÷ average watts — **tok/s/W** for generative runtimes, **inf/s/W** for graph/vision runtimes. Published results carry the unit; the two are not comparable |
 
-```bash
-git clone https://github.com/webdevsamran/local-ai-hardware-bench.git
-cd local-ai-hardware-bench
-pip install -e ".[dev]"
-```
+**Metrics that cannot be measured reliably are reported as `null` and shown as
+"not measured" in reports. They are never estimated.** A zero and an unmeasured
+value are different things, and this project keeps them different all the way to
+the dashboard.
 
-Optional but recommended for richer telemetry: `pip install psutil`.
+## Comparison safety — the part nobody else does
 
-## Quick start
+Two tokens-per-second numbers are only meaningful together if the things that
+move them were the same. AIHWBench classifies every comparison explicitly and
+returns machine-readable reasons:
 
-```bash
-# What hardware do I have? Any problems?
-aihwbench doctor
+- **`STRICTLY_COMPARABLE`** — model checksum, format, quantization and
+  tokenizer, prompt, token budget, sampling settings, seed, context length,
+  batch/concurrency, warmups/iterations, runtime, backend and device all match.
+- **`CONDITIONALLY_COMPARABLE`** — the workload matches but caveats exist
+  (power profile, OS version, runtime version).
+- **`NOT_COMPARABLE`** — a direct metric comparison would mislead. The CLI
+  refuses to emit deltas unless you pass `--force`, and `aihwbench compare`
+  exits with code **3**.
+- **`INSUFFICIENT_METADATA`** — the fields needed to decide are absent. Missing
+  on both sides is treated as *unknown*, never as agreement.
 
-# Which runtimes are usable right now?
-aihwbench runtimes
+That last rule exists because the obvious implementation gets it backwards: two
+results that both omit a field look identical to a naive comparison. The
+leaderboard groups by comparability rather than footnoting it, so an
+incomparable row can never be read as a ranking.
 
-# Full detection dump (JSON)
-aihwbench detect
+Full rules, field by field, with the reason each one is there:
+[docs/comparability-rubric.md](docs/comparability-rubric.md) and
+[docs/methodology.md](docs/methodology.md).
 
-# Run a real benchmark (model must be pulled first)
-ollama pull qwen2.5:0.5b-instruct-q4_K_M
-aihwbench benchmark --runtime ollama --model qwen2.5:0.5b-instruct-q4_K_M
+### Result trust states
 
-# Or run a versioned suite profile
-aihwbench suite smoke --runtime ollama --model qwen2.5:0.5b-instruct-q4_K_M
+Results carry a machine-readable trust state consumed by the dataset pipeline
+and the dashboard badges (see
+[submission pipeline](docs/results/submission-pipeline.md) and
+`aihwbench/quality.py`):
 
-# Validate and report on any result file
-aihwbench validate results/raw/<run_id>.json
-aihwbench report results/raw/<run_id>.json
+| State | Meaning |
+| --- | --- |
+| `verified` | Executed/reproduced by the project on real hardware |
+| `community_validated` | Independently reproduced by a community member |
+| `unreviewed` | Default for new submissions pending review |
+| `flagged` | Statistically anomalous; queued for human review — never auto-rejected |
+| `invalidated` | Superseded with a recorded reason; original history is preserved |
+| `superseded` | Replaced by a referenced replacement result |
 
-# Compare two runs (refuses to compare incompatible workloads)
-aihwbench compare results/raw/<a>.json results/raw/<b>.json
+Bad history is never silently deleted: invalidation records keep the original
+document verbatim with a reason and a replacement reference.
 
-# Generate dataset views from published results
-aihwbench export results/published --output results/dataset
+## Guides
 
-# Benchmark preconditions & environment noise (timer, power, thermals)
-aihwbench self-test
-```
+Written for people searching for the problem, not for the tool:
+
+| Guide | What it answers |
+| --- | --- |
+| [How to benchmark a local LLM](docs/guides/how-to-benchmark-a-local-llm.md) | The whole process end to end, and the five mistakes that make a number meaningless |
+| [Tokens per second, explained](docs/guides/tokens-per-second-explained.md) | What tok/s, TTFT and inter-token latency actually mean, and which one you feel |
+| [How much VRAM do I need?](docs/guides/vram-requirements-for-local-llms.md) | Model size × quantization × context, and what happens when it does not fit |
+| [NPU vs GPU vs CPU for local AI](docs/guides/npu-vs-gpu-for-local-ai.md) | What an NPU in an AI PC is good at, and what it is not |
+| [Choosing a quantization](docs/guides/choosing-a-quantization.md) | q4 vs q5 vs q8 vs FP16 — speed, memory, and the quality column people omit |
+| [Benchmark your hardware](docs/contributing/benchmarking-your-hardware.md) | Contribute a result from your own machine |
+
+## Frequently asked questions
+
+### How many tokens per second do I need for a local LLM?
+
+For reading generated text as it streams, roughly **7–10 tok/s** keeps pace with
+a fast reader, and 20+ feels instant. For code completion or anything agentic,
+what matters more is **time to first token** — a 200 ms TTFT at 30 tok/s feels
+faster than a 2 s TTFT at 80 tok/s. That is why this project reports both
+separately and refuses to collapse them into a single score.
+
+### How much VRAM do I need to run a 7B model?
+
+A 7B model at q4_K_M needs roughly 4.5 GB for weights, plus a KV cache that
+grows with context — so 6 GB is tight and 8 GB is comfortable at short context.
+Use `aihwbench fit --parameters 7B --quantization q4_k_m` for an estimate,
+clearly labelled as an estimate, or the
+[Will it run?](https://webdevsamran.github.io/local-ai-hardware-bench/will-it-run)
+page, which also shows measured results for that configuration where they exist.
+
+### What happens if a model does not fit in VRAM?
+
+Throughput falls off a step, not a slope. On the reference machine, moving from
+18 to 24 offloaded layers changed generation by **39.6%** for 66 MB of VRAM, and
+the full curve spans **5.8×**. Where the step sits depends on PCIe generation,
+memory bandwidth and what else is using the card, which is why it has to be
+measured per machine:
+[the offload cliff](docs/results/offload-cliff-rtx3080ti.md).
+
+### Does KV-cache quantization speed up inference?
+
+No. It is a **memory** feature. Measured across nine K/V dtype combinations,
+`q4_0` for both caches cut cache memory by 71.9% with a throughput difference
+inside the noise floor — while two asymmetric configurations cost over 60% of
+throughput for less memory saved:
+[KV-cache quantization](docs/results/kv-cache-rtx3080ti.md).
+
+### Is an NPU faster than a GPU for running LLMs?
+
+For LLM token generation on a machine that also has a discrete GPU, generally
+no — NPUs are built for sustained low-power inference, not peak memory
+bandwidth, and token generation is bandwidth-bound. Where an NPU wins is
+**performance per watt**, and leaving the GPU free for something else.
+AIHWBench samples NPU utilisation where the operating system exposes counters,
+so the claim can be checked rather than argued:
+[NPU vs GPU vs CPU](docs/guides/npu-vs-gpu-for-local-ai.md).
+
+### Why do two benchmarks of the same GPU disagree?
+
+Usually because they were never comparable: a different quantization, a
+different context length, a different runtime build, a laptop on battery rather
+than plugged in, or a background process competing for the same silicon. This
+project treats that as the central problem rather than a caveat — see
+[comparison safety](#comparison-safety--the-part-nobody-else-does). During
+development of this repository, a 15% difference between two devices turned out
+to be background CPU contention, which is precisely the failure mode the
+classifier exists to catch.
+
+### Does AIHWBench send my data anywhere?
+
+No. It runs entirely offline. Detection output is sanitized — no serial numbers,
+MAC addresses, usernames, home paths, cloud access keys or network identifiers —
+and every published artifact passes a fail-closed privacy scan before it can be
+committed. Submitting a result is an explicit, separate action. See
+[SECURITY.md](SECURITY.md) and [docs/security/privacy.md](docs/security/privacy.md).
+
+### Can I publish a benchmark from my own machine?
+
+Yes, and it is the most useful thing you can contribute. Run the benchmark, then
+validate and bundle the result and open a pull request — CI checks the schema,
+the privacy scan and the integrity hashes automatically. See
+[docs/contributing/benchmarking-your-hardware.md](docs/contributing/benchmarking-your-hardware.md).
+
+### Is it free? What is the licence?
+
+Apache-2.0, permanently, for the entire benchmarking core. See
+[SUSTAINABILITY.md](SUSTAINABILITY.md) for how the project intends to fund
+maintenance without crippling the open-source core, and
+[Sponsor this project](#sponsor-this-project) below.
 
 ## Dashboard
 
-The [web/](web) directory contains a production React + TypeScript
-dashboard deployed to GitHub Pages. It is generated exclusively from the
-published dataset — no synthetic numbers:
+The [web/](web) directory contains a production React + TypeScript dashboard
+deployed to GitHub Pages, generated exclusively from the published dataset — no
+synthetic numbers. Every route is prerendered to real HTML with its own title,
+description, canonical URL and JSON-LD, so it is indexable without executing
+JavaScript.
 
-- global leaderboard (throughput / TTFT / perf-per-watt views),
+- global leaderboard (throughput / TTFT / perf-per-watt views), grouped by
+  comparison safety rather than ranked blindly,
 - hardware, runtime, model and result explorers with URL-shareable filters,
+- interactive tools: will-it-run, local-vs-cloud cost, efficiency frontiers,
+  offload-cliff explorer, configuration recommender,
 - result comparison, compatibility matrix, methodology and docs pages,
-- downloadable JSON per result.
+- downloadable JSON per result and a read-only dataset API.
 
-Regenerate its data locally with `python scripts/generate_frontend_data.py`;
-CI fails if the committed generated data drifts from `results/published/`.
+Regenerate its data locally with `python scripts/generate_frontend_data.py`; CI
+fails if the committed generated data drifts from `results/published/`. Measured
+Lighthouse and axe-core results, with the conditions they were taken under, are
+in [docs/research/dashboard-performance.md](docs/research/dashboard-performance.md).
 
 ## Advanced workflows
 
@@ -215,32 +430,23 @@ aihwbench evaluate --evaluator multiple_choice --dataset mmlu-subset.jsonl
 
 # Export via the exporter plugin API (json/csv/markdown/sqlite built-in)
 aihwbench export-as --format csv --results-dir results/published --output out.csv
+
+# Generate dataset views from published results
+aihwbench export results/published --output results/dataset
+
+# Validate and report on any result file
+aihwbench validate results/raw/<run_id>.json
+aihwbench report results/raw/<run_id>.json
+
+# Compare two runs (refuses to compare incompatible workloads)
+aihwbench compare results/raw/<a>.json results/raw/<b>.json
+
+# Or run a versioned suite profile
+aihwbench suite smoke --runtime ollama --model qwen2.5:0.5b-instruct-q4_K_M
+
+# Full detection dump (JSON)
+aihwbench detect
 ```
-
-### llama.cpp backend
-
-```bash
-aihwbench benchmark --runtime llama.cpp \
-    --model-path path/to/model-q4_k_m.gguf \
-    --device cuda
-```
-
-## Metrics captured
-
-| Metric | Source | Notes |
-| --- | --- | --- |
-| Model load time | measured | where the runtime exposes it |
-| Time to first token (TTFT) | measured | first streamed token |
-| Prompt processing tok/s | measured | runtime-reported counts/durations |
-| Generation tok/s | measured | runtime-reported counts/durations |
-| Latency mean/p50/p75/p90/p95/p99/p99.9, stddev, CV | measured | across iterations |
-| Peak RAM / VRAM | sampled | background telemetry thread |
-| CPU/GPU utilization | sampled | `psutil` / `nvidia-smi` |
-| Temperature, power draw | sampled | `nvidia-smi`; null elsewhere |
-| Performance per watt | derived | throughput ÷ average watts — **tok/s/W** for generative runtimes, **inf/s/W** for graph/vision runtimes. Published results carry the unit; the two are not comparable |
-
-**Metrics that cannot be measured reliably are reported as `null` and shown
-as "not measured" in reports. They are never estimated.**
 
 ## How a benchmark run is put together
 
@@ -279,57 +485,24 @@ flowchart TB
 
 ## Result format & schema
 
-Every result is a JSON document validated against schema 1.0:
+Every result is a JSON document validated on write:
 
 - Formal JSON Schema: [`schemas/result-1.0.schema.json`](schemas/result-1.0.schema.json) and
-  [`schemas/result-2.0.schema.json`](schemas/result-2.0.schema.json) — the writer currently emits 2.0
+  [`schemas/result-2.0.schema.json`](schemas/result-2.0.schema.json)
 - Semantic validator: [`aihwbench/schemas.py`](aihwbench/schemas.py)
 - Full field reference: [`schemas/README.md`](schemas/README.md)
 
-Validation covers types, ISO-8601 UTC timestamps, run-id format,
-non-negative metrics, utilisation ranges (0–100), and reproducibility
-typing.
-
-## Comparison safety
-
-Comparisons are classified explicitly:
-
-- **STRICTLY_COMPARABLE** — model checksum/format/quantization, prompt,
-  token budget, sampling settings, seed, context length, batch/concurrency,
-  warmups/iterations, runtime/backend/device all match.
-- **CONDITIONALLY_COMPARABLE** — workload matches but caveats exist
-  (power profile, OS version, runtime version).
-- **NOT_COMPARABLE** — direct metric comparison would be misleading;
-  the CLI refuses to emit deltas unless you pass `--force`, and returns
-  machine-readable reasons.
-
-See [docs/methodology.md](docs/methodology.md).
-
-## Result trust states
-
-Results carry a machine-readable trust state consumed by the dataset
-pipeline and the dashboard badges (see
-[submission pipeline](docs/results/submission-pipeline.md) and
-`aihwbench/quality.py`):
-
-| State | Meaning |
-| --- | --- |
-| `verified` | Executed/reproduced by the project on real hardware |
-| `community_validated` | Independently reproduced by a community member |
-| `unreviewed` | Default for new submissions pending review |
-| `flagged` | Statistically anomalous; queued for human review — never auto-rejected |
-| `invalidated` | Superseded with a recorded reason; original history is preserved |
-| `superseded` | Replaced by a referenced replacement result |
-
-Bad history is never silently deleted: invalidation records keep the
-original document verbatim with a reason and a replacement reference.
+Validation covers types, ISO-8601 UTC timestamps, run-id format, non-negative
+metrics, utilisation ranges (0–100), and reproducibility typing. Passing
+`--formal` to the validate command additionally checks the document against the
+published JSON Schema.
 
 ## Python SDK & plugins
 
-Typed public APIs live in `aihwbench/sdk.py`: `BenchmarkResult`,
-`SystemInfo`, `RuntimeInfo`, `ModelInfo`, `MetricSet`, `Workload`,
-`BenchmarkRunner`, `RegressionReport`. All convert losslessly from
-published result documents; unavailable metrics stay `None`.
+Typed public APIs live in `aihwbench/sdk.py`: `BenchmarkResult`, `SystemInfo`,
+`RuntimeInfo`, `ModelInfo`, `MetricSet`, `Workload`, `BenchmarkRunner`,
+`RegressionReport`. All convert losslessly from published result documents;
+unavailable metrics stay `None`.
 
 Plugin entry points:
 
@@ -352,6 +525,9 @@ Exit codes are a stable contract (`aihwbench/exit_codes.py`):
 | 4 | configuration error |
 | 5 | performance regression detected (regression gate) |
 
+A CI regression gate that cannot compare two results **fails** rather than
+passing silently — that is what code 3 is for.
+
 ## Reproducing a published result
 
 Each committed result in [`results/published/`](results/published) includes a
@@ -373,52 +549,69 @@ Tooling support:
 
 ## Contributing
 
-We welcome code, backends, hardware results, documentation, and reviews.
-Start with [CONTRIBUTING.md](CONTRIBUTING.md). Good first issues are
-labeled in the issue tracker. See also:
+We welcome code, backends, hardware results, documentation, and reviews. The
+highest-value contribution is **a benchmark from hardware nobody here owns**.
+
+Start with [CONTRIBUTING.md](CONTRIBUTING.md). Good first issues are labeled in
+the issue tracker. See also:
 
 - [Backend plugin API](docs/guides/plugin-api.md)
 - [Result submission pipeline](docs/results/submission-pipeline.md)
 - [Governance](GOVERNANCE.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
 
-## Documentation
+## Sponsor this project
 
-| Audience | Start here |
-| --- | --- |
-| New user | [Quickstart](docs/getting-started/quickstart.md) · [Installation](docs/getting-started/installation.md) · [FAQ](FAQ.md) |
-| Contributor | [Onboarding](docs/contributing/onboarding.md) · [Benchmark your hardware](docs/contributing/benchmarking-your-hardware.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Glossary](GLOSSARY.md) |
-| Runtime maintainer | [Backends overview](docs/backends/overview.md) · [Plugin API](docs/guides/plugin-api.md) |
-| Researcher | [Reproducibility](docs/research/reproducibility.md) · [Citation](docs/research/citation.md) |
-| Security/compliance | [Privacy](docs/security/privacy.md) · [Supply chain](docs/security/supply-chain.md) |
-| Hardware | [Hardware overview](docs/hardware/overview.md) |
-| Measured studies | [Offload cliff](docs/results/offload-cliff-rtx3080ti.md) — throughput against GPU layers · [KV-cache quantization](docs/results/kv-cache-rtx3080ti.md) — what it costs in memory, and the two configurations that cost more than they save · [Three devices, one model](docs/results/openvino-three-devices.md) — CPU, iGPU and dGPU on the same IR, and the device where greedy decoding is not reproducible |
-| Models | [Model zoo](docs/models/zoo.md) — licences, checksums, how to obtain each |
-| Desktop app | [desktop/README.md](desktop/README.md) — a thin Tauri shell over the same CLI |
-| Dashboard | [Performance and accessibility](docs/research/dashboard-performance.md) — Lighthouse and axe results, with the conditions they were measured under |
+AIHWBench is built and maintained in the open, under Apache-2.0, with no company
+behind it. The benchmarking core will stay free permanently — see
+[SUSTAINABILITY.md](SUSTAINABILITY.md) for exactly what that promise covers.
 
-## Vendor collaboration
+There are four ways to help, in rough order of how much they would change the
+project:
 
-Hardware vendors (AMD, Intel, NVIDIA, Qualcomm, Hailo, mini-PC OEMs, ...):
-we welcome evaluation units, engineering samples, dev kits, loaner systems,
-and remote hardware access. In return you receive independent runtime
-validation, reproducible data, installation docs, bug reports, and upstream
-PRs. We do not promise favorable results — see
-[docs/vendor-collaboration.md](docs/vendor-collaboration.md) and
-[docs/hardware-needed.md](docs/hardware-needed.md).
+1. **Lend or donate hardware.** This is the bottleneck. Nine published results
+   all come from one laptop. An AMD system, a Snapdragon X machine, an Apple
+   Silicon Mac, an Intel Core Ultra AI PC with an NPU, or any mini PC or SBC
+   would each unlock a backend that is written, unit-tested and has never
+   executed on the silicon it targets. See
+   [docs/hardware-needed.md](docs/hardware-needed.md) and
+   [docs/vendor-collaboration.md](docs/vendor-collaboration.md).
+2. **Sponsor maintenance time** via
+   [GitHub Sponsors](https://github.com/sponsors/webdevsamran) — see
+   [`.github/FUNDING.yml`](.github/FUNDING.yml). Funded time goes to correctness
+   first, hardware coverage second, features third.
+3. **Fund a specific backend or study.** Vendor-funded work is disclosed in the
+   pull request and the release notes, and buys no editorial control over
+   results. Negative results are published like any other result.
+4. **Run one benchmark and send it.** It costs you five minutes and is worth
+   more to the dataset than most code contributions.
 
-## Ecosystem (planned)
+**What sponsorship does not buy:** favourable results, removal of a published
+number, exclusion of a competitor, or advance notice of a result. Those terms
+are written down in
+[docs/vendor-collaboration.md](docs/vendor-collaboration.md) so they can be held
+against the project later.
 
-| Offering | Status |
-| --- | --- |
-| AIHWBench Community (this repo) | Available — Apache-2.0 |
-| AIHWBench Dataset | Public validated dataset built from published results |
-| AIHWBench Enterprise / Cloud / Certified / Labs | Planned — see [TRADEMARKS.md](TRADEMARKS.md); nothing exists yet |
+Read the full appeal, including what each kind of help would concretely unlock:
+**[SPONSORS.md](SPONSORS.md)**.
+
+## Credits and acknowledgements
+
+AIHWBench measures other people's software. It would not exist without
+llama.cpp, Ollama, ONNX Runtime, OpenVINO, vLLM, SGLang, MLX, ExLlamaV2 and the
+rest of the local-inference ecosystem, and it stands on MLCommons' work on what
+auditable benchmarking should look like. Everyone credited, upstream and in this
+repository: **[CREDITS.md](CREDITS.md)**.
+
+Maintainers and contributors: [AUTHORS.md](AUTHORS.md) ·
+[CONTRIBUTORS.md](CONTRIBUTORS.md) · [MAINTAINERS.md](MAINTAINERS.md). If you
+contributed and are not listed, that is a bug — please open an issue.
 
 ## Security & privacy
 
-Detection output is sanitized: no serial numbers, MAC addresses, usernames,
-home paths, or network identifiers are collected. Published artifacts pass
-a fail-closed privacy scan. See [SECURITY.md](SECURITY.md).
+Detection output is sanitized: no serial numbers, MAC addresses, usernames, home
+paths, cloud access keys, API keys or network identifiers are collected.
+Published artifacts pass a fail-closed privacy scan. Report vulnerabilities
+privately — see [SECURITY.md](SECURITY.md).
 
 <!-- related-projects -->
 ## Related projects
@@ -435,27 +628,39 @@ These are independent projects: no shared library, no coupled releases, and each
 
 <!-- /related-projects -->
 
-## How this compares
+## Ecosystem (planned)
 
-9 projects are tracked in [`docs/competitive-analysis.md`](docs/competitive-analysis.md),
-fetched from the GitHub API on 2026-09-09 and committed to
-[`data/competitor-meta.json`](data/competitor-meta.json).
+| Offering | Status |
+| --- | --- |
+| AIHWBench Community (this repo) | Available — Apache-2.0 |
+| AIHWBench Dataset | Public validated dataset built from published results |
+| AIHWBench Enterprise / Cloud / Certified / Labs | Planned — see [TRADEMARKS.md](TRADEMARKS.md); nothing exists yet |
 
-Most of them are *runtimes* — llama.cpp, Ollama, vLLM, ONNX Runtime, OpenVINO — each of
-which reports its own numbers, measured its own way. That is exactly the problem this
-project exists for: numbers from two runtimes are not comparable unless the same load
-generator produced them under recorded conditions. **MLCommons Inference** is the closest
-in intent and is the reference for rigorous, auditable benchmarking; it targets datacentre
-submissions rather than the laptop or mini-PC in front of you.
+## Documentation
+
+| Audience | Start here |
+| --- | --- |
+| New user | [Quickstart](docs/getting-started/quickstart.md) · [Installation](docs/getting-started/installation.md) · [FAQ](FAQ.md) |
+| Contributor | [Onboarding](docs/contributing/onboarding.md) · [Benchmark your hardware](docs/contributing/benchmarking-your-hardware.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Glossary](GLOSSARY.md) |
+| Runtime maintainer | [Backends overview](docs/backends/overview.md) · [Plugin API](docs/guides/plugin-api.md) |
+| Researcher | [Methodology](docs/methodology.md) · [Comparability rubric](docs/comparability-rubric.md) · [Reproducibility](docs/research/reproducibility.md) · [Citation](docs/research/citation.md) · [Dataset API](web/public/api/openapi.json) |
+| Security/compliance | [Privacy](docs/security/privacy.md) · [Supply chain](docs/security/supply-chain.md) |
+| Hardware | [Hardware overview](docs/hardware/overview.md) · [Compatibility matrix](docs/compatibility-matrix.md) · [Hardware needed](docs/hardware-needed.md) |
+| Measured studies | [Offload cliff](docs/results/offload-cliff-rtx3080ti.md) · [KV-cache quantization](docs/results/kv-cache-rtx3080ti.md) · [Three devices, one model](docs/results/openvino-three-devices.md) |
+| Models | [Model zoo](docs/models/zoo.md) — licences, checksums, how to obtain each |
+| Dashboard | [Performance and accessibility](docs/research/dashboard-performance.md) |
+| Desktop app | [desktop/README.md](desktop/README.md) — a thin Tauri shell over the same CLI |
+| Enterprise | [Enterprise overview](docs/enterprise/overview.md) (planned/future) |
 
 ## Citation
 
 If this benchmark contributed to published work, cite it via
-[`CITATION.cff`](CITATION.cff) — GitHub renders a "Cite this repository" control from it.
+[`CITATION.cff`](CITATION.cff) — GitHub renders a "Cite this repository" control
+from it.
 
 ## License & attribution
 
-Apache-2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
-Created by [@webdevsamran](https://github.com/webdevsamran); see
-[AUTHORS.md](AUTHORS.md) and [CONTRIBUTORS.md](CONTRIBUTORS.md).
-To cite this work use [CITATION.cff](CITATION.cff).
+Apache-2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE). Created by
+[@webdevsamran](https://github.com/webdevsamran); see [AUTHORS.md](AUTHORS.md),
+[CONTRIBUTORS.md](CONTRIBUTORS.md) and [CREDITS.md](CREDITS.md). To cite this
+work use [CITATION.cff](CITATION.cff).

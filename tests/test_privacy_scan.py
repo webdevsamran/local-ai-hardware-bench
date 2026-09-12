@@ -319,6 +319,12 @@ _WEB_DATA = Path(__file__).resolve().parent.parent / "web" / "public" / "data"
 #: asserting that a fire drill is a fire.
 _DETECTION_CORPUS = "privacy.json"
 
+#: `scripts/secret_scan.py`'s whole-file exemption marker. Assembled from two
+#: halves rather than written out, because a file containing it intact is
+#: exempted from the secret scan -- and this one holds synthetic credentials.
+#: The only file allowed to carry it intact is the corpus itself.
+_ALLOW_FILE_MARKER = "secret-scan: " + "allow-file"
+
 
 def _published_data_files() -> list[Path]:
     return sorted(p for p in _WEB_DATA.glob("*.json") if p.name != _DETECTION_CORPUS)
@@ -349,23 +355,33 @@ def test_the_detection_corpus_is_exempt_from_the_secret_scanner_by_marker():
     in generated output and the next regeneration is where it would be lost.
     """
     text = (_WEB_DATA / _DETECTION_CORPUS).read_text(encoding="utf-8")
-    assert "secret-scan: allow-file" in text, (
+    assert _ALLOW_FILE_MARKER in text, (
         "the privacy corpus lost the secret scanner's whole-file exemption; "
         "regenerate it with scripts/generate_frontend_data.py"
     )
 
 
-def test_the_generator_does_not_exempt_itself():
-    """The marker exempts whatever file it appears in, including a generator.
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "scripts/generate_frontend_data.py",
+        "tests/test_privacy_scan.py",
+    ],
+)
+def test_no_source_file_exempts_itself_from_the_secret_scan(relative: str):
+    """The marker exempts whatever file it appears in, including this one.
 
-    Writing it as a literal in `generate_frontend_data.py` made the generator
-    itself exempt -- silently, and for every secret it might later come to
-    hold. It is assembled from two halves there for this reason.
+    Writing it as a literal in `generate_frontend_data.py` exempted the
+    generator -- silently, and for every secret it might later come to hold.
+    Writing the *assertion* against that as a literal here then exempted this
+    test file, which holds a handful of synthetic credentials of its own. Both
+    assemble the marker from two halves for the same reason, and this checks
+    both rather than only the one that was noticed first.
     """
-    generator = Path(__file__).resolve().parent.parent / "scripts" / "generate_frontend_data.py"
-    assert "secret-scan: allow-file" not in generator.read_text(encoding="utf-8"), (
-        "generate_frontend_data.py contains the whole-file exemption marker "
-        "verbatim, which exempts the generator itself from the secret scan"
+    path = Path(__file__).resolve().parent.parent / relative
+    assert _ALLOW_FILE_MARKER not in path.read_text(encoding="utf-8"), (
+        f"{relative} contains the whole-file exemption marker verbatim, "
+        "which exempts it from the secret scan"
     )
 
 

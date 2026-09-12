@@ -1,14 +1,31 @@
-"""NVIDIA TensorRT / TensorRT-LLM backend — detection only.
+"""NVIDIA TensorRT — measured through ONNX Runtime's TensorRT provider.
 
-Detection looks for trtexec on PATH and the tensorrt Python package.
-Benchmarking requires engine builds specific to each GPU, which are not
-committed to this repository.
+The obstacle with TensorRT has never been the API, it is that an engine is
+built for one GPU, one driver and one precision, and is not portable to
+another machine. That is why no engine is committed here and why a TensorRT
+number cannot be shipped the way a GGUF result can.
+
+ONNX Runtime's TensorRT execution provider removes the part that blocks
+measurement: it takes an ordinary ONNX model, builds the engine on the machine
+doing the benchmarking, caches it, and runs it. The first run therefore
+includes engine construction and can take minutes — that is a real cost of
+this runtime and is reported as load time rather than hidden by a warm-up.
+
+**TensorRT-LLM is a different thing and is not this.** It is a separate
+engine-compilation stack for transformer models, officially Linux, and it
+would need its own backend. This one measures ONNX graphs.
+
+Verified on the reference machine only insofar as the delegation path is: the
+identical code runs DirectML here, where 101 of 104 MobileNetV2 nodes were
+assigned to the accelerator. The TensorRT provider itself is not installed,
+so this specific path is written and not observed.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
+from ._delegate import run_via_onnxruntime
 from .base import (
     BackendError,
     BackendInfo,
@@ -55,12 +72,40 @@ def detect() -> BackendInfo:
     )
 
 
+def _has_tensorrt_provider() -> bool:
+    """Whether ONNX Runtime here can build and run a TensorRT engine."""
+    try:
+        import onnxruntime
+
+        return "TensorrtExecutionProvider" in onnxruntime.get_available_providers()
+    except Exception:  # noqa: BLE001 - detection must never raise
+        return False
+
+
 def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
-    """TensorRT benchmarking is planned for v0.6."""
-    info = detect()
-    if info.status is not RuntimeStatus.CONFIGURATION_REQUIRED:
-        raise BackendError(f"tensorrt is not available: {info.status.value} ({info.detail})")
-    raise BackendError("TensorRT benchmarking is planned for v0.6. See ROADMAP.md.")
+    """Benchmark an ONNX model on a TensorRT engine built for this GPU.
+
+    The engine build happens inside the session creation ONNX Runtime does, so
+    it lands in `load_time_ms`. On a first run for a given model and GPU that
+    figure is minutes rather than milliseconds, and it belongs in the result:
+    a runtime that needs ten minutes before it answers anything is making a
+    trade a reader should be able to see.
+    """
+    if not _has_tensorrt_provider():
+        info = detect()
+        raise BackendError(
+            "tensorrt: ONNX Runtime has no TensorrtExecutionProvider, so there "
+            "is no way to build or run an engine here. Install onnxruntime-gpu "
+            "built against TensorRT on a machine with an NVIDIA GPU. "
+            f"(detection: {info.status.value} — {info.detail})"
+        )
+    return run_via_onnxruntime(
+        config,
+        system,
+        name="tensorrt",
+        device="tensorrt",
+        backend="onnxruntime-tensorrt",
+    )
 
 
 # Declared capability contract: truthful hardware/library prerequisites.

@@ -21,10 +21,10 @@ Every "Tested" cell links to a committed result file with a reproducibility bloc
 | ONNX Runtime (DirectML EP) | **Tested** | `results/published/onnxruntime-1787391455.json` |
 | OpenVINO (CPU device) | **Tested** | `results/published/openvino-1787391625.json` |
 | OpenVINO (GPU device) | **Tested** | `results/published/openvino-1787391710.json` |
-| ROCm | Hardware Needed (no AMD GPU; Windows HIP SDK only) | — |
-| QNN | Hardware Needed (no Snapdragon NPU) | — |
-| TensorRT | Not tested (needs per-GPU engine builds; CUDA toolkit absent) | — |
-| HailoRT | Hardware Needed (no Hailo device) | — |
+| ROCm | Implemented; hardware needed (no AMD GPU; Windows HIP SDK only) | — |
+| QNN | Implemented; hardware needed (no Snapdragon NPU) | — |
+| TensorRT | Implemented; TensorRT execution provider absent here | — |
+| HailoRT | Implemented; hardware needed (no Hailo device) | — |
 
 ## Platform × runtime matrix
 
@@ -59,17 +59,17 @@ undocumented is one nobody knows to try.
 | `lmstudio` | OpenAI-compatible HTTP | Experimental | Needs the LM Studio server running |
 | `vllm` | OpenAI-compatible HTTP | Supported | Linux + NVIDIA/ROCm only; not runnable on this machine |
 | `sglang` | OpenAI-compatible HTTP | Supported | Linux + NVIDIA/ROCm only; not runnable on this machine |
-| `lemonade` | HTTP API | Detection only | Needs Lemonade Server; Ryzen AI for acceleration |
-| `rocm` | Detection only | Hardware Needed | No AMD GPU |
-| `mlx` | Detection only | Hardware Needed | Apple silicon only |
-| `qnn` | Detection only | Hardware Needed | No Snapdragon NPU |
-| `tensorrt` | Detection only | Not tested | Needs per-GPU engine builds; CUDA toolkit absent |
-| `hailo` | Detection only | Hardware Needed | No Hailo device |
-| `windows_ml` | Detection only | Experimental | Windows ML runtime |
+| `lemonade` | OpenAI-compatible HTTP | Supported | Implemented over its `/api/v1` surface; needs Lemonade Server on Ryzen AI to execute |
+| `rocm` | llama.cpp HIP / ONNX Runtime EP | Supported | Implemented, dispatching on the artifact; no AMD GPU here to execute it |
+| `mlx` | In-process (`mlx_lm`) | Supported | Implemented, recording unified-memory peak from MLX itself; Apple Silicon needed to execute |
+| `qnn` | ONNX Runtime EP | Supported | Implemented, refusing when the provider is assigned no graph nodes; no Snapdragon NPU here |
+| `tensorrt` | ONNX Runtime EP | Supported | Implemented; the engine is built on the benchmarking machine and its cost lands in `load_time_ms`. TensorRT provider absent here |
+| `hailo` | In-process (HailoRT) | Supported | Implemented over `InferVStreams`; reports inferences/sec, not tokens. Needs a device and a compiled `.hef` |
+| `windows_ml` | ONNX Runtime (DirectML) | **Tested** | 101 of 104 MobileNetV2 nodes ran on the GPU here |
 | `vulkan` | llama.cpp build variant | Experimental | Two Vulkan devices found here (Iris Xe, RTX 3080 Ti); this llama.cpp build is CUDA-only, so the limit is the build and not the hardware |
 | `sycl` | llama.cpp build variant | Experimental | Intel Iris Xe present; oneAPI absent, so nothing can reach it |
-| `webgpu` | Browser / Node 22+ | Planned | The sandbox exposes no power, VRAM or temperature, so a browser result cannot answer the energy questions asked elsewhere |
-| `exllamav2` | In-process (CUDA) | Detection only | Needs PyTorch+CUDA, `exllamav2` and EXL2 weights; its fractional bits-per-weight do not map onto GGUF quantization labels |
+| `webgpu` | llama.cpp Dawn / browser | Supported (native) | The native Dawn path is implemented and fully measurable. The in-browser path stays unimplemented: the sandbox exposes no power, VRAM or temperature, and those nulls would read to the classifier as agreeing with a native result's |
+| `exllamav2` | In-process (CUDA) | Supported | Implemented over the dynamic generator; needs PyTorch+CUDA, `exllamav2` and EXL2 weights. Its fractional bits-per-weight do not map onto GGUF quantization labels |
 | `jetson` | llama.cpp on L4T | Hardware Needed | aarch64 + Tegra; unified memory, and the `nvpmodel` power mode must be recorded or results are not comparable |
 | `arm_sbc` | llama.cpp CPU | Hardware Needed | Raspberry Pi and similar, identified by device-tree model; throttling and power-delivery flags recorded because both present as "slow board" |
 

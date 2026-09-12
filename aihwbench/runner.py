@@ -194,7 +194,20 @@ def run_benchmark(runtime: str, config: Any) -> dict[str, Any]:
     # no way to know the difference exists, and a reader seeing no NPU
     # metrics cannot tell "this machine has none" from "nobody measured it".
     # The block says which, and never invents a number.
-    result["npu"] = npu_telemetry(system)
+    # Aggregates come from the run's own telemetry rather than a fresh reading:
+    # by the time this executes the benchmark is over and the NPU is idle, so
+    # sampling now would report an accelerated run as roughly zero percent busy.
+    _metrics = result.get("metrics") or {}
+    result["npu"] = npu_telemetry(
+        system,
+        measured={
+            "npu_util_percent": _metrics.get("avg_npu_util_percent"),
+            "npu_util_percent_peak": _metrics.get("peak_npu_util_percent"),
+            "source": ((result.get("telemetry") or {}).get("sources") or {}).get(
+                "npu_util_percent"
+            ),
+        },
+    )
 
     trace = trace_series(result)
     result["thermal"] = thermal_from_trace(trace)

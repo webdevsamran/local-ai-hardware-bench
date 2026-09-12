@@ -27,7 +27,14 @@ import platform
 from pathlib import Path
 from typing import Any
 
-from .base import BackendError, BackendInfo, BenchmarkConfig, RuntimeStatus, run_command
+from ._delegate import run_via_llama_cpp
+from .base import (
+    BackendError,
+    BackendInfo,
+    BenchmarkConfig,
+    RuntimeStatus,
+    run_command,
+)
 
 
 def intel_gpus() -> list[str]:
@@ -136,14 +143,18 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     if info.status is not RuntimeStatus.AVAILABLE:
         raise BackendError(f"sycl is not available: {info.status.value} ({info.detail})")
 
-    from . import llama_cpp
-
-    extra = dict(config.extra or {})
-    extra.setdefault("device", "SYCL0")
-    result = llama_cpp.run(BenchmarkConfig(**{**config.__dict__, "extra": extra}), system)
-    result["runtime"]["name"] = "sycl"
-    result["runtime"]["backend"] = "llama.cpp-sycl"
-    return result
+    # The device is discovered from `--list-devices` rather than assumed to be
+    # `SYCL0`. The old hardcoded name was also never passed on: llama.cpp
+    # read no device key at all, so on a build carrying both SYCL and CUDA
+    # the server picked its own preferred device and the result came back
+    # labelled `sycl` having run on the other one.
+    return run_via_llama_cpp(
+        config,
+        system,
+        name="sycl",
+        device_prefix="SYCL",
+        backend="llama.cpp-sycl",
+    )
 
 
 #: Declared capability contract: truthful prerequisites.

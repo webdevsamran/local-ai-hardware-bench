@@ -32,6 +32,7 @@ from .base import (
     RuntimeStatus,
     file_sha256,
     new_run_id,
+    resolved_device,
     run_command,
     which,
 )
@@ -234,6 +235,37 @@ def _cache_type(config: BenchmarkConfig, which: str) -> str | None:
     return value
 
 
+def _offload_device(config: BenchmarkConfig) -> str | None:
+    """`--device`: which of llama.cpp's devices to offload to.
+
+    This existed as an unread key for as long as the Vulkan and SYCL backends
+    have been delegating here. Both set `extra["device"]` -- `"Vulkan0"`,
+    `"SYCL0"` -- nothing consumed it, and both then relabelled the result's
+    `runtime.name`. On a build carrying only one GPU backend that was
+    harmless, because detection refuses when the build lacks the backend. On a
+    build carrying Vulkan *and* CUDA, which is the common multi-backend case,
+    llama.cpp picks its own preferred device and the measurement came back
+    labelled `vulkan` having run on CUDA.
+
+    `vulkan.py`'s own docstring calls that "worse than no result ... exactly
+    the kind of mislabelling the comparison classifier cannot catch", which is
+    right: `runtime.name` is in the classifier's strict set, so the wrong value
+    does not merely misinform, it licenses a comparison against real Vulkan
+    runs.
+
+    The device name is llama.cpp's own, as printed by `--list-devices`
+    (`CUDA0`, `Vulkan0`, `SYCL0`, `RPC[...]`), and is passed through
+    unvalidated on purpose: the authority on what exists is the binary, which
+    refuses an unknown name at startup with a better message than a guess here
+    would produce.
+    """
+    requested = config.extra.get("device")
+    if requested is None:
+        return None
+    value = str(requested).strip()
+    return value or None
+
+
 def _gpu_layers(config: BenchmarkConfig) -> int:
     """Layers to offload to the GPU: ``-ngl``.
 
@@ -278,6 +310,9 @@ class LlamaServerHandle:
             str(_gpu_layers(self.config)),
             "--no-webui",
         ]
+        device = _offload_device(self.config)
+        if device is not None:
+            cmd.extend(["--device", device])
         for cache in ("k", "v"):
             cache_type = _cache_type(self.config, cache)
             if cache_type is not None:
@@ -507,7 +542,13 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
             "name": "llama.cpp",
             "version": info.version,
             "backend": "llama-server",
-            "device": config.device,
+            # The llama.cpp device that ran, when one was named, rather than
+            # only the vocabulary-level hint. `runtime.device` is in the
+            # classifier's strict set; "auto" on a machine with two GPUs does
+            # not identify what was measured.
+            "device": resolved_device(config.device) or config.device,
+            "device_requested": config.device,
+            "offload_device": _offload_device(config),
         },
         "model": {
             "name": Path(model_path).name,

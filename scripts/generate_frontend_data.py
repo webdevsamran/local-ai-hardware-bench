@@ -291,6 +291,15 @@ def _offload_cliffs() -> dict:
     }
 
 
+#: `scripts/secret_scan.py`'s whole-file exemption marker, which the generated
+#: privacy corpus carries. Assembled from two halves rather than written out,
+#: because a generator containing the marker verbatim would exempt *itself*
+#: from the secret scan -- silently, and for every future secret it might come
+#: to hold. The scanner exempts only the file the marker appears in, so the
+#: only place it may appear intact is the corpus.
+_ALLOW_FILE_MARKER = "secret-scan: " + "allow-file"
+
+
 def _privacy_patterns() -> dict:
     """The privacy scanner's patterns, plus vectors pinning the two engines.
 
@@ -310,6 +319,11 @@ def _privacy_patterns() -> dict:
     # Strings chosen to exercise each pattern from both sides. The negatives
     # are the important half: a pattern matching everything would sail through
     # a positives-only check while making the scanner useless.
+    #
+    # Every username, key and address below is fictional. This file is
+    # published to the dashboard, so a probe built from a real value would leak
+    # exactly what the scanner exists to catch -- and it did: the Windows probe
+    # here carried the maintainer's actual account name until it was noticed.
     probes = [
         "aa:bb:cc:dd:ee:ff",
         "AA-BB-CC-DD-EE-FF",
@@ -318,8 +332,15 @@ def _privacy_patterns() -> dict:
         "123-45-6789",
         "ghp_" + "a" * 36,
         "Bearer abcdef0123456789",
-        r"C:\Users\samra\models",
+        r"C:\Users\alice\models",
+        # Windows accepts `/` too, `pathlib` emits it and JSON carries it
+        # unescaped, so this is the form a result actually contains.
+        "C:/Users/alice/models/m.gguf",
         "/home/alice/models",
+        # macOS uses /Users/, which the posix `home` pattern does not match.
+        "/Users/alice/models",
+        "AKIAIOSFODNN7EXAMPLE",
+        "sk-" + "A" * 32,
         "Serial Number: ABC123XYZ",
         "SN-12345678",
         "USERNAME",
@@ -331,6 +352,12 @@ def _privacy_patterns() -> dict:
         "generation_tokens_per_second",
         "2026-09-10T08:00:00Z",
         "serial",  # a bare CPU capability flag, not a leak
+        # A SHA-256 digest: every result carries one, and it is the reason the
+        # API-key pattern requires a prefix instead of keying on entropy.
+        "sha256-c5396e06" + "0" * 56,
+        "models/mobilenetv2-12.onnx",
+        "exl2-4.65bpw",
+        "Users of this tool",  # the bare word, not a path segment
     ]
 
     patterns = pattern_registry()
@@ -355,7 +382,17 @@ def _privacy_patterns() -> dict:
             "Generated from aihwbench/sanitize.py, which stays canonical. "
             "Detection is regex-based and deliberately over-eager: a false "
             "positive costs a contributor a second look, while a false "
-            "negative publishes someone's home directory."
+            "negative publishes someone's home directory. "
+            # This file is a detection corpus: every probe above is a synthetic
+            # credential, which is precisely what the repository secret scanner
+            # looks for. It has flagged this file since the corpus was
+            # introduced -- a standing red CI check that teaches everyone to
+            # ignore it. The scanner ships a whole-file exemption for exactly
+            # this case, and the marker travels in the generated document so it
+            # cannot be lost on the next regeneration.
+            "Every credential in reference_cases is synthetic and exists to be "
+            "matched; this file is a detection corpus, not a store of secrets, "
+            "so it carries the scanner's whole-file exemption: " + _ALLOW_FILE_MARKER
         ),
     }
 

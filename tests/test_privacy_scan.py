@@ -16,7 +16,10 @@ Also pins the back-compat contracts consumed by CI and other tests:
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
+
+import pytest
 
 from aihwbench.quality import data_quality_report
 from aihwbench.sanitize import (
@@ -228,3 +231,193 @@ def test_colliding_keys_are_kept_rather_than_dropped():
     cleaned = redact_object({r"C:\Users\bob": 1, r"C:\Users\eve": 2})
     assert len(cleaned) == 2, "no field may be lost to a key collision"
     assert sorted(cleaned.values()) == [1, 2]
+
+
+# --- path separators and platforms the scanner used to miss -----------------
+#
+# A result document is a public artifact in this project: it is committed to
+# `results/published/` and served from the dataset API. So a home directory that
+# slips past the scan is not an inconvenience, it is somebody's username on the
+# internet. These four forms all did slip past.
+
+
+@pytest.mark.parametrize(
+    "leak,label",
+    [
+        (r"C:\Users\alice\models\m.gguf", "windows backslash"),
+        ("C:/Users/alice/models/m.gguf", "windows forward slash"),
+        (r"C:/Users/alice\models", "windows mixed separators"),
+        ("/Users/alice/models", "macOS home"),
+        ("/home/alice/models", "linux home"),
+    ],
+)
+def test_every_home_directory_form_is_caught(leak, label):
+    """Only the backslash form was.
+
+    Windows accepts `/` everywhere, `pathlib` emits it, and JSON carries it
+    without escaping — so `C:/Users/name/...` is the form this project actually
+    produces, and it was the form that passed. macOS was worse: the posix
+    pattern matches `/home/`, macOS uses `/Users/`, and nothing matched it at
+    all. Every result from a Mac carried its owner's username, and this project
+    ships an MLX backend whose entire audience is on macOS.
+    """
+    clean, findings = scan_object({"path": leak})
+    assert not clean, f"{label} was not detected: {leak}"
+    assert findings, f"{label} produced no finding"
+    assert "alice" not in redact_object({"path": leak})["path"], f"{label} survived redaction"
+
+
+@pytest.mark.parametrize(
+    "secret",
+    ["AKIAIOSFODNN7EXAMPLE", "ASIAY34FZKBOKMUTVV7A", "sk-proj-abc123def456ghi789jkl012"],
+)
+def test_cloud_and_api_keys_are_caught(secret):
+    """A benchmark result should never carry one, and somebody will paste one
+    into a note field anyway."""
+    clean, _ = scan_object({"note": f"key {secret}"})
+    assert not clean
+    assert secret not in redact_object({"note": f"key {secret}"})["note"]
+
+
+@pytest.mark.parametrize(
+    "legitimate",
+    [
+        "sha256:bdffb86766b3da0a24c9de9f9da92ed79acb2b59fc93a5dd12cae6b2d1d48d04",
+        "qwen2.5:0.5b-instruct-q4_K_M",
+        "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+        "models/mobilenetv2-12.onnx",
+        "Users of this tool should run aihwbench doctor first",
+        "exl2-4.65bpw",
+    ],
+)
+def test_real_content_is_not_redacted(legitimate):
+    """The cost of a greedy pattern is paid by every result.
+
+    This project puts a SHA-256 digest in every document and a model tag in
+    most; a checksum redacted as a "key" would destroy the provenance the
+    checksum exists to provide.
+    """
+    clean, findings = scan_object({"v": legitimate})
+    assert clean, f"false positive on legitimate content: {findings}"
+    assert redact_object({"v": legitimate})["v"] == legitimate
+
+
+# --------------------------------------------------------------------------
+# The dashboard's own published data.
+#
+# `web/public/data/` is committed and served to every visitor, so it is a
+# published artifact under exactly the rules `results/published/` lives by --
+# and nothing was scanning it. One file carried the maintainer's real Windows
+# account name, in a probe written to demonstrate the home-directory pattern.
+# The scanner's own test corpus was the leak.
+# --------------------------------------------------------------------------
+
+_WEB_DATA = Path(__file__).resolve().parent.parent / "web" / "public" / "data"
+
+#: The detection corpus is the one file here that is *supposed* to contain
+#: identifiers: every probe in it exists to be matched. Scanning it would be
+#: asserting that a fire drill is a fire.
+_DETECTION_CORPUS = "privacy.json"
+
+
+def _published_data_files() -> list[Path]:
+    return sorted(p for p in _WEB_DATA.glob("*.json") if p.name != _DETECTION_CORPUS)
+
+
+def test_there_are_published_data_files_to_scan():
+    """A glob that matched nothing would make the test below vacuous."""
+    assert len(_published_data_files()) >= 5
+
+
+@pytest.mark.parametrize("path", _published_data_files(), ids=lambda p: p.name)
+def test_published_dashboard_data_carries_no_identifiers(path: Path):
+    clean, findings = scan_file(path)
+    assert clean, f"{path.name} would publish: {findings}"
+
+
+def test_the_detection_corpus_is_exempt_from_the_secret_scanner_by_marker():
+    """Not by luck, and not by the scanner having a blind spot.
+
+    Every probe in the corpus is a synthetic credential, which is precisely
+    what `scripts/secret_scan.py` hunts for -- so it flagged this file, in CI,
+    on every run, from the day the corpus was introduced. A permanently red
+    check is worse than no check: it trains everyone to scroll past the one
+    place a real secret would appear.
+
+    The scanner already ships a whole-file exemption for a detection corpus.
+    This pins that the generated document carries it, because the marker lives
+    in generated output and the next regeneration is where it would be lost.
+    """
+    text = (_WEB_DATA / _DETECTION_CORPUS).read_text(encoding="utf-8")
+    assert "secret-scan: allow-file" in text, (
+        "the privacy corpus lost the secret scanner's whole-file exemption; "
+        "regenerate it with scripts/generate_frontend_data.py"
+    )
+
+
+def test_the_generator_does_not_exempt_itself():
+    """The marker exempts whatever file it appears in, including a generator.
+
+    Writing it as a literal in `generate_frontend_data.py` made the generator
+    itself exempt -- silently, and for every secret it might later come to
+    hold. It is assembled from two halves there for this reason.
+    """
+    generator = Path(__file__).resolve().parent.parent / "scripts" / "generate_frontend_data.py"
+    assert "secret-scan: allow-file" not in generator.read_text(encoding="utf-8"), (
+        "generate_frontend_data.py contains the whole-file exemption marker "
+        "verbatim, which exempts the generator itself from the secret scan"
+    )
+
+
+def test_the_secret_scanner_skips_gitignored_build_output():
+    """`dist` was skipped and `dist-ssr` was not.
+
+    Both are gitignored build output holding a second copy of every generated
+    file. The effect was a scan whose result depended on whether the developer
+    had run `npm run build` -- findings that appeared from nowhere and vanished
+    again after `git clean`.
+    """
+    scanner = Path(__file__).resolve().parent.parent / "scripts" / "secret_scan.py"
+    source = scanner.read_text(encoding="utf-8")
+    for build_dir in ('"dist"', '"dist-ssr"', '"node_modules"'):
+        assert build_dir in source, f"secret_scan.py no longer skips {build_dir}"
+
+
+#: The only account name the detection corpus may use. A probe demonstrating a
+#: home-directory pattern has to contain *some* username, and the tempting one
+#: to reach for is whichever is on the machine writing it -- which is how the
+#: maintainer's real Windows account name ended up committed and served to the
+#: dashboard. `alice` was already the placeholder in the posix probe; this
+#: makes it the only option rather than a convention.
+_FICTIONAL_USER = "alice"
+
+_HOME_PROBE = re.compile(r"(?:[A-Za-z]:)?[\\/]+(?:Users|home)[\\/]+([^\\/\s\"']+)", re.IGNORECASE)
+
+
+def test_the_detection_corpus_names_only_a_fictional_user():
+    """The one leak the scan above cannot catch, because it is inside the scan.
+
+    `privacy.json` is excluded from the published-data scan by necessity: every
+    probe in it is a deliberate identifier, so scanning it would fail by
+    design. That exclusion is also a blind spot, and it is precisely where the
+    real leak was -- a probe naming the maintainer's own Windows account under
+    ``C:\\Users``, committed, published, and invisible to every check the
+    project had.
+
+    So the corpus gets its own narrower rule: a home-directory probe may name
+    exactly one user, and that user is fictional.
+    """
+    corpus = json.loads((_WEB_DATA / _DETECTION_CORPUS).read_text(encoding="utf-8"))
+    rules = corpus.get("privacy_rules", corpus)
+    cases = rules["reference_cases"]
+    assert cases, "the corpus has no reference cases to check"
+
+    names = {
+        match.group(1).lower() for case in cases for match in _HOME_PROBE.finditer(case["text"])
+    }
+    assert names, "no home-directory probe found; the corpus stopped covering the pattern"
+    unexpected = sorted(names - {_FICTIONAL_USER})
+    assert not unexpected, (
+        f"the privacy corpus names {unexpected} in a home-directory probe. "
+        f"Probes are published; use {_FICTIONAL_USER!r}, never a real account name."
+    )

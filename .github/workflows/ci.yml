@@ -234,7 +234,7 @@ jobs:
       - name: Validate schema, scan privacy, detect duplicate fingerprints
         shell: python
         run: |
-          import json, pathlib, sys
+          import hashlib, json, pathlib, sys
           sys.path.insert(0, ".")
           from aihwbench.fingerprint import result_fingerprint
           from aihwbench.formal_schema import validate_formal
@@ -243,7 +243,29 @@ jobs:
           from aihwbench.schemas import validate_result
           failures = []
           fingerprints = {}
+          measurement_hashes = {}
+          repeats = []
           checked = 0
+
+          def measured_identity(doc):
+              """Hash of what was *measured*, not of what was configured.
+
+              `aihwbench/fingerprint.py` says in its own docstring that two
+              results sharing a fingerprint "describe the same experiment and
+              are legitimate repeats". This gate read that as a defect and
+              failed the build on the project's second published repeat of a
+              configuration -- while feature #26 requires repeated runs and
+              refuses to publish unlabelled single-run numbers. The gate was
+              rejecting exactly the data the methodology asks for.
+
+              A real duplicate is the same artifact submitted twice, so that
+              is what this hashes: the measurements. Two runs of one
+              configuration differ in every timing; a copy-paste does not.
+              """
+              parts = (doc.get("metrics"), doc.get("iterations"), doc.get("energy"))
+              return hashlib.sha256(
+                  json.dumps(parts, sort_keys=True, default=str).encode("utf-8")
+              ).hexdigest()
           patterns = ("results/published/*.json", "results/normalized/*.json")
           files = [p for pat in patterns for p in sorted(pathlib.Path(".").glob(pat))]
           for path in files:
@@ -264,8 +286,11 @@ jobs:
               ]
               clean, privacy = scan_object(data)
               fp = result_fingerprint(data)
-              dup = fingerprints.get(fp)
+              same_experiment = fingerprints.get(fp)
               fingerprints.setdefault(fp, str(path))
+              mh = measured_identity(data)
+              same_measurements = measurement_hashes.get(mh)
+              measurement_hashes.setdefault(mh, str(path))
               checked += 1
               status = "OK"
               detail = []
@@ -275,14 +300,30 @@ jobs:
               if privacy:
                   status = "PRIVACY_FAIL"
                   detail.extend(privacy)
-              if dup:
+              if same_measurements:
+                  # Identical measured values from a separate run would mean
+                  # the same artifact was published twice under two names.
                   status = "DUPLICATE"
-                  detail.append(f"duplicate fingerprint of {dup}")
+                  detail.append(
+                      f"identical measurements to {same_measurements}: "
+                      "the same artifact appears to be published twice"
+                  )
+              elif same_experiment:
+                  status = "REPEAT"
+                  repeats.append(f"{path} repeats the configuration of {same_experiment}")
               print(f"{status}: {path}")
               failures.extend((str(path), d) for d in detail)
+          if repeats:
+              print()
+              print("Repeated configurations (expected -- this is what #26 asks for):")
+              for line in repeats:
+                  print(f"  {line}")
           if failures:
               print()
               for path, msg in failures:
                   print(f"{path}: {msg}")
               sys.exit(1)
-          print(f"Pipeline-checked {checked} result file(s): schema OK, no privacy issues, no duplicates.")
+          print(
+              f"Pipeline-checked {checked} result file(s): schema OK, no privacy issues, "
+              f"no duplicated artifacts ({len(repeats)} legitimate repeat(s))."
+          )

@@ -30,7 +30,14 @@ import re
 from pathlib import Path
 from typing import Any
 
-from .base import BackendError, BackendInfo, BenchmarkConfig, RuntimeStatus, run_command
+from ._delegate import run_via_llama_cpp
+from .base import (
+    BackendError,
+    BackendInfo,
+    BenchmarkConfig,
+    RuntimeStatus,
+    run_command,
+)
 
 #: `deviceName = Intel(R) Iris(R) Xe Graphics`
 _DEVICE_NAME = re.compile(r"^\s*deviceName\s*=\s*(.+?)\s*$", re.MULTILINE)
@@ -121,17 +128,18 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     if info.status is not RuntimeStatus.AVAILABLE:
         raise BackendError(f"vulkan is not available: {info.status.value} ({info.detail})")
 
-    from . import llama_cpp
-
-    extra = dict(config.extra or {})
-    extra.setdefault("device", "Vulkan0")
-    result = llama_cpp.run(
-        BenchmarkConfig(**{**config.__dict__, "extra": extra}),
+    # The device is discovered from `--list-devices` rather than assumed to be
+    # `Vulkan0`. The old hardcoded name was also never passed on: llama.cpp
+    # read no device key at all, so on a build carrying both Vulkan and CUDA
+    # the server picked its own preferred device and the result came back
+    # labelled `vulkan` having run on the other one.
+    return run_via_llama_cpp(
+        config,
         system,
+        name="vulkan",
+        device_prefix="Vulkan",
+        backend="llama.cpp-vulkan",
     )
-    result["runtime"]["name"] = "vulkan"
-    result["runtime"]["backend"] = "llama.cpp-vulkan"
-    return result
 
 
 #: Declared capability contract: truthful prerequisites.

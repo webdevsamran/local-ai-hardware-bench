@@ -71,18 +71,28 @@ validated result file exists in [`results/published/`](results/published).
 | OpenVINO (CPU + GPU devices) | Yes | **Yes — tested** |
 | OpenVINO GenAI (LLM pipeline, CPU/iGPU/dGPU) | Yes | **Yes — measured**; not published, the machine was contended ([study](docs/results/openvino-three-devices.md)) |
 | NVIDIA CUDA | Yes | **Yes — tested** (via Ollama/llama.cpp CUDA builds) |
-| NVIDIA TensorRT | Yes | Not yet (needs per-GPU engine builds) |
-| AMD ROCm / Ryzen AI / Lemonade | Yes | Hardware needed (no AMD system available) |
-| Qualcomm QNN | Yes | Hardware needed (no Snapdragon NPU available) |
-| Hailo HailoRT | Yes | Hardware needed (no Hailo device available) |
+| NVIDIA TensorRT | Yes | **Backend written**, needs an NVIDIA box to verify (engine built on the benchmarking machine) |
+| AMD ROCm / Ryzen AI / Lemonade | Yes | **Backends written**, need an AMD system to verify |
+| Qualcomm QNN | Yes | **Backend written**, needs a Snapdragon X to verify |
+| Hailo HailoRT | Yes | **Backend written**, needs a Hailo device and a compiled `.hef` |
 | LM Studio (OpenAI-compatible server) | Yes | **Yes — experimental** (HTTP API backend) |
 | vLLM (OpenAI-compatible server) | Yes | Supported (Linux + NVIDIA/ROCm; not runnable on the reference machine) |
 | SGLang (OpenAI-compatible server) | Yes | Supported (Linux + NVIDIA/ROCm; not runnable on the reference machine) |
-| Apple MLX | Yes | Hardware needed (requires Apple Silicon; benchmarking planned) |
+| Apple MLX | Yes | **Backend written**, needs Apple Silicon to verify |
 | Windows ML / DirectML | Yes | **Yes — tested** (ONNX Runtime DML EP) |
 
 Runtimes that cannot run on current hardware report an explicit
 `HARDWARE_REQUIRED` status instead of pretending.
+
+**"Backend written" means the code path is complete and unit-tested, and has
+never run on the silicon it targets** — no AMD, Snapdragon, Hailo or Apple
+machine has been available here. Each one detects its runtime, refuses rather
+than falling back to a CPU under an accelerator's name, and produces a result
+through the same measurement path every published number here came from. If you
+have one of these machines, `aihwbench doctor` then `aihwbench benchmark
+--runtime <name>` is the whole of it; a failure is a bug report with a stack
+trace, which is nearly as useful as a result. See
+[docs/hardware-needed.md](docs/hardware-needed.md).
 
 ## Installation
 

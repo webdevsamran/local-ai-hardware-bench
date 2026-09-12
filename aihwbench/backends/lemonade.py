@@ -1,13 +1,26 @@
-"""AMD Lemonade Server backend — detection-only (issue #9).
+"""AMD Lemonade Server — Ryzen AI, over the protocol the project already speaks.
 
-Lemonade (https://github.com/amd/lemonade) exposes an OpenAI-compatible
-HTTP server (default port 8000) targeting AMD Ryzen AI / NPU hardware.
+Lemonade (https://github.com/amd/lemonade) puts an OpenAI-compatible HTTP
+server in front of AMD's Ryzen AI stack, which means the NPU is reachable by
+exactly the path vLLM, SGLang and LM Studio are reached by. Its endpoints live
+under `/api/v1/` rather than `/v1/`, and that prefix is the only thing that
+made it look like a different problem.
 
-Status: detection only. The benchmark path is NOT implemented because no
-validated measurement protocol exists yet for this runtime; ``run()``
-raises a clean ``BackendError`` instead of producing misleading numbers.
-``METADATA.capabilities`` is empty so this adapter can never look
-benchmark-capable in registry or tooling introspection.
+This was detection-only on the grounds that "no validated measurement protocol
+exists for this runtime". That was true of the *runtime* and not of the
+*protocol*: streaming chat completions with a usage block is the same contract
+three other backends here already measure, and reusing it means Lemonade gets
+the same TTFT definition, the same inter-token series and the same refusal to
+count SSE chunks as tokens — rather than a fourth interpretation that drifts.
+
+**What a result here does and does not say.** Lemonade decides internally
+whether a model runs on the Ryzen AI NPU, the integrated GPU or the CPU, and
+the OpenAI protocol carries no field for which one it chose. So a result
+records the runtime honestly and does not claim the NPU ran it. Anyone
+publishing one should say which device Lemonade reported loading; the project
+would rather have an unattributed measurement than an invented attribution.
+
+Untested on real hardware: no Ryzen AI machine has been available here.
 """
 
 from __future__ import annotations
@@ -26,17 +39,19 @@ from .base import (
     run_command,
     server_is_listening,
 )
+from .openai_server import OpenAIServer, run_openai_benchmark
 
 LEMONADE_PORT = 8000
 
 METADATA = BenchmarkMetadata(
     name="lemonade",
-    description=(
-        "AMD Lemonade Server (Ryzen AI) — detection only; "
-        "benchmark path pending a validated protocol (issue #9)"
-    ),
+    description="AMD Lemonade Server (Ryzen AI) over its OpenAI-compatible API",
     api_version=1,
-    capabilities=(),
+    # Was deliberately empty while this backend could not measure anything, so
+    # that no registry or tooling introspection could present it as capable.
+    # It can measure now, and leaving the tuple empty would understate it in
+    # the same way the old description overstated the obstacle.
+    capabilities=("llm", "openai-api", "amd", "ryzen-ai"),
 )
 
 
@@ -87,13 +102,30 @@ def detect() -> BackendInfo:
     )
 
 
+#: Lemonade's OpenAI-compatible surface. The host carries the `/api` prefix so
+#: the shared client's `/v1/...` paths land on `/api/v1/...`, which is where
+#: Lemonade serves them.
+SERVER = OpenAIServer(
+    name="lemonade",
+    host=f"http://127.0.0.1:{LEMONADE_PORT}/api",
+    backend_id="lemonade-openai-api",
+    model_format="onnx-genai",
+    install_hint=(
+        "Start Lemonade Server (`lemonade-server serve`) on a Ryzen AI machine. "
+        "Install: https://github.com/amd/lemonade"
+    ),
+)
+
+
 def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
-    """Refuse to benchmark: detection-only until a protocol is validated."""
+    """Benchmark a model served by Lemonade.
+
+    Detection goes through Lemonade's own `/api/v1/health` rather than the
+    generic model listing, because that endpoint is what distinguishes
+    Lemonade from any other process holding port 8000 -- vLLM's default port
+    is the same one.
+    """
     info = detect()
     if info.status is not RuntimeStatus.AVAILABLE:
         raise BackendError(f"Lemonade is not available: {info.status.value} ({info.detail})")
-    raise BackendError(
-        "Lemonade benchmarking is not implemented yet: no validated "
-        "measurement protocol exists for this runtime (issue #9). "
-        "Detection-only backends never produce estimated numbers."
-    )
+    return run_openai_benchmark(SERVER, config, system)

@@ -5,6 +5,90 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Added — the nine backends that could detect hardware and not measure it
+
+ROCm, QNN, Hailo, TensorRT, Lemonade, ExLlamaV2, MLX, WebGPU and Windows ML all
+detected their runtime honestly and then raised "planned". That is a defensible
+place to stop, and it is also the state in which code rots fastest: nothing
+exercises it, so nothing catches it decaying, and whoever finally plugs in a
+Radeon card discovers the backend was never *finished* rather than never
+*verified*. They measure now.
+
+- **Most of them delegate, and that is the point.** Vulkan, SYCL and ROCm are
+  build variants of llama.cpp; QNN, TensorRT and DirectML are execution
+  providers of ONNX Runtime; Lemonade speaks the OpenAI protocol three other
+  backends here already speak. Each selects different silicon and different
+  kernels — which is what this project exists to measure — but the loop that
+  issues requests and times them is the same loop every time. Nine private
+  copies of it would drift, and the ones nobody can run would drift furthest.
+
+  Only Hailo, ExLlamaV2 and MLX needed loops of their own, because they are
+  genuinely different engines.
+
+- **A delegated result says what produced it.** `runtime.delegated_to` records
+  that a row labelled `rocm` came from llama.cpp's HIP build rather than from
+  some separate AMD runtime. The label is not a disguise.
+
+- **Nothing falls back.** A missing accelerator is refused, never quietly
+  replaced by a CPU. `runtime.name` is in the comparison-safety classifier's
+  strict set, so a mislabelled result does not merely misinform a reader — it
+  licenses the classifier to rank a CPU measurement against real NPU ones.
+
+- **Intel Core Ultra NPU counters**, read from the Windows NPU Engine counter
+  set and the `intel_vpu` sysfs, and sampled *during* the run by the telemetry
+  loop. This is the whole difficulty: `npu_telemetry` was called after a
+  benchmark finished, so a point-in-time reading would have described an idle
+  NPU and reported a genuinely accelerated run as roughly 0% busy — a
+  fabricated zero dressed as a measurement, worse than the honest `None` the
+  module shipped before. The probe is skipped entirely on machines with no NPU,
+  because reading a Windows performance counter spawns PowerShell and doing
+  that twice a second on hardware that cannot answer is pure cost.
+
+- **"Did the provider load?" is the wrong question.** ONNX Runtime partitions a
+  graph, so an accelerator can initialise, report itself active, and be handed
+  almost none of the model — which is exactly what QNN does with a float32
+  model, since it wants quantized QDQ operators. Every presence check says the
+  NPU is running while a CPU does the work. The ONNX path now counts *node
+  assignment* from the runtime's own profiling trace and refuses when the
+  requested provider got zero nodes.
+
+  Verified on real hardware, via the one accelerator this machine has: 101 of
+  104 MobileNetV2 nodes on DirectML, 3 on the CPU. QNN and TensorRT take that
+  identical code.
+
+### Fixed — Vulkan and SYCL relabelled results they had not steered
+
+- **`llama_cpp` never read `extra["device"]`.** Both backends set it —
+  `"Vulkan0"`, `"SYCL0"` — nothing consumed it, and both then rewrote
+  `runtime.name`. On a build carrying only one GPU backend that was harmless,
+  because detection refuses when the build lacks it. On a build carrying Vulkan
+  *and* CUDA, which is the common multi-backend case, llama.cpp picked its own
+  preferred device and the measurement came back labelled `vulkan` having run
+  on CUDA. `vulkan.py`'s own docstring calls that "worse than no result".
+
+  The key now reaches `--device`, and the device is *discovered* from
+  `--list-devices` rather than assumed to be the backend's zeroth. Hardcoding
+  `Vulkan0` assumed both that the build had the backend and that its first
+  device was the wanted one; the first assumption is the one that fails.
+
+- **A caller cannot point one backend at another's device.** `--device CUDA0`
+  through the ROCm backend is refused rather than honoured, because it would
+  measure CUDA and label the result `rocm` — the same mislabelling by a more
+  deliberate route. It is the one place a caller's explicit value does not win.
+
+- **Two concurrent DirectML sessions segfault the process.** Exit 139, no
+  Python traceback. The node-assignment probe opens a session of its own, and
+  the first version opened it while the measurement session was alive — which
+  would have crashed on every DirectML machine. Sequential sessions are fine,
+  so the ordering is the entire fix, and it is not something `try` can defend
+  against. Found by running it here rather than reasoning about it.
+
+- **Jetson and ARM SBC now record `delegated_to` too.** Both already measured
+  correctly through llama.cpp and both relabelled by hand, so a reader could
+  not tell a `jetson` row had come from llama.cpp the way a `vulkan` row now
+  says it did. Same helper, same field, one fewer inconsistency.
+
+
 ### Added — OpenVINO GenAI: one model, three kinds of silicon
 
 - **The `openvino_genai` backend measures instead of refusing.** It was

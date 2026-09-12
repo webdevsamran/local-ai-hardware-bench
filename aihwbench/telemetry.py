@@ -72,6 +72,9 @@ def _gpu_probes() -> tuple[tuple[str, Callable[[], dict[str, Any] | None]], ...]
     )
 
 
+_IS_WINDOWS = platform.system() == "Windows"
+
+
 class RaplPowerReader:
     """CPU-package power from Intel RAPL, without blocking the sampler.
 
@@ -257,6 +260,25 @@ class TelemetrySampler:
         # the loop nothing per tick.
         reader = RaplPowerReader()
         self._rapl: RaplPowerReader | None = reader if reader.available() else None
+        # Resolved on first use; see _npu_probe_enabled.
+        self._npu_enabled: bool | None = None
+
+    def _npu_probe_enabled(self) -> bool:
+        """Whether to sample the NPU, asked once and cached.
+
+        Reading the Windows NPU counter spawns PowerShell, which is far too
+        expensive at a 0.5s cadence to do speculatively. Machines without an
+        NPU -- which is most of them, including this project's own reference
+        laptop -- pay nothing.
+        """
+        if self._npu_enabled is None:
+            try:
+                from .npu import npu_counters_available
+
+                self._npu_enabled = npu_counters_available()
+            except Exception:  # noqa: BLE001 - telemetry must never raise
+                self._npu_enabled = False
+        return self._npu_enabled
 
     def start(self) -> None:
         self._stop.clear()
@@ -313,7 +335,7 @@ class TelemetrySampler:
             values = [float(v) for s in samples if (v := s.get(key)) is not None]
             return round(sum(values) / len(values), 2) if values else None
 
-        return {
+        summary = {
             "peak_ram_mb": peak("ram_mb"),
             "peak_vram_mb": peak("vram_mb"),
             "avg_cpu_util_percent": avg("cpu_util_percent"),
@@ -321,6 +343,14 @@ class TelemetrySampler:
             "max_temperature_c": peak("temperature_c"),
             "average_power_watts": avg("power_watts"),
         }
+        # Only when something actually reported it. Adding the keys
+        # unconditionally would put `avg_npu_util_percent: None` on every
+        # result from every machine, and a field that is null everywhere
+        # teaches readers to ignore it on the one machine where it is not.
+        if any(sample.get("npu_util_percent") is not None for sample in samples):
+            summary["avg_npu_util_percent"] = avg("npu_util_percent")
+            summary["peak_npu_util_percent"] = peak("npu_util_percent")
+        return summary
 
     def provenance(self) -> dict[str, Any]:
         """Scope/source/device metadata for the collected telemetry.
@@ -357,7 +387,14 @@ class TelemetrySampler:
         }
         if device is not None:
             block["device"] = device
-        npu_block = npu_snapshot_safe()
+        npu_summary = self.summary()
+        npu_block = npu_snapshot_safe(
+            {
+                "npu_util_percent": npu_summary.get("avg_npu_util_percent"),
+                "npu_util_percent_peak": npu_summary.get("peak_npu_util_percent"),
+                "source": self._sources.get("npu_util_percent"),
+            }
+        )
         if npu_block is not None:
             block["npu"] = npu_block
         return block
@@ -457,6 +494,22 @@ class TelemetrySampler:
             if battery is not None:
                 sample.update(battery)
                 self._sources["battery_percent"] = "psutil"
+
+            # NPU utilization, sampled here rather than read once after the
+            # run. A post-run reading describes an idle accelerator and would
+            # report a genuinely NPU-accelerated benchmark as roughly zero
+            # percent busy -- a fabricated zero wearing a measurement's
+            # clothes, which is worse than the honest null this reported before
+            # any counter was wired.
+            if self._npu_probe_enabled():
+                from .npu import npu_utilization_percent
+
+                npu_util = npu_utilization_percent()
+                if npu_util is not None:
+                    sample["npu_util_percent"] = npu_util
+                    self._sources["npu_util_percent"] = (
+                        "windows-perf-counter" if _IS_WINDOWS else "intel-vpu-sysfs"
+                    )
             with self._lock:
                 self._samples.append(sample)
             time.sleep(self.interval)
@@ -612,17 +665,19 @@ def measure(fn: Callable[[], Any]) -> tuple[Any, float]:
     return result, elapsed_ms
 
 
-def npu_snapshot_safe() -> dict[str, Any] | None:
+def npu_snapshot_safe(measured: dict[str, Any] | None = None) -> dict[str, Any] | None:
     """Best-effort NPU telemetry block (#18); None when no NPU is detected.
 
     Never raises. Uses the structured hook contract from
-    :mod:`aihwbench.npu`: fields always exist, values stay ``None`` until
-    a real driver counter is wired — nothing is fabricated.
+    :mod:`aihwbench.npu`: fields always exist, and values stay ``None`` unless
+    `measured` carries aggregates collected *during* a run. Reading the counter
+    here instead would sample an idle device and report an accelerated
+    benchmark as roughly zero percent busy.
     """
     try:
         from .npu import npu_telemetry
 
-        block = npu_telemetry()
+        block = npu_telemetry(measured=measured)
     except Exception:  # pragma: no cover - host-hardware dependent
         return None
     return block if block.get("npu_device") else None

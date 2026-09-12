@@ -17,11 +17,15 @@ Runtime, OpenVINO, ...). Each backend:
 | `onnxruntime` | ONNX Runtime | Win/Linux/macOS | DirectML/CUDA/CPU providers |
 | `openvino` | OpenVINO | Win/Linux | CPU + Intel GPU devices |
 | `openvino_genai` | OpenVINO GenAI | Win/Linux | Measured LLM pipeline; CPU/GPU/NPU, one device per run |
-| `tensorrt` | TensorRT | Linux/Win | HARDWARE_REQUIRED until validated |
-| `rocm` | ROCm | Linux | HARDWARE_REQUIRED until validated |
-| `qnn` | Qualcomm QNN | Windows ARM64 | HARDWARE_REQUIRED until validated |
-| `hailo` | HailoRT | Linux | HARDWARE_REQUIRED until validated |
-| `windows_ml` | Windows ML | Windows 11 | CONFIGURATION_REQUIRED |
+| `tensorrt` | TensorRT (ONNX Runtime EP) | Linux/Win | Engine built on the benchmarking machine; written, not yet run on an NVIDIA box |
+| `rocm` | ROCm | Linux | GGUF via llama.cpp HIP, ONNX via the ROCm EP; written, needs a Radeon |
+| `qnn` | Qualcomm QNN (ONNX Runtime EP) | Windows ARM64 | Refuses when the NPU is handed no graph nodes; written, needs a Snapdragon X |
+| `hailo` | HailoRT | Linux | Pre-compiled `.hef` only; inferences/sec, not tokens; written, needs a Hailo device |
+| `windows_ml` | Windows ML (DirectML) | Windows 11 | **Measured here**: 101/104 MobileNetV2 nodes on the GPU |
+| `lemonade` | AMD Lemonade (Ryzen AI) | Win/Linux | OpenAI-compatible API; written, needs Ryzen AI |
+| `exllamav2` | ExLlamaV2 | Linux/Win | EXL2 weights, fractional bits per weight; written, needs an NVIDIA GPU |
+| `mlx` | Apple MLX | macOS | Unified memory recorded from MLX itself; written, needs Apple Silicon |
+| `vulkan` / `sycl` / `webgpu` | llama.cpp build variants | varies | Device discovered from `--list-devices`, never assumed |
 
 ## Third-party plugins
 

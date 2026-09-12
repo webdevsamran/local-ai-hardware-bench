@@ -28,6 +28,7 @@ import platform
 from pathlib import Path
 from typing import Any
 
+from ._delegate import relabel
 from .base import BackendError, BackendInfo, BenchmarkConfig, RuntimeStatus, run_command
 
 #: L4T writes the board release here; its presence is the reliable marker.
@@ -116,8 +117,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     from . import llama_cpp
 
     result = llama_cpp.run(config, system)
-    result["runtime"]["name"] = "jetson"
-    result["runtime"]["backend"] = "llama.cpp-jetson"
+    relabel(result, name="jetson", backend="llama.cpp-jetson", delegated_to="llama.cpp")
     result.setdefault("reproducibility", {})["power_profile"] = mode
     # Unified memory: a discrete-GPU VRAM figure would be a category error.
     result.setdefault("system", {})["memory_is_unified"] = True

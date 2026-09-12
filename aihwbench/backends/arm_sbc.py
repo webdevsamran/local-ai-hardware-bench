@@ -34,6 +34,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from ._delegate import relabel
 from .base import BackendError, BackendInfo, BenchmarkConfig, RuntimeStatus, run_command
 
 _DEVICE_TREE_MODEL = Path("/proc/device-tree/model")
@@ -150,8 +151,7 @@ def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
     result = llama_cpp.run(config, system)
     after = throttle_state()
 
-    result["runtime"]["name"] = "arm_sbc"
-    result["runtime"]["backend"] = "llama.cpp-cpu"
+    relabel(result, name="arm_sbc", backend="llama.cpp-cpu", delegated_to="llama.cpp")
     result.setdefault("system", {})["board"] = board_model()
     result.setdefault("system", {})["memory_is_unified"] = True
     result.setdefault("reproducibility", {})["throttling"] = {

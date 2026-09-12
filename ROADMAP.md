@@ -76,11 +76,26 @@ shipped-but-unreachable is not done.
       rather than inferred from a filename. `--device auto` is refused,
       because OpenVINO's AUTO plugin does not report the device it chose
       and `runtime.device` is in the classifier's strict set
-- [ ] TensorRT / TensorRT-LLM backend (needs per-GPU engine builds)
-- [ ] ROCm backend (Linux; needs AMD hardware)
-- [ ] Lemonade / Ryzen AI backend (needs Ryzen AI hardware)
-- [ ] Qualcomm QNN backend + ARM64 Windows validation (needs Snapdragon X)
-- [ ] HailoRT backend, HEF benchmark configs (needs Hailo device)
+- [x] TensorRT backend via ONNX Runtime's TensorRT provider: the engine is
+      built on the benchmarking machine and its cost lands in `load_time_ms`
+      rather than being hidden by a warm-up. Written, never run on an NVIDIA
+      box. TensorRT-LLM is a separate engine stack and is still not covered
+- [x] ROCm backend: GGUF through llama.cpp's HIP build, ONNX through the
+      ROCm execution provider, dispatched on the artifact. Written, never
+      run on a Radeon
+- [x] Lemonade / Ryzen AI backend over its OpenAI-compatible API, reusing the
+      same streaming measurement three other server backends already use.
+      Written, never run on Ryzen AI. A result does not claim the NPU ran it:
+      the protocol carries no field saying which device Lemonade chose
+- [x] Qualcomm QNN backend via ONNX Runtime's QNN provider, refusing when the
+      provider loads but is assigned no graph nodes -- which is what a float32
+      model does on an NPU that wants quantized QDQ operators, and what every
+      "did the provider load?" check reports as success. Written, never run on
+      a Snapdragon; ARM64 CI still needs the hardware
+- [x] HailoRT backend over `InferVStreams`, reporting inferences per second
+      rather than tokens and recording the device architecture the HEF was
+      compiled for. Written, never run on a Hailo device; HEF benchmark
+      configs still need one
 - [~] vLLM and SGLang backends over their OpenAI-compatible servers. Detection,
       streaming, usage-token accounting and metric-source labelling are
       implemented and unit-tested against a fake server; neither engine runs on
@@ -108,7 +123,12 @@ shipped-but-unreachable is not done.
 - [x] Container and image identity. A tag is not an identity, so the digest is
       recorded where the launch environment supplies it and its absence is
       explained where it does not. Never inferred from a tag.
-- [ ] Intel Core Ultra NPU counters (needs Core Ultra hardware)
+- [x] Intel Core Ultra NPU counters: the Windows NPU Engine counter set and
+      the `intel_vpu` sysfs, sampled *during* a run by the telemetry loop.
+      A reading taken after a benchmark describes an idle NPU and would
+      report an accelerated run as roughly zero percent busy. The reader was
+      verified against the identically-shaped GPU Engine counter on this
+      machine; the NPU counter itself needs Core Ultra silicon
 - [ ] AMD platform results (hardware needed)
 - [ ] Snapdragon X Elite results (hardware needed)
 - [ ] Mini-PC / edge device class results (hardware needed)

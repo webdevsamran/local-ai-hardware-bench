@@ -23,8 +23,16 @@ it to defeat side-channel attacks, so inter-token latency below a few
 milliseconds cannot be resolved.
 
 So detection reports what a browser-based measurement can and cannot answer,
-and `run` refuses rather than producing a result with the honest fields
-silently null.
+and the browser path refuses rather than producing a result with the honest
+fields silently null.
+
+**There is a second WebGPU, and it is measurable.** llama.cpp gained a native
+WebGPU backend built on Dawn, which runs the same API outside any sandbox: a
+normal process, real timers, and telemetry that works. It answers a narrower
+question than the browser one — "how does the WebGPU path perform on this GPU",
+not "what can a locked-down laptop do" — but it answers it honestly, so this
+backend measures it when the build has it and keeps refusing the browser case
+for the reasons above.
 """
 
 from __future__ import annotations
@@ -32,6 +40,7 @@ from __future__ import annotations
 import shutil
 from typing import Any
 
+from ._delegate import run_via_llama_cpp
 from .base import BackendError, BackendInfo, BenchmarkConfig, RuntimeStatus, run_command
 
 #: Fields a page cannot measure, whatever the runtime does. Reported so a
@@ -76,6 +85,19 @@ def node_has_webgpu() -> bool:
 
 
 def detect() -> BackendInfo:
+    # The native path first: a llama.cpp built with -DGGML_WEBGPU=ON exposes a
+    # Dawn-backed device and can be measured fully, with none of the sandbox
+    # limits below. Reporting only the browser situation would tell a user
+    # nothing can be done when something can.
+    if build_has_webgpu_backend():
+        return BackendInfo(
+            "webgpu",
+            RuntimeStatus.AVAILABLE,
+            None,
+            "llama.cpp exposes a native WebGPU (Dawn) device; full telemetry "
+            "applies. The in-browser path remains unimplemented.",
+        )
+
     browsers = browsers_present()
     harness = node_has_webgpu()
 
@@ -93,25 +115,58 @@ def detect() -> BackendInfo:
         "webgpu",
         RuntimeStatus.CONFIGURATION_REQUIRED,
         None,
-        f"{where} present, but no WebGPU benchmark harness is wired up. A "
-        "browser result also cannot carry power, VRAM or temperature -- the "
-        "sandbox does not expose them -- so it answers 'does it run, and how "
-        "fast', not the energy questions this project asks elsewhere.",
+        f"{where} present, but no in-browser harness is wired up, and this "
+        "llama.cpp build has no native WebGPU backend. For a measurable path, "
+        "rebuild llama.cpp with -DGGML_WEBGPU=ON. A browser result also cannot "
+        "carry power, VRAM or temperature -- the sandbox does not expose them "
+        "-- so it answers 'does it run, and how fast', not the energy "
+        "questions this project asks elsewhere.",
     )
 
 
-def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
-    """Refuse until a harness exists, rather than emit a half-filled result.
+def build_has_webgpu_backend() -> bool:
+    """Whether the located llama.cpp was built with its Dawn WebGPU backend.
 
-    A WebGPU result with null power, null VRAM and null temperature is
-    indistinguishable from a native result whose telemetry failed, and the
-    comparison classifier reads two nulls as agreement. Producing one would
-    quietly make browser numbers comparable with native ones.
+    Asked of `--list-devices`, which is the binary's own answer. A build
+    without it enumerates no WebGPU device however many browsers are installed.
     """
+    from ..devices import device_inventory
+
+    devices = device_inventory().get("devices") or []
+    return any(str(d.get("id", "")).upper().startswith("WEBGPU") for d in devices)
+
+
+def run(config: BenchmarkConfig, system: dict[str, Any]) -> dict[str, Any]:
+    """Measure the native WebGPU path, or refuse the browser one.
+
+    The browser case still refuses, and not for want of effort: a WebGPU result
+    with null power, null VRAM and null temperature is indistinguishable from a
+    native result whose telemetry failed, and the comparison classifier reads
+    two nulls as agreement. Emitting one would quietly make browser numbers
+    comparable with native ones.
+
+    The native case has none of that problem. llama.cpp's Dawn-backed WebGPU
+    device is an ordinary process on an ordinary GPU, so every field this
+    project measures is measurable, and the result is honestly labelled as the
+    WebGPU path rather than as a browser.
+    """
+    if build_has_webgpu_backend():
+        return run_via_llama_cpp(
+            config,
+            system,
+            name="webgpu",
+            device_prefix="WebGPU",
+            backend="llama.cpp-webgpu-dawn",
+        )
+
     info = detect()
     raise BackendError(
-        f"webgpu is not available: {info.status.value} ({info.detail}). "
-        f"Fields a browser cannot measure: {', '.join(UNMEASURABLE_IN_BROWSER)}."
+        f"webgpu: no WebGPU device is available to benchmark. "
+        f"({info.status.value}: {info.detail}) "
+        "For the native path, build llama.cpp with -DGGML_WEBGPU=ON; its Dawn "
+        "backend runs outside a sandbox and can be measured fully. The "
+        "in-browser path is not implemented, and would not carry "
+        f"{', '.join(UNMEASURABLE_IN_BROWSER)} even if it were."
     )
 
 

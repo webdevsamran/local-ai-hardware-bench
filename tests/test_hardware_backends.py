@@ -26,6 +26,8 @@ nodes on the GPU, 3 on the CPU. QNN and TensorRT take that identical code.
 
 from __future__ import annotations
 
+from unittest import mock
+
 import pytest
 
 from aihwbench.backends import (
@@ -398,13 +400,52 @@ def test_exllamav2_keeps_fractional_bits_out_of_ggufs_vocabulary(tmp_path):
     assert exllamav2.bits_per_weight(tmp_path) is None
 
 
-def test_mlx_separates_wrong_machine_from_missing_package():
-    """Only one of the two is fixable in a minute."""
-    info = mlx.detect()
-    # This project's machine is not a Mac, so the hardware answer is the right
-    # one -- and it must not be reported as a missing package.
-    assert info.status is RuntimeStatus.HARDWARE_REQUIRED
+@pytest.mark.parametrize(
+    "system,machine,reason",
+    [
+        ("Windows", "AMD64", "not a Mac at all"),
+        ("Linux", "x86_64", "not a Mac at all"),
+        ("Darwin", "x86_64", "an Intel Mac, which MLX does not support"),
+    ],
+)
+def test_mlx_reports_wrong_machine_as_hardware_not_configuration(system, machine, reason):
+    """Only one of the two failures is fixable in a minute.
+
+    The first version of this asserted against whatever host it ran on, with a
+    comment reading "this project's machine is not a Mac". That is true of the
+    maintainer's laptop and false of a macOS CI runner, where MLX genuinely
+    can run -- so the backend correctly answered CONFIGURATION_REQUIRED and
+    all four macOS jobs failed. A test that encodes one developer's hardware
+    passes for the wrong reason everywhere else.
+
+    Both branches are now driven by a faked platform, so the assertion is
+    about the backend's logic rather than about the machine running pytest.
+    """
+    with (
+        mock.patch("platform.system", return_value=system),
+        mock.patch("platform.machine", return_value=machine),
+    ):
+        info = mlx.detect()
+    assert info.status is RuntimeStatus.HARDWARE_REQUIRED, reason
     assert "Apple Silicon" in (info.detail or "")
+
+
+def test_mlx_reports_a_missing_package_as_configuration_not_hardware():
+    """On hardware that can run MLX, the answer must be the fixable one.
+
+    The import probe is a subprocess, so it is faked here rather than through
+    ``sys.modules``: patching the parent process's imports would leave the
+    child importing whatever the runner happens to have installed, and the
+    test would then pass or fail on the CI image's contents.
+    """
+    with (
+        mock.patch("platform.system", return_value="Darwin"),
+        mock.patch("platform.machine", return_value="arm64"),
+        mock.patch.object(mlx, "run_command", return_value=(1, "ModuleNotFoundError")),
+    ):
+        info = mlx.detect()
+    assert info.status is RuntimeStatus.CONFIGURATION_REQUIRED
+    assert "mlx-lm" in (info.detail or "")
 
 
 def test_webgpu_still_refuses_the_browser_but_measures_the_native_path():

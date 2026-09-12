@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import platform
 import sys
+import threading
 
 import pytest
 
@@ -404,3 +405,48 @@ def _wait_for_samples(sampler, minimum: int = 2, timeout: float = 5.0) -> None:
             return
         _time.sleep(0.02)
     raise AssertionError("sampler produced no samples")
+
+
+def test_the_npu_capability_is_probed_before_the_sampling_thread_starts(monkeypatch):
+    """The expensive probe must not sit inside a sampling interval.
+
+    `_npu_probe_enabled` is cached, and its docstring said it was "asked once,
+    before a run" -- while actually being asked from `_loop`, on the first
+    iteration. On Windows that probe spawns PowerShell, which takes longer
+    than one sampling interval and, on a loaded runner, longer than `stop`
+    will wait. The sample is appended only after enrichment, so the first
+    sample -- RAM and CPU already read -- was discarded and a Windows
+    benchmark lost its telemetry at the moment a run began.
+
+    Asserted structurally rather than by timing: a timing test passes against
+    the broken code whenever the probe happens to finish inside `stop`'s join
+    window, which is most of the time and none of the interesting time. What
+    must hold is that the probe has already run, on the calling thread, by the
+    time `start` returns.
+    """
+    threads: list[str] = []
+    sampler = TelemetrySampler(interval_seconds=0.02)
+
+    def record_probe() -> bool:
+        threads.append(threading.current_thread().name)
+        return False
+
+    monkeypatch.setattr(sampler, "_npu_probe_enabled", record_probe)
+    monkeypatch.setattr(tlm, "_system_ram_sample", lambda: (8192.0, "test-ram"))
+    monkeypatch.setattr(tlm, "_cpu_util_sample", lambda: (37.5, "test-cpu"))
+    monkeypatch.setattr(tlm, "_nvidia_smi_sample", lambda: None)
+
+    caller = threading.current_thread().name
+    sampler.start()
+    probed_during_start = list(threads)
+    try:
+        assert probed_during_start, (
+            "start() returned without resolving the NPU capability: the probe "
+            "is back inside the sampling loop, where it costs the first sample"
+        )
+        assert probed_during_start[0] == caller, (
+            f"the probe ran on {probed_during_start[0]!r}, not on the calling "
+            f"thread {caller!r} -- it is being resolved from the sampling loop"
+        )
+    finally:
+        sampler.stop()

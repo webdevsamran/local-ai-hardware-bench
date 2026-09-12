@@ -270,6 +270,15 @@ class TelemetrySampler:
         expensive at a 0.5s cadence to do speculatively. Machines without an
         NPU -- which is most of them, including this project's own reference
         laptop -- pay nothing.
+
+        Resolved from :meth:`start`, not from the sampling thread. This said
+        "asked once, before a run" while being asked from inside the loop, so
+        the first iteration blocked in PowerShell and its sample -- RAM and
+        CPU already collected -- was never recorded, because the append
+        happens after enrichment. On Windows that silently cost every
+        benchmark its first telemetry sample at exactly the moment a run
+        starts, and it surfaced as a CI failure only because one test watches
+        a 90 ms window.
         """
         if self._npu_enabled is None:
             try:
@@ -281,6 +290,10 @@ class TelemetrySampler:
         return self._npu_enabled
 
     def start(self) -> None:
+        # Resolve the NPU capability before the thread exists, so the one
+        # expensive probe happens while nothing is being measured yet rather
+        # than inside the first sampling interval.
+        self._npu_probe_enabled()
         self._stop.clear()
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()

@@ -68,6 +68,12 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: pip install -e ".[dev]"
       - run: pytest
+      # The unit suite answers "does this function work". This answers "is the
+      # guard wired into the path a user travels" -- which is a different
+      # question, and the one every defect in this repository's history came
+      # down to.
+      - name: Acceptance criteria (guards are reachable, not merely present)
+        run: python scripts/acceptance_check.py
 
   coverage:
     name: Test coverage

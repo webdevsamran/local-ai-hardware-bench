@@ -33,9 +33,17 @@ Companies may run the full core internally at no cost. We monetize
 | AIHWBench Labs | Planned | Independent testing/vendor validation reports |
 | Sponsored engineering | Open | Vendor-funded backend work, disclosed publicly |
 | Training / workshops | Open | Benchmark methodology education |
-| GitHub Sponsors | Not configured | Will appear in FUNDING.yml only when real |
+| GitHub Sponsors | Listed | [`.github/FUNDING.yml`](.github/FUNDING.yml) names one account and nothing else; the Sponsor button renders only while GitHub Sponsors enrollment is active, and [SPONSORS.md](SPONSORS.md) says so rather than leaving a dead button |
 
 Nothing in this table exists today beyond the open-source core.
+No money has been received to date, from any source.
+
+## The bottleneck is hardware, not funding
+
+Nine published results, one laptop, and ten backends that have never
+executed on the silicon they target. Lending a machine for a weekend changes
+more than a donation does. [SPONSORS.md](SPONSORS.md) is the appeal;
+[docs/hardware-needed.md](docs/hardware-needed.md) is the list.
 Each offering launches only with working software or a defined,
 evidence-based process — see [TRADEMARKS.md](TRADEMARKS.md) for naming
 rules and [docs/enterprise/overview.md](docs/enterprise/overview.md)

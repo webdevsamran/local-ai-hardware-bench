@@ -154,7 +154,16 @@ def _d5():
 
 @check("D5 jsonschema is a declared dependency")
 def _d5b():
-    import tomllib
+    # `tomllib` is stdlib only from 3.11, and this project supports 3.10 --
+    # where `tomli` is already a declared dev dependency for exactly this
+    # reason. Importing `tomllib` unconditionally made every 3.10 job in the
+    # CI matrix fail on all three operating systems, which is a good
+    # demonstration of why the support floor belongs in the matrix rather
+    # than in a comment.
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # Python 3.10
+        import tomli as tomllib  # type: ignore[no-redef]
 
     data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
     extras = data["project"]["optional-dependencies"]

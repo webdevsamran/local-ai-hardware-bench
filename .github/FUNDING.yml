@@ -1,0 +1,17 @@
+# Funding sources for AIHWBench.
+#
+# SUSTAINABILITY.md promises that a funding channel appears here only when it
+# is real, so this file lists exactly one: GitHub Sponsors for the maintainer.
+# No Patreon, Ko-fi, Open Collective or custom payment link is listed, because
+# none of those accounts exist and an inert link is worse than no link.
+#
+# GitHub renders the Sponsor button from this file only while the named account
+# is enrolled in GitHub Sponsors. If the button is not visible on the
+# repository, enrollment has not completed yet -- see SPONSORS.md, which says
+# so plainly rather than leaving a dead button to explain itself.
+#
+# The most valuable contribution to this project is not money. It is hardware
+# the maintainer does not own, or a single benchmark result from a machine
+# nobody here has: docs/hardware-needed.md.
+
+github: [webdevsamran]

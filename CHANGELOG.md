@@ -5,6 +5,93 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Fixed — the privacy scanner's own test corpus was the leak
+
+`web/public/data/privacy.json` is committed and served to every visitor of the
+dashboard, which makes it a published artifact under exactly the rules
+`results/published/` lives by. Nothing was scanning it.
+
+Inside it, the probe demonstrating the Windows home-directory pattern was
+written as the maintainer's real account name — the one on the machine that
+generated the file. So the document that exists to prove the scanner catches
+home directories was itself publishing one, on the public site, indefinitely.
+
+- Probes are fictional now, and a test pins that: a home-directory probe may
+  name exactly one user, and that user is `alice`. Re-introducing the real name
+  fails the suite.
+- Every other file in `web/public/data/` is scanned by the canonical privacy
+  scanner as part of the test suite. The corpus is excluded by necessity, which
+  is why it gets the narrower rule above rather than no rule at all.
+- The scanner itself gained three patterns and a widened one:
+  cloud access-key ids, prefixed API keys, macOS `/Users/` homes — which were
+  not covered at all, on a project that ships an MLX backend for an audience
+  entirely on macOS — and Windows homes written with forward or mixed
+  separators, which is the form `pathlib` emits and JSON carries unescaped.
+
+### Fixed — `scripts/secret_scan.py` had been failing in CI since the corpus landed
+
+Every probe in the privacy corpus is a synthetic credential, which is precisely
+what the repository's secret scanner hunts for. It flagged that file on every
+run. A permanently red check is worse than no check: it teaches everyone to
+scroll past the one place a real secret would surface.
+
+- The corpus now carries the scanner's existing whole-file exemption marker,
+  and the marker travels inside the generated document so regeneration cannot
+  drop it.
+- The marker is assembled from two halves in the generator, because writing it
+  as a literal there exempted *the generator* from the scan — silently, and for
+  every secret it might later come to hold.
+- `dist-ssr` joins `dist` in the skip list. Both are gitignored build output;
+  skipping one and not the other made the scan's result depend on whether the
+  developer had run `npm run build`.
+
+### Added — documentation written for the question rather than for the tool
+
+Five guides, each stating which of its numbers were measured here and which are
+arithmetic: [how to benchmark a local LLM](docs/guides/how-to-benchmark-a-local-llm.md),
+[tokens per second](docs/guides/tokens-per-second-explained.md),
+[VRAM requirements](docs/guides/vram-requirements-for-local-llms.md),
+[NPU vs GPU vs CPU](docs/guides/npu-vs-gpu-for-local-ai.md) and
+[choosing a quantization](docs/guides/choosing-a-quantization.md).
+
+The NPU guide is the one worth reading for how this project handles a gap: no
+machine with an NPU has been available, so it says so in its second paragraph
+rather than quoting numbers it does not have.
+
+README and FAQ were restructured around the same principle — the questions
+people actually ask before buying a card, each answered by a link to something
+measured. Every `aihwbench` command in all of it is parsed against the real CLI
+by `tests/test_documented_commands.py`, and every relative link is resolved by
+`scripts/check_docs_links.py`.
+
+### Added — a sponsorship appeal that says what sponsorship does not buy
+
+[SPONSORS.md](SPONSORS.md), [CREDITS.md](CREDITS.md) and a `.github/FUNDING.yml`
+naming exactly one channel. `SUSTAINABILITY.md` promised a funding file would
+appear "only when real", so the file lists GitHub Sponsors and nothing else —
+no Patreon, no Ko-fi, no custom link, because those accounts do not exist and an
+inert link is worse than no link. It also states plainly that the Sponsor button
+renders only while enrollment is active, rather than leaving a dead button to
+explain itself.
+
+The appeal ranks hardware above money, because nine published results from one
+laptop against ten backends that have never touched their target silicon is a
+hardware problem, not a funding one. What sponsorship explicitly does not buy —
+favourable results, removal of a number, exclusion of a competitor, advance
+notice — is written down so it can be held against the project later.
+
+### Added — acceptance checks that run the guards rather than grep for them
+
+`scripts/acceptance_check.py`, wired into CI after `pytest`. Twenty-two checks
+that execute the code path a feature claims to have: the regression gate
+actually returns `EXIT_NOT_COMPARABLE`, every registered backend resolves and
+reaches a measurement path, the leaderboard actually consults the classifier.
+
+The defect class this exists for has appeared repeatedly here: a capability
+built, unit-tested, exported, ticked in ROADMAP.md, and never called by any
+production code path. A unit test proves the function works. It does not prove
+anything calls it.
+
 ### Added — the nine backends that could detect hardware and not measure it
 
 ROCm, QNN, Hailo, TensorRT, Lemonade, ExLlamaV2, MLX, WebGPU and Windows ML all

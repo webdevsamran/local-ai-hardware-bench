@@ -1,5 +1,5 @@
 {
-  "note": "Generated from aihwbench/sanitize.py, which stays canonical. Detection is regex-based and deliberately over-eager: a false positive costs a contributor a second look, while a false negative publishes someone's home directory.",
+  "note": "Generated from aihwbench/sanitize.py, which stays canonical. Detection is regex-based and deliberately over-eager: a false positive costs a contributor a second look, while a false negative publishes someone's home directory. Every credential in reference_cases is synthetic and exists to be matched; this file is a detection corpus, not a store of secrets, so it carries the scanner's whole-file exemption: secret-scan: allow-file",
   "patterns": [
     {
       "id": "mac_address",
@@ -32,16 +32,34 @@
       "pattern": "\\b(?:gh[pousr]_[A-Za-z0-9]{36,}\\b|Bearer\\s+[A-Za-z0-9._~+/=-]{10,})"
     },
     {
+      "id": "cloud_access_key",
+      "ignore_case": false,
+      "label": "cloud access key id",
+      "pattern": "\\b(?:AKIA|ASIA|AROA|AIDA|ANPA|ANVA|AIPA)[0-9A-Z]{12,}\\b"
+    },
+    {
+      "id": "api_key",
+      "ignore_case": false,
+      "label": "API key",
+      "pattern": "\\b(?:sk|pk|rk)-[A-Za-z0-9_-]{16,}\\b"
+    },
+    {
       "id": "windows_path",
       "ignore_case": true,
       "label": "Windows user home path",
-      "pattern": "[A-Za-z]:\\\\+Users\\\\+[^\\\"'\\\\]+"
+      "pattern": "[A-Za-z]:[\\\\/]+Users[\\\\/]+[^\\\"'\\\\/\\s]+"
     },
     {
       "id": "home_path",
       "ignore_case": true,
       "label": "home directory",
       "pattern": "(?:[\\\\/]{1,2})home(?:[\\\\/]{1,2})[A-Za-z0-9._-]+"
+    },
+    {
+      "id": "macos_home_path",
+      "ignore_case": false,
+      "label": "macOS home directory",
+      "pattern": "(?<![A-Za-z0-9]):?[\\\\/]Users[\\\\/][^\\\"'\\\\/\\s]+"
     },
     {
       "id": "serial_number",
@@ -114,15 +132,41 @@
     },
     {
       "matches": [
+        "macos_home_path",
         "windows_path"
       ],
-      "text": "C:\\Users\\samra\\models"
+      "text": "C:\\Users\\alice\\models"
+    },
+    {
+      "matches": [
+        "macos_home_path",
+        "windows_path"
+      ],
+      "text": "C:/Users/alice/models/m.gguf"
     },
     {
       "matches": [
         "home_path"
       ],
       "text": "/home/alice/models"
+    },
+    {
+      "matches": [
+        "macos_home_path"
+      ],
+      "text": "/Users/alice/models"
+    },
+    {
+      "matches": [
+        "cloud_access_key"
+      ],
+      "text": "AKIAIOSFODNN7EXAMPLE"
+    },
+    {
+      "matches": [
+        "api_key"
+      ],
+      "text": "sk-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
     },
     {
       "matches": [
@@ -171,6 +215,22 @@
     {
       "matches": [],
       "text": "serial"
+    },
+    {
+      "matches": [],
+      "text": "sha256-c5396e0600000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "matches": [],
+      "text": "models/mobilenetv2-12.onnx"
+    },
+    {
+      "matches": [],
+      "text": "exl2-4.65bpw"
+    },
+    {
+      "matches": [],
+      "text": "Users of this tool"
     }
   ]
 }

@@ -23,6 +23,12 @@ SKIP_DIRS = {
     "__pycache__",
     "build",
     "dist",
+    # The SSR build's output directory. `dist` was skipped and this was not,
+    # so a developer who had run `npm run build` scanned a second copy of every
+    # generated file -- including the privacy-detection corpus -- and got
+    # findings that vanished again after `git clean`. Both are gitignored build
+    # output; neither is a source of truth for anything.
+    "dist-ssr",
     "node_modules",
     "results",
     "site",

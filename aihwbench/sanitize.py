@@ -60,17 +60,54 @@ _PATTERNS: tuple[tuple[str, str, re.Pattern[str]], ...] = (
         "possible token/credential",
         re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9]{36,}\b|Bearer\s+[A-Za-z0-9._~+/=-]{10,})"),
     ),
-    # ``\\+`` (one-or-more literal backslashes) also matches repr-doubled
-    # text, so leaks are caught even if a value was repr()'d first.
+    # Cloud access-key ids. The prefixes are assigned by AWS and are not
+    # something that occurs in a benchmark result by accident, so matching them
+    # cannot redact legitimate content.
+    (
+        "cloud_access_key",
+        "cloud access key id",
+        re.compile(r"\b(?:AKIA|ASIA|AROA|AIDA|ANPA|ANVA|AIPA)[0-9A-Z]{12,}\b"),
+    ),
+    # Provider API keys with a distinctive prefix. Deliberately narrow: a bare
+    # high-entropy string is indistinguishable from a checksum, and this
+    # project puts SHA-256 digests in every result.
+    (
+        "api_key",
+        "API key",
+        re.compile(r"\b(?:sk|pk|rk)-[A-Za-z0-9_-]{16,}\b"),
+    ),
+    # Windows user directories, with either separator.
+    #
+    # The original pattern required backslashes, which missed the form this
+    # project produces constantly: Windows accepts `/` everywhere, `pathlib`
+    # emits it, JSON carries it without escaping, and `C:/Users/name/models`
+    # therefore passed the privacy scan and would have been published. A
+    # result file is a public artifact here, so that is a leak rather than an
+    # inconvenience.
+    #
+    # ``[\\/]+`` also matches repr-doubled backslashes, so a value that was
+    # repr()'d before landing in the document is still caught.
     (
         "windows_path",
         "Windows user home path",
-        re.compile(r"[A-Za-z]:\\+Users\\+[^\"'\\]+", re.IGNORECASE),
+        re.compile(r"[A-Za-z]:[\\/]+Users[\\/]+[^\"'\\/\s]+", re.IGNORECASE),
     ),
     (
         "home_path",
         "home directory",
         re.compile(r"(?:[\\/]{1,2})home(?:[\\/]{1,2})[A-Za-z0-9._-]+", re.IGNORECASE),
+    ),
+    # macOS home directories, which were not covered at all: the pattern above
+    # matches `/home/`, and macOS uses `/Users/`. Every result from a Mac
+    # carried its owner's username past the scan -- and this project ships an
+    # MLX backend whose entire audience is on macOS.
+    #
+    # Anchored to the start of a path segment so `.../Users/` inside some
+    # unrelated string is still caught, while the bare word "Users" is not.
+    (
+        "macos_home_path",
+        "macOS home directory",
+        re.compile(r"(?<![A-Za-z0-9]):?[\\/]Users[\\/][^\"'\\/\s]+"),
     ),
     (
         "serial_number",

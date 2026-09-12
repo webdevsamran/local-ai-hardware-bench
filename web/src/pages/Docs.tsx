@@ -1,6 +1,42 @@
 import { Link } from 'react-router-dom'
 import CopyCommand from '../components/CopyCommand'
 
+/**
+ * The guides live as markdown in the repository rather than as routes here,
+ * because they are read as often from GitHub as from the dashboard and a
+ * second copy would drift. Linking them keeps them reachable from the site.
+ */
+const DOCS_BASE =
+  'https://github.com/webdevsamran/local-ai-hardware-bench/blob/main/docs/guides'
+
+const GUIDES = [
+  {
+    file: 'how-to-benchmark-a-local-llm.md',
+    title: 'How to benchmark a local LLM',
+    blurb: 'the whole process, and the five mistakes that make a number meaningless',
+  },
+  {
+    file: 'tokens-per-second-explained.md',
+    title: 'Tokens per second, explained',
+    blurb: 'why throughput is not the number you feel, and what to read instead',
+  },
+  {
+    file: 'vram-requirements-for-local-llms.md',
+    title: 'How much VRAM do I need?',
+    blurb: 'the arithmetic, and the measured step it cannot predict',
+  },
+  {
+    file: 'npu-vs-gpu-for-local-ai.md',
+    title: 'NPU vs GPU vs CPU',
+    blurb: 'what an NPU is actually good at — and what has not been measured here',
+  },
+  {
+    file: 'choosing-a-quantization.md',
+    title: 'Choosing a quantization',
+    blurb: 'q4 vs q5 vs q8 vs FP16, including the quality column most tables omit',
+  },
+]
+
 export default function Docs() {
   return (
     <div>
@@ -68,6 +104,21 @@ export default function Docs() {
           privacy scan and data-quality checks automatically. See the{' '}
           <Link to="/community">community page</Link> for the full guide.
         </p>
+      </section>
+
+      <section className="card">
+        <h2>Guides</h2>
+        <p>
+          Written for the question rather than the tool. Each one states which
+          of its numbers were measured here and which are arithmetic.
+        </p>
+        <ul>
+          {GUIDES.map((guide) => (
+            <li key={guide.file}>
+              <a href={`${DOCS_BASE}/${guide.file}`}>{guide.title}</a> — {guide.blurb}
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="card">

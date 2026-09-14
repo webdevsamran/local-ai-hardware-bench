@@ -1,8 +1,11 @@
-# AGENTS.md
+# Development notes
 
-Working notes for AI coding agents in this repository. Everything here is
-checked against CI — if a command below disagrees with
-`.github/workflows/ci.yml`, the workflow wins and this file is the bug.
+Working notes for anyone changing this repository. Everything here is checked
+against CI — if a command below disagrees with `.github/workflows/ci.yml`, the
+workflow wins and this file is the bug.
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) first for the contribution workflow;
+this file covers the rules that are easy to break without noticing.
 
 ## What this project is
 

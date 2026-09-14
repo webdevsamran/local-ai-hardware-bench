@@ -5,6 +5,28 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Changed — editor configuration out of the repository, doctrine kept
+
+A tracked editor launch configuration was removed. It described one
+contributor's local setup and said nothing about how to build or test this
+project, so it belongs in a personal exclude rather than in a file every
+contributor reads. Local setups are unaffected.
+
+`DEVELOPMENT.md` is the working-notes file, renamed from a tool-specific name
+it never needed. Its content is not advice for any particular editor — it is
+this repository's engineering doctrine, and the document a new contributor
+most needs:
+
+- a metric that was not measured is `null`, never an estimate;
+- `performance_per_watt` is two different units and must never be ranked in
+  one column;
+- a comparability check is never loosened to make two runs compare;
+- the six trust states live in `aihwbench/trust.py` and nowhere else;
+- which files are generated, and which must not be touched without asking.
+
+Every rule there is enforced by a test, which is why the file is worth
+keeping rather than deleting. Renamed, not rewritten.
+
 ### Fixed — the privacy scanner's own test corpus was the leak
 
 `web/public/data/privacy.json` is committed and served to every visitor of the
@@ -1976,7 +1998,7 @@ contract.
   `experiments/` workflow that shipped no example manifest.
 
 ### Added
-- `AGENTS.md`, `experiments/` with a runnable manifest, and
+- `DEVELOPMENT.md`, `experiments/` with a runnable manifest, and
   `docs/methodology-review.md` — a review packet with five specific questions,
   since the methodology has never been externally reviewed (#21).
 - A PyPI publish job in `release.yml`, which previously had none, so

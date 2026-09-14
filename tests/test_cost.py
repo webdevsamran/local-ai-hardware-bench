@@ -8,6 +8,8 @@ competitor landscape is fetched rather than hardcoded.
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from aihwbench.analysis.cost import compare_local_vs_cloud
@@ -105,13 +107,44 @@ def test_no_hardware_cost_means_no_ownership_comparison():
 
 
 def test_no_price_table_is_bundled():
-    """The module must not ship provider prices that can go stale."""
+    """The module must not ship provider prices that can go stale.
+
+    Checked by shape rather than by a list of provider names. The list version
+    only caught the providers somebody thought to enumerate, so a table added
+    for a provider not on it would have passed -- and the list needed
+    maintaining forever to stay useful. A per-token or per-million-token price
+    constant has a recognisable form whoever sells it, so that is what this
+    looks for.
+    """
+    import ast
     from pathlib import Path
 
     from aihwbench.analysis import cost
 
     source = Path(cost.__file__).read_text(encoding="utf-8")
-    for vendor in ("openai", "anthropic", "gpt-4", "claude-", "gemini"):
-        assert vendor not in source.lower(), (
-            f"cost.py must not bundle {vendor} pricing; prices are caller-supplied"
-        )
+    tree = ast.parse(source)
+
+    #: Names that would hold a bundled price rather than a caller-supplied one.
+    price_like = re.compile(r"(price|pricing|rate|cost).*(table|per_million|per_token|usd)", re.I)
+
+    offenders = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        names = [t.id for t in targets if isinstance(t, ast.Name)]
+        if not any(price_like.search(n) for n in names):
+            continue
+        # A module-level constant holding numbers is a bundled table; a
+        # parameter default of None is not.
+        value = node.value
+        if isinstance(value, (ast.Dict, ast.List, ast.Tuple)) or isinstance(
+            getattr(value, "value", None), (int, float)
+        ):
+            offenders.append(names)
+
+    assert not offenders, (
+        f"cost.py appears to bundle a price table ({offenders}). Prices are "
+        "supplied by the caller, because any rate committed here is wrong the "
+        "day a provider changes it and nothing in the repository would notice."
+    )

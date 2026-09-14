@@ -3,6 +3,21 @@
 # Requires the repository setting Pages → Source = "GitHub Actions".
 # If deployment fails with a permissions error, that single setting is the
 # remaining manual step; everything else is fully configured here.
+#
+# The path filter below does not match the first push to an empty repository.
+# A branch-creating push has no previous commit to diff against, so no path
+# can be "changed" and this workflow does not run -- the site then returns 404
+# with every check green, which is the confusing part. It happened once, on a
+# repository recreated from scratch.
+#
+# The filter is still right for day-to-day work: a change to Python source
+# cannot alter the dashboard, and rebuilding it anyway would burn a couple of
+# minutes per push to republish identical bytes. So the first deploy after a
+# repository is recreated is triggered by hand:
+#
+#     gh workflow run pages.yml --ref main
+#
+# Every later deploy is automatic.
 
 name: Deploy dashboard to GitHub Pages
 

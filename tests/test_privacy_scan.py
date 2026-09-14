@@ -267,9 +267,27 @@ def test_every_home_directory_form_is_caught(leak, label):
     assert "alice" not in redact_object({"path": leak})["path"], f"{label} survived redaction"
 
 
+#: Synthetic cloud credentials, assembled from halves rather than written as
+#: literals.
+#:
+#: GitHub's secret scanner reads the file, not the test around it. A
+#: temporary-access-key ID written out in a public repository raises a "public
+#: leak" alert whether or not the value was ever real -- this one never was,
+#: and it still cost a maintainer the time to prove that. Worse, a repository
+#: that trains its owner to dismiss secret-scanning alerts as "just the tests
+#: again" is one dismissal away from ignoring a real one.
+#:
+#: Splitting the prefix keeps the scanner quiet while the assembled value still
+#: exercises the pattern exactly as a real credential would.
+_AWS_LONG_TERM = "AKIA" + "IOSFODNN7EXAMPLE"
+_AWS_TEMPORARY = "ASIA" + "EXAMPLEKEY1234XY"
+_PROVIDER_API_KEY = "sk-proj-" + "abc123def456ghi789jkl012"
+
+
 @pytest.mark.parametrize(
     "secret",
-    ["AKIAIOSFODNN7EXAMPLE", "ASIAY34FZKBOKMUTVV7A", "sk-proj-abc123def456ghi789jkl012"],
+    [_AWS_LONG_TERM, _AWS_TEMPORARY, _PROVIDER_API_KEY],
+    ids=["aws-long-term", "aws-temporary", "provider-api-key"],
 )
 def test_cloud_and_api_keys_are_caught(secret):
     """A benchmark result should never carry one, and somebody will paste one

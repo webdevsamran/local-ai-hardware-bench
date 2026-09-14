@@ -85,6 +85,28 @@ editing by hand.
   `github/codeql-action/*` entries must all move together or CodeQL fails with
   a version-mismatch error.
 
+## Deploying the dashboard
+
+`.github/workflows/pages.yml` publishes `web/` to GitHub Pages on any push to
+`main` that touches `web/**`, `results/published/**`,
+`scripts/generate_frontend_data.py`, or the workflow itself. Nothing else needs
+doing.
+
+The one exception is the **first** push to an empty repository. A
+branch-creating push has no previous commit to diff against, so no path counts
+as changed and the workflow does not run. The site returns 404 while every
+check reports green, which is exactly the shape of problem nobody goes looking
+for. Trigger it once by hand:
+
+```bash
+gh workflow run pages.yml --ref main
+```
+
+Two repository settings also have to exist and are not in version control:
+Pages → Source = "GitHub Actions", and the branch protection in
+`scripts/branch-protection.json`, applied with the command in that file's own
+`_comment` block.
+
 ## Conventions
 
 Conventional-commit prefixes (`feat:`, `fix:`, `docs:`, `test:`, `chore:`).

@@ -1,4 +1,14 @@
-"""Speculative decoding: the acceptance rate, which decides whether it helps.
+"""Speculative decoding, and the acceptance rate that decides whether it helps.
+
+The first line of this docstring is worded to keep a word ending in "coding"
+away from a following colon, and that is not fussiness. PEP 263 declares a
+source encoding on line one or two via a *comment* matching
+``coding[:=]\\s*([-\\w.]+)``. CPython enforces the comment part. CodeQL's
+Python extractor does not, and the original opening line read "Speculative
+decoding: the acceptance rate", which it took as a declaration of an encoding
+named ``the``. No such codec exists, so it could not decode this file at all
+and dropped the module from every security scan while the other 102 were
+analysed. ``tests/test_source_is_parseable_by_scanners.py`` pins it.
 
 Speculative decoding runs a small draft model ahead of a large one and keeps
 whatever the large model agrees with. It is sold as a free ~2x, and whether you
@@ -55,22 +65,16 @@ SPECULATIVE_METRICS = {
 def _metric_pattern(name: str) -> re.Pattern[str]:
     """Match one Prometheus counter line, with or without a label set.
 
-    Deliberately not an f-string. The previous version interpolated the escaped
-    name into a raw f-string, which CPython accepts and CodeQL's Python
-    extractor could not parse -- so this file was silently excluded from every
-    security scan for three weeks while the repository's other 102 modules were
-    analysed. A parse error that costs you analysis is worse than one that
-    costs you a build, because nothing goes red.
+    Concatenated rather than interpolated, for readability only. The previous
+    version built the same pattern with a raw f-string, where the optional
+    label set had to be written with every brace doubled; nobody reads a
+    doubled brace as a literal one on the first pass. Both forms compile to a
+    byte-identical pattern string.
 
-    The hazard is the exact sequence backslash-brace-brace: a backslash
-    immediately followed by a doubled brace, inside a raw f-string. Two other
-    raw f-strings in this repository parse fine -- one has a backslash, the
-    other has doubled braces -- and only the file combining them failed.
-    ``tests/test_source_is_parseable_by_scanners.py`` pins the combination.
-
-    Concatenation costs nothing here (the sole interpolation is the escaped
-    name) and the regex is now legible: an optional Prometheus label set reads
-    as itself, without the reader having to un-double every brace to see it.
+    This was briefly and wrongly blamed for the CodeQL parse failure on this
+    module. It was not the cause -- see the module docstring, which names the
+    real one -- and the change is kept because the regex is easier to read,
+    not because it fixed anything.
     """
     return re.compile(
         "^" + re.escape(name) + r"(?:\{[^}]*\})?\s+([0-9.eE+-]+)\s*$",

@@ -5,55 +5,73 @@ vulnerability: `aihwbench/analysis/speculative.py` could not be parsed, so it
 was dropped from the analysis. The other 102 modules were scanned; that one was
 not, for three weeks, and nothing anywhere went red. A parse error that costs
 you a *build* announces itself. A parse error that costs you *analysis* looks
-exactly like a clean result.
+exactly like a clean result, and the file it silences is picked by accident
+rather than by risk.
 
 That is the failure mode this file exists for. A test suite that only runs
 under CPython cannot notice it: `python -m py_compile` is perfectly happy with
-the line that broke the extractor.
+the file that broke the extractor, and so is `ast.parse` at every
+`feature_version` from 3.7 to 3.14.
 
 The construct
 -------------
 
-A raw f-string containing a backslash immediately followed by a doubled brace::
+PEP 263 lets a source file declare its encoding on line one or two, with a
+**comment** matching ``coding[:=]\\s*([-\\w.]+)``. CPython enforces the comment
+part. CodeQL's Python extractor applies the pattern to the first two lines
+whether or not they are a comment.
 
-    rf"...(?:\\{{[^}}]*\\}})?..."
+The module's docstring opened:
 
-CPython resolves this in one pass -- `{{` is the f-string escape for a literal
-brace, and the backslash before it is just a backslash, because the string is
-raw. A parser that resolves backslash escapes *before* brace-doubling sees
-`\\{` as an escaped brace, is left holding a single `{`, reads it as the start
-of an interpolation, and never recovers.
+    \"\"\"Speculative decoding: the acceptance rate, which decides ...
 
-The evidence for that reading is that two other raw f-strings in this
-repository parse fine:
+"de*coding: the*" matches. The extractor read the file's declared encoding as
+``the``, looked up a codec by that name, found none, and could not decode the
+file -- which is why the failure presented as a parse error with no offending
+line. The runner log said so plainly once it was read:
 
-- `tests/test_frontend_hydration.py` has a backslash and no doubled braces;
-- `tests/test_release_provenance.py` has doubled braces and no backslash
-  before them.
+    [WARN] .../aihwbench/analysis/speculative.py has encoding 'the'
 
-Only the file combining the two failed. This pins the combination rather than
-banning raw f-strings outright, which would forbid two constructs that
-demonstrably work.
+Any first- or second-line prose ending a word in "coding" before a colon or
+equals sign does it: "decoding:", "encoding:", "transcoding=". So the guard is
+the PEP 263 pattern itself, applied the lax way a third-party reader applies
+it, with the capture checked against the codec registry.
+
+A correction worth keeping
+--------------------------
+
+This file first blamed a raw f-string on line 56 -- the module's only one, and
+the only one in the package. That hypothesis survived a plausible elimination
+(66 files carry em-dashes and none are flagged; two other raw f-strings parse
+fine) and was still wrong: the fix shipped, and CodeQL failed on the very same
+file for the very same reason. The lesson is in the method, not the hypothesis.
+Narrowing by what is *unique* to the failing file found a real uniqueness that
+was not the cause; reading the tool's own log found the cause in one line. The
+log was available the entire time.
 """
 
 from __future__ import annotations
 
-import ast
+import codecs
+import re
 from pathlib import Path
 
 import pytest
 
 _ROOT = Path(__file__).resolve().parent.parent
 
-#: Directories CodeQL extracts. It is configured with no path filter, so this
-#: is "every Python file in the repository" rather than a chosen subset.
+#: Directories CodeQL extracts. Its workflow sets no path filter, so this is
+#: "every Python file in the repository" rather than a chosen subset.
 _SCANNED = ("aihwbench", "scripts", "tests")
 
-#: The hazardous sequences, assembled rather than written out so this module
-#: does not trip its own check when the detector is later widened to scan
-#: docstrings as well as f-string literals.
-_BACKSLASH = chr(92)
-_HAZARDS = (_BACKSLASH + "{{", _BACKSLASH + "}}")
+#: PEP 263's declaration pattern. Assembled from two halves so that this
+#: module's own source does not contain the sequence it forbids -- the file
+#: defining the rule would otherwise be the first to break it.
+_PEP263 = re.compile("cod" + r"ing[:=]\s*([-\w.]+)")
+
+#: How many leading lines a reader scans for the declaration. PEP 263 says one
+#: or two; the extractor that failed here honours that much.
+_DECLARATION_LINES = 2
 
 
 def _python_files() -> list[Path]:
@@ -74,58 +92,46 @@ def test_there_are_files_to_check() -> None:
 
 
 @pytest.mark.parametrize("path", _FILES, ids=lambda p: str(p.relative_to(_ROOT)))
-def test_every_scanned_file_parses(path: Path) -> None:
-    """The cheap half: CPython itself must be able to read it.
+def test_no_file_accidentally_declares_a_nonexistent_source_encoding(path: Path) -> None:
+    """The defect that cost one module every security scan for three weeks.
 
-    This cannot catch the CodeQL failure -- CPython parsed the offending file
-    without complaint -- but it is the floor, and it costs nothing.
+    Checked against the codec registry rather than by banning the word: a real
+    ``# -*- coding: utf-8 -*-`` header is legitimate and must keep working. It
+    is only a defect when the captured name is not a codec, because then no
+    reader applying PEP 263 laxly can decode the file at all.
     """
+    lines = path.read_text(encoding="utf-8").split("\n")[:_DECLARATION_LINES]
+    for number, line in enumerate(lines, start=1):
+        match = _PEP263.search(line)
+        if match is None:
+            continue
+        declared = match.group(1)
+        try:
+            codecs.lookup(declared)
+        except LookupError:
+            pytest.fail(
+                f"{path.relative_to(_ROOT)}:{number} reads as a PEP 263 encoding "
+                f"declaration of {declared!r}, which is not a codec. CPython "
+                f"ignores it because the line is not a comment, but a reader "
+                f"that applies the pattern to any of the first two lines cannot "
+                f"decode this file -- CodeQL drops it from analysis entirely, "
+                f"silently. Reword the line so a word ending in 'coding' is not "
+                f"followed by ':' or '='.\n    {line.strip()[:100]}"
+            )
+
+
+@pytest.mark.parametrize("path", _FILES, ids=lambda p: str(p.relative_to(_ROOT)))
+def test_every_scanned_file_parses(path: Path) -> None:
+    """The floor: CPython itself must be able to read it.
+
+    This cannot catch the defect above -- CPython parsed the offending file
+    without complaint, which is the whole problem -- but it costs nothing and
+    catches the ordinary breakage.
+    """
+    import ast
+
     source = path.read_text(encoding="utf-8")
     try:
         ast.parse(source, filename=str(path))
     except SyntaxError as exc:  # pragma: no cover - only on a genuine breakage
         pytest.fail(f"{path.relative_to(_ROOT)}:{exc.lineno}: {exc.msg}")
-
-
-def _raw_fstrings(path: Path) -> list[tuple[int, str]]:
-    """Every raw f-string literal in a file, with its line number.
-
-    Located through the AST rather than by regex over the text: a regex would
-    match the example inside a docstring -- including the ones in this module's
-    own docstring -- and report a hazard in prose that no parser ever reads as
-    code.
-    """
-    source = path.read_text(encoding="utf-8")
-    found: list[tuple[int, str]] = []
-    for node in ast.walk(ast.parse(source, filename=str(path))):
-        if not isinstance(node, ast.JoinedStr):
-            continue
-        segment = ast.get_source_segment(source, node)
-        if not segment:
-            continue
-        prefix = segment[: len(segment) - len(segment.lstrip("rRfFbB"))].lower()
-        if "r" in prefix and "f" in prefix:
-            found.append((node.lineno, segment))
-    return found
-
-
-@pytest.mark.parametrize("path", _FILES, ids=lambda p: str(p.relative_to(_ROOT)))
-def test_no_raw_fstring_hides_a_brace_behind_a_backslash(path: Path) -> None:
-    """The construct that made a module invisible to the security scanner.
-
-    The fix is never difficult: the interpolation can be concatenated, which
-    also makes the regex legible, since nobody reads a doubled brace as a
-    literal one on the first pass.
-    """
-    offenders = [
-        (line, segment)
-        for line, segment in _raw_fstrings(path)
-        if any(hazard in segment for hazard in _HAZARDS)
-    ]
-    assert not offenders, (
-        f"{path.relative_to(_ROOT)} contains a raw f-string with a backslash "
-        f"before a doubled brace, which CodeQL's Python extractor cannot parse "
-        f"-- the whole file is then silently dropped from security analysis: "
-        f"{offenders}. Concatenate the interpolation instead of using an "
-        f"f-string; see aihwbench/analysis/speculative.py for the pattern."
-    )

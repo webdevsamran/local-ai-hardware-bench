@@ -53,7 +53,29 @@ SPECULATIVE_METRICS = {
 
 
 def _metric_pattern(name: str) -> re.Pattern[str]:
-    return re.compile(rf"^{re.escape(name)}(?:\{{[^}}]*\}})?\s+([0-9.eE+-]+)\s*$", re.MULTILINE)
+    """Match one Prometheus counter line, with or without a label set.
+
+    Deliberately not an f-string. The previous version interpolated the escaped
+    name into a raw f-string, which CPython accepts and CodeQL's Python
+    extractor could not parse -- so this file was silently excluded from every
+    security scan for three weeks while the repository's other 102 modules were
+    analysed. A parse error that costs you analysis is worse than one that
+    costs you a build, because nothing goes red.
+
+    The hazard is the exact sequence backslash-brace-brace: a backslash
+    immediately followed by a doubled brace, inside a raw f-string. Two other
+    raw f-strings in this repository parse fine -- one has a backslash, the
+    other has doubled braces -- and only the file combining them failed.
+    ``tests/test_source_is_parseable_by_scanners.py`` pins the combination.
+
+    Concatenation costs nothing here (the sole interpolation is the escaped
+    name) and the regex is now legible: an optional Prometheus label set reads
+    as itself, without the reader having to un-double every brace to see it.
+    """
+    return re.compile(
+        "^" + re.escape(name) + r"(?:\{[^}]*\})?\s+([0-9.eE+-]+)\s*$",
+        re.MULTILINE,
+    )
 
 
 def parse_speculative_metrics(prometheus_text: str) -> dict[str, float | None]:

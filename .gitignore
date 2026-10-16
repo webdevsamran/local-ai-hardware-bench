@@ -39,10 +39,12 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Secrets
+# Secrets & Private Internal Docs
 .env
 *.key
+private/
 
 # Runtime compiler artifacts
 *.errors.txt
+
 

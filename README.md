@@ -26,6 +26,8 @@ raw data, and refuses to print a comparison it cannot justify.
 
 **[Live dashboard and leaderboard →](https://webdevsamran.github.io/local-ai-hardware-bench/)**
 
+> **Latest Flagship Hardware Study:** **[FuriosaAI RNGD (48GB HBM3) NPU Master Study](docs/results/furiosa-rngd-48gb-flagship-study.md)** — Comprehensive evaluation across 11 models (Qwen3, Llama 3.1, GPT-OSS-20B MoE, DeepSeek-R1-Distill, Qwen3-VL Multimodal, and BGE/Harrier pooling) delivering up to **`1,532 tok/s`** aggregate decode throughput, **`17,308 tok/s`** prefill, and **`14.89 tok/s/W`** power efficiency on a single PCIe accelerator card. See also **[Platform Guide: FuriosaAI RNGD](platforms/furiosa/rngd.md)**.
+
 ---
 
 ## Contents
@@ -51,6 +53,7 @@ estimate:
 
 | Question | Answer |
 | --- | --- |
+| **How fast does a dedicated NPU accelerator card run local LLMs?** | [FuriosaAI RNGD 48GB Master Study](docs/results/furiosa-rngd-48gb-flagship-study.md) — **1,532 tok/s batched**, 17,308 tok/s prefill, 14.9 tok/s/W |
 | **How many tokens per second will this model get on my GPU?** | [Run one benchmark](#install-and-run-your-first-benchmark), or browse the [leaderboard](https://webdevsamran.github.io/local-ai-hardware-bench/leaderboard) |
 | **How much VRAM do I need to run a 7B, 13B or 70B LLM?** | [Will it run on my PC?](https://webdevsamran.github.io/local-ai-hardware-bench/will-it-run) and `aihwbench fit` |
 | **What happens when the model does not fit in VRAM?** | [The offload cliff, measured](docs/results/offload-cliff-rtx3080ti.md) — **39.6% lost in one step**, 5.8× end to end |

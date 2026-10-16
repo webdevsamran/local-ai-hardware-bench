@@ -1,0 +1,197 @@
+{
+  "schema_version": "2.1-sweep",
+  "id": "sweep-furiosa-rngd-bge-m3",
+  "timestamp": "2026-10-16T15:13:30Z",
+  "hardware": {
+    "os": "Linux (Ubuntu 24.04 LTS)",
+    "os_version": "6.8.0-147-generic",
+    "cpu": "AMD EPYC 9354 32-Core Processor",
+    "cpu_cores_physical": 64,
+    "cpu_cores_logical": 128,
+    "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+    "gpu_vram_mb": 48640,
+    "gpu_driver_version": null,
+    "npu": "FuriosaAI RNGD (npu1, 8x PE TCP Cores, 48GB HBM3)",
+    "ram_gb": 1007.4,
+    "platform_name": "FuriosaAI RNGD PCIe Server"
+  },
+  "npu": {
+    "npu_device": "FuriosaAI RNGD (npu1, 8x PE Cores, 48GB HBM3)",
+    "npu_telemetry_source": "furiosa-smi",
+    "npu_util_percent": 29.41,
+    "npu_power_watts": 109.0,
+    "npu_memory_used_mb": 48308.0,
+    "npu_util_percent_peak": 42.7
+  },
+  "model": {
+    "name": "furiosa-ai/bge-m3",
+    "format": "fxb",
+    "quantization": "FP32",
+    "parameters": "0.57B",
+    "checksum": "sha256:3b85151963188861e2c8f56022743b680fd6345f01718abeaa0caa1e09c51d62",
+    "revision": "2026.4.0",
+    "tokenizer": "furiosa-ai/bge-m3",
+    "family": "xlm-roberta"
+  },
+  "model_size_bytes": 1168350259,
+  "model_size_gb": 1.09,
+  "fxb_path": "/workspace/hf_cache/hub/models--furiosa-ai--bge-m3/snapshots/d05e4eb05f9f8e6a32928a109baf1585a61ae581/bge-m3-fc43f6a779-c03e584974-2609100220.fxb",
+  "runtime": {
+    "name": "furiosa-llm",
+    "version": "2026.4.0-release (rev: b1baffa)",
+    "backend": "furiosa-llm-pooling",
+    "device": "npu1 (FuriosaAI RNGD TP=8)",
+    "device_requested": "npu1"
+  },
+  "load_time_ms": 3074.67,
+  "idle_power_w": 97.0,
+  "idle_temp_c": 48.79,
+  "pooling_batch_sweep": [
+    {
+      "seq_len": 128,
+      "batch_size": 1,
+      "latency_p50_ms": 5.05,
+      "latency_p95_ms": 6.2,
+      "latency_samples_ms": [
+        6.32,
+        5.05,
+        4.66
+      ],
+      "inferences_per_second": 198.02,
+      "tokens_processed_per_second": 25346.53,
+      "avg_power_w": 80.33,
+      "peak_temp_c": 48.23,
+      "avg_pe_utilization_pct": 32.7,
+      "peak_hbm_used_mb": 48096.0,
+      "inferences_per_watt": 2.465
+    },
+    {
+      "seq_len": 128,
+      "batch_size": 8,
+      "latency_p50_ms": 22.35,
+      "latency_p95_ms": 24.49,
+      "latency_samples_ms": [
+        19.68,
+        24.73,
+        22.35
+      ],
+      "inferences_per_second": 357.94,
+      "tokens_processed_per_second": 45816.55,
+      "avg_power_w": 79.33,
+      "peak_temp_c": 48.23,
+      "avg_pe_utilization_pct": 23.55,
+      "peak_hbm_used_mb": 48096.0,
+      "inferences_per_watt": 4.512
+    },
+    {
+      "seq_len": 128,
+      "batch_size": 32,
+      "latency_p50_ms": 76.28,
+      "latency_p95_ms": 83.98,
+      "latency_samples_ms": [
+        85.86,
+        76.45,
+        76.28,
+        71.69,
+        74.59
+      ],
+      "inferences_per_second": 419.51,
+      "tokens_processed_per_second": 53696.91,
+      "avg_power_w": 77.0,
+      "peak_temp_c": 49.53,
+      "avg_pe_utilization_pct": 29.41,
+      "peak_hbm_used_mb": 48308.0,
+      "inferences_per_watt": 5.448
+    },
+    {
+      "seq_len": 128,
+      "batch_size": 64,
+      "latency_p50_ms": 142.82,
+      "latency_p95_ms": 146.07,
+      "latency_samples_ms": [
+        146.43,
+        126.1,
+        142.82
+      ],
+      "inferences_per_second": 448.12,
+      "tokens_processed_per_second": 57358.91,
+      "avg_power_w": 72.5,
+      "peak_temp_c": 49.53,
+      "avg_pe_utilization_pct": 28.85,
+      "peak_hbm_used_mb": 48308.0,
+      "inferences_per_watt": 6.181
+    },
+    {
+      "seq_len": 512,
+      "batch_size": 1,
+      "latency_p50_ms": 6.66,
+      "latency_p95_ms": 8.18,
+      "latency_samples_ms": [
+        8.35,
+        6.66,
+        6.42
+      ],
+      "inferences_per_second": 150.15,
+      "tokens_processed_per_second": 76876.88,
+      "avg_power_w": 66.0,
+      "peak_temp_c": 48.6,
+      "avg_pe_utilization_pct": 26.22,
+      "peak_hbm_used_mb": 48308.0,
+      "inferences_per_watt": 2.275
+    },
+    {
+      "seq_len": 512,
+      "batch_size": 8,
+      "latency_p50_ms": 40.21,
+      "latency_p95_ms": 44.77,
+      "latency_samples_ms": [
+        33.22,
+        45.28,
+        40.21
+      ],
+      "inferences_per_second": 198.96,
+      "tokens_processed_per_second": 101865.21,
+      "avg_power_w": 66.67,
+      "peak_temp_c": 48.6,
+      "avg_pe_utilization_pct": 25.88,
+      "peak_hbm_used_mb": 48308.0,
+      "inferences_per_watt": 2.984
+    },
+    {
+      "seq_len": 512,
+      "batch_size": 32,
+      "latency_p50_ms": 134.14,
+      "latency_p95_ms": 134.54,
+      "latency_samples_ms": [
+        120.34,
+        134.58,
+        134.14
+      ],
+      "inferences_per_second": 238.56,
+      "tokens_processed_per_second": 122141.05,
+      "avg_power_w": 73.0,
+      "peak_temp_c": 49.77,
+      "avg_pe_utilization_pct": 30.85,
+      "peak_hbm_used_mb": 48308.0,
+      "inferences_per_watt": 3.268
+    },
+    {
+      "seq_len": 512,
+      "batch_size": 64,
+      "latency_p50_ms": 238.35,
+      "latency_p95_ms": 242.3,
+      "latency_samples_ms": [
+        238.35,
+        227.5,
+        242.73
+      ],
+      "inferences_per_second": 268.51,
+      "tokens_processed_per_second": 137478.5,
+      "avg_power_w": 81.5,
+      "peak_temp_c": 50.46,
+      "avg_pe_utilization_pct": 27.3,
+      "peak_hbm_used_mb": 48308.0,
+      "inferences_per_watt": 3.295
+    }
+  ]
+}

@@ -1,7 +1,133 @@
 {
   "throughput_vs_latency": {
-    "excluded_missing_metrics": 4,
+    "excluded_missing_metrics": 8,
     "points": [
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "RedHatAI/DeepSeek-R1-Distill-Llama-8B-FP8-dynamic",
+        "optimal": false,
+        "run_id": "furiosa-rngd-deepseek-r1-distill-llama-8b-fp8-standard",
+        "runtime": "furiosa-llm",
+        "x": 109.83,
+        "y": 62.59
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "RedHatAI/DeepSeek-R1-Distill-Llama-8B-FP8-dynamic",
+        "optimal": false,
+        "run_id": "furiosa-rngd-deepseek-r1-distill-llama-8b-fp8-sustained",
+        "runtime": "furiosa-llm",
+        "x": 110.13,
+        "y": 62.57
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/gpt-oss-20b",
+        "optimal": false,
+        "run_id": "furiosa-rngd-gpt-oss-20b-standard",
+        "runtime": "furiosa-llm",
+        "x": 136.19,
+        "y": 121.55
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/gpt-oss-20b",
+        "optimal": false,
+        "run_id": "furiosa-rngd-gpt-oss-20b-sustained",
+        "runtime": "furiosa-llm",
+        "x": 135.73,
+        "y": 118.93
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Meta-Llama-3.1-8B-Instruct-FP8-dynamic",
+        "optimal": false,
+        "run_id": "furiosa-rngd-llama31-8b-fp8-standard",
+        "runtime": "furiosa-llm",
+        "x": 110.03,
+        "y": 62.61
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Meta-Llama-3.1-8B-Instruct-FP8-dynamic",
+        "optimal": false,
+        "run_id": "furiosa-rngd-llama31-8b-fp8-sustained",
+        "runtime": "furiosa-llm",
+        "x": 109.62,
+        "y": 63.46
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-4B-FP8",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-4b-fp8-standard",
+        "runtime": "furiosa-llm",
+        "x": 142.6,
+        "y": 61.54
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-4B-FP8",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-4b-fp8-sustained",
+        "runtime": "furiosa-llm",
+        "x": 142.31,
+        "y": 61.63
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-8B-FP8",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-8b-fp8-standard",
+        "runtime": "furiosa-llm",
+        "x": 103.33,
+        "y": 75.61
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-8B-FP8",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-8b-fp8-sustained",
+        "runtime": "furiosa-llm",
+        "x": 103.46,
+        "y": 75.76
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-VL-2B-Instruct",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-vl-2b-instruct-standard",
+        "runtime": "furiosa-llm",
+        "x": 186.52,
+        "y": 37.18
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-VL-2B-Instruct",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-vl-2b-instruct-sustained",
+        "runtime": "furiosa-llm",
+        "x": 185.58,
+        "y": 37.77
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-VL-4B-Instruct",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-vl-4b-instruct-standard",
+        "runtime": "furiosa-llm",
+        "x": 103.73,
+        "y": 66.24
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-VL-4B-Instruct",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-vl-4b-instruct-sustained",
+        "runtime": "furiosa-llm",
+        "x": 103.47,
+        "y": 66.79
+      },
       {
         "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
         "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
@@ -54,8 +180,134 @@
     "y_metric": "ttft_ms"
   },
   "throughput_vs_power": {
-    "excluded_missing_metrics": 4,
+    "excluded_missing_metrics": 8,
     "points": [
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "RedHatAI/DeepSeek-R1-Distill-Llama-8B-FP8-dynamic",
+        "optimal": false,
+        "run_id": "furiosa-rngd-deepseek-r1-distill-llama-8b-fp8-standard",
+        "runtime": "furiosa-llm",
+        "x": 109.83,
+        "y": 141.26
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "RedHatAI/DeepSeek-R1-Distill-Llama-8B-FP8-dynamic",
+        "optimal": false,
+        "run_id": "furiosa-rngd-deepseek-r1-distill-llama-8b-fp8-sustained",
+        "runtime": "furiosa-llm",
+        "x": 110.13,
+        "y": 142.71
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/gpt-oss-20b",
+        "optimal": false,
+        "run_id": "furiosa-rngd-gpt-oss-20b-standard",
+        "runtime": "furiosa-llm",
+        "x": 136.19,
+        "y": 117.75
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/gpt-oss-20b",
+        "optimal": false,
+        "run_id": "furiosa-rngd-gpt-oss-20b-sustained",
+        "runtime": "furiosa-llm",
+        "x": 135.73,
+        "y": 121.24
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Meta-Llama-3.1-8B-Instruct-FP8-dynamic",
+        "optimal": false,
+        "run_id": "furiosa-rngd-llama31-8b-fp8-standard",
+        "runtime": "furiosa-llm",
+        "x": 110.03,
+        "y": 139.09
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Meta-Llama-3.1-8B-Instruct-FP8-dynamic",
+        "optimal": false,
+        "run_id": "furiosa-rngd-llama31-8b-fp8-sustained",
+        "runtime": "furiosa-llm",
+        "x": 109.62,
+        "y": 142.07
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-4B-FP8",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-4b-fp8-standard",
+        "runtime": "furiosa-llm",
+        "x": 142.6,
+        "y": 118.37
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-4B-FP8",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-4b-fp8-sustained",
+        "runtime": "furiosa-llm",
+        "x": 142.31,
+        "y": 121.29
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-8B-FP8",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-8b-fp8-standard",
+        "runtime": "furiosa-llm",
+        "x": 103.33,
+        "y": 141.0
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-8B-FP8",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-8b-fp8-sustained",
+        "runtime": "furiosa-llm",
+        "x": 103.46,
+        "y": 139.99
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-VL-2B-Instruct",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-vl-2b-instruct-standard",
+        "runtime": "furiosa-llm",
+        "x": 186.52,
+        "y": 230.0
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-VL-2B-Instruct",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-vl-2b-instruct-sustained",
+        "runtime": "furiosa-llm",
+        "x": 185.58,
+        "y": 230.0
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-VL-4B-Instruct",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-vl-4b-instruct-standard",
+        "runtime": "furiosa-llm",
+        "x": 103.73,
+        "y": 134.96
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-VL-4B-Instruct",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-vl-4b-instruct-sustained",
+        "runtime": "furiosa-llm",
+        "x": 103.47,
+        "y": 138.07
+      },
       {
         "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
         "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
@@ -108,8 +360,134 @@
     "y_metric": "average_power_watts"
   },
   "throughput_vs_vram": {
-    "excluded_missing_metrics": 4,
+    "excluded_missing_metrics": 8,
     "points": [
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "RedHatAI/DeepSeek-R1-Distill-Llama-8B-FP8-dynamic",
+        "optimal": false,
+        "run_id": "furiosa-rngd-deepseek-r1-distill-llama-8b-fp8-standard",
+        "runtime": "furiosa-llm",
+        "x": 109.83,
+        "y": 47258.85
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "RedHatAI/DeepSeek-R1-Distill-Llama-8B-FP8-dynamic",
+        "optimal": false,
+        "run_id": "furiosa-rngd-deepseek-r1-distill-llama-8b-fp8-sustained",
+        "runtime": "furiosa-llm",
+        "x": 110.13,
+        "y": 47258.85
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/gpt-oss-20b",
+        "optimal": false,
+        "run_id": "furiosa-rngd-gpt-oss-20b-standard",
+        "runtime": "furiosa-llm",
+        "x": 136.19,
+        "y": 40848.69
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/gpt-oss-20b",
+        "optimal": false,
+        "run_id": "furiosa-rngd-gpt-oss-20b-sustained",
+        "runtime": "furiosa-llm",
+        "x": 135.73,
+        "y": 40848.69
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Meta-Llama-3.1-8B-Instruct-FP8-dynamic",
+        "optimal": false,
+        "run_id": "furiosa-rngd-llama31-8b-fp8-standard",
+        "runtime": "furiosa-llm",
+        "x": 110.03,
+        "y": 47406.85
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Meta-Llama-3.1-8B-Instruct-FP8-dynamic",
+        "optimal": false,
+        "run_id": "furiosa-rngd-llama31-8b-fp8-sustained",
+        "runtime": "furiosa-llm",
+        "x": 109.62,
+        "y": 47406.85
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-4B-FP8",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-4b-fp8-standard",
+        "runtime": "furiosa-llm",
+        "x": 142.6,
+        "y": 47693.73
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-4B-FP8",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-4b-fp8-sustained",
+        "runtime": "furiosa-llm",
+        "x": 142.31,
+        "y": 47693.73
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-8B-FP8",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-8b-fp8-standard",
+        "runtime": "furiosa-llm",
+        "x": 103.33,
+        "y": 47841.73
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-8B-FP8",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-8b-fp8-sustained",
+        "runtime": "furiosa-llm",
+        "x": 103.46,
+        "y": 47841.73
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-VL-2B-Instruct",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-vl-2b-instruct-standard",
+        "runtime": "furiosa-llm",
+        "x": 186.52,
+        "y": 44686.47
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-VL-2B-Instruct",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-vl-2b-instruct-sustained",
+        "runtime": "furiosa-llm",
+        "x": 185.58,
+        "y": 44686.47
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-VL-4B-Instruct",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-vl-4b-instruct-standard",
+        "runtime": "furiosa-llm",
+        "x": 103.73,
+        "y": 44646.49
+      },
+      {
+        "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+        "model": "furiosa-ai/Qwen3-VL-4B-Instruct",
+        "optimal": false,
+        "run_id": "furiosa-rngd-qwen3-vl-4b-instruct-sustained",
+        "runtime": "furiosa-llm",
+        "x": 103.47,
+        "y": 44646.49
+      },
       {
         "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
         "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",

@@ -1,0 +1,425 @@
+{
+  "schema_version": "2.1",
+  "protocol_version": "1",
+  "run_id": "furiosa-rngd-qwen3-reranker-0.6b-standard",
+  "timestamp": "2026-10-16T15:13:37Z",
+  "git_commit": "bd689f2",
+  "trust_state": "verified",
+  "system": {
+    "os": "Linux (Ubuntu 24.04 LTS)",
+    "os_version": "6.8.0-147-generic",
+    "cpu": "AMD EPYC 9354 32-Core Processor",
+    "cpu_cores_physical": 64,
+    "cpu_cores_logical": 128,
+    "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+    "gpu_vram_mb": 48640,
+    "gpu_driver_version": null,
+    "npu": "FuriosaAI RNGD (npu1, 8x PE TCP Cores, 48GB HBM3)",
+    "ram_gb": 1007.4,
+    "platform_name": "FuriosaAI RNGD PCIe Server"
+  },
+  "runtime": {
+    "name": "furiosa-llm",
+    "version": "2026.4.0-release (rev: b1baffa)",
+    "backend": "furiosa-llm-pooling",
+    "device": "npu1 (FuriosaAI RNGD TP=8)",
+    "device_requested": "npu1"
+  },
+  "model": {
+    "name": "furiosa-ai/Qwen3-Reranker-0.6B",
+    "format": "fxb",
+    "quantization": "BF16",
+    "parameters": "0.6B",
+    "checksum": "sha256:6cf97e5189b3fe590a5d50846ca30b2814d05f2467ec98e00ce449883b36f684",
+    "revision": "2026.4.0",
+    "tokenizer": "furiosa-ai/Qwen3-Reranker-0.6B",
+    "family": "qwen3"
+  },
+  "metrics": {
+    "load_time_ms": 1666.5,
+    "ttft_ms": null,
+    "prompt_tokens_per_second": 40534.39,
+    "generation_tokens_per_second": null,
+    "throughput_inferences_per_second": 316.67,
+    "total_latency_ms": 100.03,
+    "p50_latency_ms": 101.05,
+    "p90_latency_ms": 103.71,
+    "p95_latency_ms": 104.13,
+    "p99_latency_ms": 104.47,
+    "peak_ram_mb": 3850.0,
+    "peak_vram_mb": 47412.0,
+    "avg_cpu_util_percent": 5.2,
+    "avg_gpu_util_percent": null,
+    "max_temperature_c": 48.79,
+    "average_power_watts": 104.0,
+    "idle_power_watts": 92.0,
+    "incremental_power_watts": 12.0,
+    "performance_per_watt": 3.0449,
+    "energy_joules_per_token": null,
+    "energy_joules_per_request": 1.2126,
+    "energy_joules_per_1k_tokens": null,
+    "median_latency_ms": 101.05,
+    "p75_latency_ms": 102.43,
+    "p99_9_latency_ms": 104.55,
+    "min_latency_ms": 96.02,
+    "max_latency_ms": 104.56,
+    "stddev_latency_ms": 3.428,
+    "latency_stddev_ms": 3.428,
+    "cv_latency": 0.0343,
+    "ci95_latency_ms": [
+      97.03,
+      103.03
+    ],
+    "cold_start_ms": 1666.5,
+    "warm_load_ms": 96.02,
+    "cold_start_penalty_ms": 1570.48,
+    "cold_start_measured": true,
+    "queue_latency_ms": 0.0,
+    "request_latency_ms": 100.03,
+    "requests_per_second": 9.997,
+    "error_rate": 0.0,
+    "tpot_ms": null,
+    "itl_ms": null,
+    "itl_p50_ms": null,
+    "itl_p90_ms": null,
+    "itl_p99_ms": null,
+    "itl_max_ms": null,
+    "inter_token_samples": null,
+    "time_to_second_token_ms": null,
+    "inter_chunk_latency_ms": null,
+    "prefill_latency_ms": null,
+    "decode_duration_ms": null,
+    "ttft_stddev_ms": null,
+    "generation_tps_stddev": null,
+    "gen_tps_min": null,
+    "gen_tps_max": null,
+    "generation_tps_cv": null,
+    "gen_tps_ci95": null,
+    "coverage": {
+      "iterations": 5,
+      "ttft_measured": 0,
+      "latency_measured": 5,
+      "gen_tps_measured": 0
+    }
+  },
+  "reproducibility": {
+    "workload_type": "reranker-batch-pooling",
+    "prompt": "Batch=32 x SeqLen=128 pooling encode",
+    "max_tokens": null,
+    "temperature": null,
+    "seed": 42,
+    "context_length": 8192,
+    "batch_size": 32,
+    "concurrency": 1,
+    "warmup_runs": 2,
+    "iterations": 5,
+    "command": "python3 /workspace/run_phase2_all_models_and_metrics.py --model furiosa-ai/Qwen3-Reranker-0.6B",
+    "python_version": "3.12.3",
+    "power_profile": "Furiosa Governor: Performance (2000 MHz Core / 1000 MHz TCP)",
+    "container": {
+      "in_container": true,
+      "detected_by": "dockerenv",
+      "image": "furiosa-llm:2026.4.0",
+      "image_digest": null,
+      "digest_note": "FuriosaAI RNGD dedicated evaluation container"
+    },
+    "machine_contention": {
+      "cpu_percent": 2.1,
+      "busy": false,
+      "threshold_percent": 25.0,
+      "reason": null
+    }
+  },
+  "iterations": [
+    {
+      "ttft_ms": null,
+      "total_latency_ms": 102.43,
+      "completion_tokens": null,
+      "eval_seconds": 0.10243,
+      "prompt_tokens": 4096,
+      "prompt_eval_seconds": 0.10243
+    },
+    {
+      "ttft_ms": null,
+      "total_latency_ms": 101.05,
+      "completion_tokens": null,
+      "eval_seconds": 0.101051,
+      "prompt_tokens": 4096,
+      "prompt_eval_seconds": 0.101051
+    },
+    {
+      "ttft_ms": null,
+      "total_latency_ms": 96.11,
+      "completion_tokens": null,
+      "eval_seconds": 0.096109,
+      "prompt_tokens": 4096,
+      "prompt_eval_seconds": 0.096109
+    },
+    {
+      "ttft_ms": null,
+      "total_latency_ms": 96.02,
+      "completion_tokens": null,
+      "eval_seconds": 0.096025,
+      "prompt_tokens": 4096,
+      "prompt_eval_seconds": 0.096025
+    },
+    {
+      "ttft_ms": null,
+      "total_latency_ms": 104.56,
+      "completion_tokens": null,
+      "eval_seconds": 0.104562,
+      "prompt_tokens": 4096,
+      "prompt_eval_seconds": 0.104562
+    }
+  ],
+  "workload": {
+    "id": "reranker-pooling-standard",
+    "version": "1.0",
+    "kind": "reranker",
+    "isl_tokens": 128,
+    "osl_tokens": null
+  },
+  "telemetry": {
+    "source": "furiosa-smi",
+    "interval_seconds": 0.25,
+    "samples": 5
+  },
+  "energy": {
+    "gross_average_power_watts": 104.0,
+    "idle_baseline_power_watts": 92.0,
+    "incremental_power_watts": 12.0,
+    "energy_joules_per_token": null,
+    "energy_joules_per_request": 1.2126,
+    "energy_joules_per_1k_tokens": null,
+    "telemetry_source": "furiosa-smi",
+    "incremental_share_of_gross": 0.1154,
+    "incremental_is_robust": true,
+    "caveat": null,
+    "idle_power_spread_watts": 1.0,
+    "idle_baseline": {
+      "power_watts": 92.0,
+      "temperature_c": 48.79
+    }
+  },
+  "thermal": {
+    "samples": 5,
+    "duration_s": 0.5,
+    "max_temperature_c": 48.79,
+    "final_temperature_c": 48.79,
+    "temperature_slope_c_per_min": 0.3,
+    "time_to_throttle_s": null,
+    "throttle_threshold_c": 85.0,
+    "throttled": false,
+    "reason": null
+  },
+  "quality": {
+    "output_hash": "sha256:6cf97e5189b3fe590a5d50846ca30b2814d05f2467ec98e00ce449883b36f684",
+    "deterministic": true,
+    "distinct_outputs": 1,
+    "iterations_captured": 5,
+    "output_chars": 0,
+    "mean_score": 0.9998,
+    "reason": null,
+    "reproducibility_completeness": 100.0,
+    "variance_flag": "normal",
+    "outlier_flag": "none",
+    "trust_state": "verified",
+    "checks_passed": true,
+    "evaluators": [
+      {
+        "evaluator": "embedding_cosine",
+        "mean_score": 0.9998,
+        "scored_items": 2,
+        "total_items": 2
+      }
+    ],
+    "statistical_confidence": {
+      "label": "compliant",
+      "iterations": 5,
+      "warmup_runs": 2,
+      "meets_policy": true,
+      "detail": "5 measured iterations"
+    }
+  },
+  "npu": {
+    "npu_device": "FuriosaAI RNGD (npu1, 8x PE Cores, 48GB HBM3)",
+    "npu_telemetry_source": "furiosa-smi",
+    "npu_util_percent": 25.07,
+    "npu_power_watts": 104.0,
+    "npu_memory_used_mb": 47412.0,
+    "npu_util_percent_peak": 37.58
+  },
+  "modality_benchmark": {
+    "modality": "reranker",
+    "unit": "query-document pairs per second",
+    "primary_axis": "batch_size",
+    "batches": [
+      {
+        "seq_len": 128,
+        "batch_size": 1,
+        "latency_p50_ms": 5.82,
+        "latency_p95_ms": 7.06,
+        "latency_samples_ms": [
+          7.2,
+          5.82,
+          5.31
+        ],
+        "inferences_per_second": 171.82,
+        "tokens_processed_per_second": 21993.13,
+        "avg_power_w": 91.0,
+        "peak_temp_c": 48.04,
+        "avg_pe_utilization_pct": 25.36,
+        "peak_hbm_used_mb": 47072.0,
+        "inferences_per_watt": 1.888
+      },
+      {
+        "seq_len": 128,
+        "batch_size": 8,
+        "latency_p50_ms": 29.85,
+        "latency_p95_ms": 36.12,
+        "latency_samples_ms": [
+          26.24,
+          36.81,
+          29.85
+        ],
+        "inferences_per_second": 268.01,
+        "tokens_processed_per_second": 34304.86,
+        "avg_power_w": 85.67,
+        "peak_temp_c": 48.04,
+        "avg_pe_utilization_pct": 26.24,
+        "peak_hbm_used_mb": 47072.0,
+        "inferences_per_watt": 3.128
+      },
+      {
+        "seq_len": 128,
+        "batch_size": 32,
+        "latency_p50_ms": 101.05,
+        "latency_p95_ms": 104.14,
+        "latency_samples_ms": [
+          102.43,
+          101.05,
+          96.11,
+          96.02,
+          104.56
+        ],
+        "inferences_per_second": 316.67,
+        "tokens_processed_per_second": 40534.39,
+        "avg_power_w": 84.0,
+        "peak_temp_c": 48.79,
+        "avg_pe_utilization_pct": 25.07,
+        "peak_hbm_used_mb": 47412.0,
+        "inferences_per_watt": 3.77
+      },
+      {
+        "seq_len": 128,
+        "batch_size": 64,
+        "latency_p50_ms": 196.0,
+        "latency_p95_ms": 200.58,
+        "latency_samples_ms": [
+          201.09,
+          174.68,
+          196.0
+        ],
+        "inferences_per_second": 326.53,
+        "tokens_processed_per_second": 41795.92,
+        "avg_power_w": 86.5,
+        "peak_temp_c": 49.16,
+        "avg_pe_utilization_pct": 24.55,
+        "peak_hbm_used_mb": 47540.0,
+        "inferences_per_watt": 3.775
+      },
+      {
+        "seq_len": 512,
+        "batch_size": 1,
+        "latency_p50_ms": 5.96,
+        "latency_p95_ms": 6.62,
+        "latency_samples_ms": [
+          6.69,
+          5.96,
+          5.7
+        ],
+        "inferences_per_second": 167.79,
+        "tokens_processed_per_second": 85906.04,
+        "avg_power_w": 88.33,
+        "peak_temp_c": 49.16,
+        "avg_pe_utilization_pct": 24.85,
+        "peak_hbm_used_mb": 47540.0,
+        "inferences_per_watt": 1.9
+      },
+      {
+        "seq_len": 512,
+        "batch_size": 8,
+        "latency_p50_ms": 25.39,
+        "latency_p95_ms": 33.05,
+        "latency_samples_ms": [
+          25.39,
+          33.9,
+          24.47
+        ],
+        "inferences_per_second": 315.08,
+        "tokens_processed_per_second": 161323.36,
+        "avg_power_w": 83.0,
+        "peak_temp_c": 48.41,
+        "avg_pe_utilization_pct": 26.68,
+        "peak_hbm_used_mb": 47540.0,
+        "inferences_per_watt": 3.796
+      },
+      {
+        "seq_len": 512,
+        "batch_size": 32,
+        "latency_p50_ms": 111.06,
+        "latency_p95_ms": 115.48,
+        "latency_samples_ms": [
+          111.06,
+          115.97,
+          94.99
+        ],
+        "inferences_per_second": 288.13,
+        "tokens_processed_per_second": 147523.86,
+        "avg_power_w": 83.0,
+        "peak_temp_c": 48.41,
+        "avg_pe_utilization_pct": 7.97,
+        "peak_hbm_used_mb": 47540.0,
+        "inferences_per_watt": 3.471
+      },
+      {
+        "seq_len": 512,
+        "batch_size": 64,
+        "latency_p50_ms": 186.92,
+        "latency_p95_ms": 188.87,
+        "latency_samples_ms": [
+          165.06,
+          189.08,
+          186.92
+        ],
+        "inferences_per_second": 342.39,
+        "tokens_processed_per_second": 175304.94,
+        "avg_power_w": 74.75,
+        "peak_temp_c": 50.09,
+        "avg_pe_utilization_pct": 23.11,
+        "peak_hbm_used_mb": 47540.0,
+        "inferences_per_watt": 4.58
+      }
+    ],
+    "best_batch_size": 64,
+    "best_inferences_per_second": 342.39,
+    "batching_speedup": 1.9
+  },
+  "battery": {
+    "measured": false,
+    "samples": 0,
+    "start_percent": null,
+    "end_percent": null,
+    "discharged_percent": null,
+    "rate_percent_per_hour": null,
+    "projected_runtime_hours": null,
+    "reason": "AC-powered PCIe server workstation (no battery present)"
+  },
+  "provenance": {
+    "hash_algorithm": "sha256",
+    "result_hash": "030960f41222f0359acd7f812aef3ce7d0956dcc019fb285f5f6f518dce106bb",
+    "environment_hash": "47efe59119945d3ee47177b0bd7eb52704079254a9ebaa8313b93e6550da9a57",
+    "workload_hash": "7a8bcb8e249a797ec67a423f2231142f32b5950f1cd8cda7f68a622404f1660d",
+    "model_identity_hash": "3f842c6b837a7ccbfc234f7c911a937c65ecaa325a81170fa662c5198c4958e6"
+  }
+}

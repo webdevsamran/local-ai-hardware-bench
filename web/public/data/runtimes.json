@@ -1,6 +1,35 @@
 [
   {
     "device_options": [
+      "npu1 (FuriosaAI RNGD TP=8)"
+    ],
+    "name": "furiosa-llm",
+    "result_ids": [
+      "furiosa-rngd-bge-m3-standard",
+      "furiosa-rngd-deepseek-r1-distill-llama-8b-fp8-standard",
+      "furiosa-rngd-deepseek-r1-distill-llama-8b-fp8-sustained",
+      "furiosa-rngd-gpt-oss-20b-standard",
+      "furiosa-rngd-gpt-oss-20b-sustained",
+      "furiosa-rngd-harrier-oss-v1-0.6b-standard",
+      "furiosa-rngd-llama31-8b-fp8-standard",
+      "furiosa-rngd-llama31-8b-fp8-sustained",
+      "furiosa-rngd-qwen3-4b-fp8-standard",
+      "furiosa-rngd-qwen3-4b-fp8-sustained",
+      "furiosa-rngd-qwen3-8b-fp8-standard",
+      "furiosa-rngd-qwen3-8b-fp8-sustained",
+      "furiosa-rngd-qwen3-reranker-0.6b-standard",
+      "furiosa-rngd-qwen3-reranker-4b-standard",
+      "furiosa-rngd-qwen3-vl-2b-instruct-standard",
+      "furiosa-rngd-qwen3-vl-2b-instruct-sustained",
+      "furiosa-rngd-qwen3-vl-4b-instruct-standard",
+      "furiosa-rngd-qwen3-vl-4b-instruct-sustained"
+    ],
+    "versions": [
+      "2026.4.0-release (rev: b1baffa)"
+    ]
+  },
+  {
+    "device_options": [
       "cuda",
       "auto"
     ],

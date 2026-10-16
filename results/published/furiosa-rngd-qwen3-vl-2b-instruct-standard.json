@@ -1,0 +1,405 @@
+{
+  "schema_version": "2.1",
+  "protocol_version": "1",
+  "run_id": "furiosa-rngd-qwen3-vl-2b-instruct-standard",
+  "timestamp": "2026-10-16T15:08:59Z",
+  "git_commit": "bd689f2",
+  "trust_state": "verified",
+  "system": {
+    "os": "Linux (Ubuntu 24.04 LTS)",
+    "os_version": "6.8.0-147-generic",
+    "cpu": "AMD EPYC 9354 32-Core Processor",
+    "cpu_cores_physical": 64,
+    "cpu_cores_logical": 128,
+    "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
+    "gpu_vram_mb": 48640,
+    "gpu_driver_version": null,
+    "npu": "FuriosaAI RNGD (npu1, 8x PE TCP Cores, 48GB HBM3)",
+    "ram_gb": 1007.4,
+    "platform_name": "FuriosaAI RNGD PCIe Server"
+  },
+  "runtime": {
+    "name": "furiosa-llm",
+    "version": "2026.4.0-release (rev: b1baffa)",
+    "backend": "furiosa-llm-engine",
+    "device": "npu1 (FuriosaAI RNGD TP=8)",
+    "device_requested": "npu1"
+  },
+  "model": {
+    "name": "furiosa-ai/Qwen3-VL-2B-Instruct",
+    "format": "fxb",
+    "quantization": "BF16",
+    "parameters": "2.1B",
+    "checksum": "sha256:a30f8d74f7e8ce087d3c9a04a1af3caa6f8a5d194dd2ebf1caf394f63f626c06",
+    "revision": "2026.4.0",
+    "tokenizer": "furiosa-ai/Qwen3-VL-2B-Instruct",
+    "family": "qwen3_vl"
+  },
+  "metrics": {
+    "load_time_ms": 68532.0,
+    "ttft_ms": 37.18,
+    "ttft_stddev_ms": 0.029,
+    "prompt_tokens_per_second": 27541.44,
+    "generation_tokens_per_second": 186.52,
+    "generation_tps_stddev": 0.517,
+    "total_latency_ms": 1401.58,
+    "p50_latency_ms": 1404.33,
+    "p90_latency_ms": 1404.98,
+    "p95_latency_ms": 1404.98,
+    "p99_latency_ms": 1404.98,
+    "latency_stddev_ms": 3.743,
+    "peak_ram_mb": 4320.0,
+    "peak_vram_mb": 44686.47,
+    "avg_cpu_util_percent": 6.5,
+    "avg_gpu_util_percent": null,
+    "max_temperature_c": 47.3,
+    "average_power_watts": 230.0,
+    "idle_power_watts": 215.0,
+    "incremental_power_watts": 15.0,
+    "performance_per_watt": 0.811,
+    "energy_joules_per_token": 1.233112,
+    "energy_joules_per_request": 20.5875,
+    "energy_joules_per_1k_tokens": 80.42,
+    "itl_ms": 5.352,
+    "itl_p50_ms": 5.352,
+    "itl_p90_ms": 5.394,
+    "itl_p99_ms": 5.422,
+    "itl_max_ms": 5.577,
+    "tpot_ms": 5.361,
+    "decode_duration_ms": 1367.18,
+    "inter_token_samples": 765,
+    "median_latency_ms": 1404.33,
+    "p75_latency_ms": 1404.98,
+    "p99_9_latency_ms": 1405.54,
+    "min_latency_ms": 1395.43,
+    "max_latency_ms": 1405.54,
+    "stddev_latency_ms": 3.743,
+    "cv_latency": 0.0027,
+    "ci95_latency_ms": [
+      1399.55,
+      1406.11
+    ],
+    "cold_start_ms": 68532.0,
+    "warm_load_ms": 37.18,
+    "cold_start_penalty_ms": 68494.82,
+    "cold_start_measured": true,
+    "queue_latency_ms": 0.0,
+    "request_latency_ms": 1402.83,
+    "requests_per_second": 0.713,
+    "error_rate": 0.0,
+    "gen_tps_min": 187.09,
+    "gen_tps_max": 188.48,
+    "generation_tps_cv": 0.0028,
+    "gen_tps_ci95": [
+      186.07,
+      186.97
+    ],
+    "prefill_latency_ms": 37.18,
+    "inter_chunk_latency_ms": 5.352,
+    "time_to_second_token_ms": 42.532,
+    "throughput_inferences_per_second": null,
+    "coverage": {
+      "iterations": 5,
+      "ttft_measured": 5,
+      "latency_measured": 5,
+      "gen_tps_measured": 5
+    }
+  },
+  "reproducibility": {
+    "workload_type": "llm-single-stream-standard",
+    "prompt": "Synthetic uncached token sequence (ISL=1024, OSL=256)",
+    "max_tokens": 256,
+    "temperature": 0.0,
+    "seed": 42,
+    "context_length": 8192,
+    "batch_size": 1,
+    "concurrency": 1,
+    "warmup_runs": 2,
+    "iterations": 5,
+    "command": "python3 /workspace/run_benchmark.py --model furiosa-ai/Qwen3-VL-2B-Instruct --slug furiosa-rngd-qwen3-vl-2b-instruct-standard",
+    "python_version": "3.12.3",
+    "power_profile": "Furiosa Governor: Performance (2000 MHz Core / 1000 MHz TCP)",
+    "container": {
+      "in_container": true,
+      "detected_by": "dockerenv",
+      "image": "furiosa-llm:2026.4.0",
+      "image_digest": null,
+      "digest_note": "FuriosaAI RNGD dedicated evaluation container"
+    },
+    "machine_contention": {
+      "cpu_percent": 2.4,
+      "busy": false,
+      "threshold_percent": 25.0,
+      "reason": null
+    }
+  },
+  "iterations": [
+    {
+      "ttft_ms": 37.21,
+      "total_latency_ms": 1395.43,
+      "completion_tokens": 256,
+      "eval_seconds": 1.358223,
+      "prompt_tokens": 1024,
+      "prompt_eval_seconds": 0.037212
+    },
+    {
+      "ttft_ms": 37.18,
+      "total_latency_ms": 1404.98,
+      "completion_tokens": 256,
+      "eval_seconds": 1.367797,
+      "prompt_tokens": 1024,
+      "prompt_eval_seconds": 0.03718
+    },
+    {
+      "ttft_ms": 37.15,
+      "total_latency_ms": 1404.33,
+      "completion_tokens": 256,
+      "eval_seconds": 1.367175,
+      "prompt_tokens": 1024,
+      "prompt_eval_seconds": 0.037155
+    },
+    {
+      "ttft_ms": 37.19,
+      "total_latency_ms": 1405.54,
+      "completion_tokens": 256,
+      "eval_seconds": 1.368344,
+      "prompt_tokens": 1024,
+      "prompt_eval_seconds": 0.03718
+    },
+    {
+      "ttft_ms": 37.15,
+      "total_latency_ms": 1403.86,
+      "completion_tokens": 256,
+      "eval_seconds": 1.366703,
+      "prompt_tokens": 1024,
+      "prompt_eval_seconds": 0.03718
+    }
+  ],
+  "workload": {
+    "id": "llm-single-stream-standard",
+    "version": "1.0",
+    "kind": "generative",
+    "isl_tokens": 1024,
+    "osl_tokens": 256
+  },
+  "telemetry": {
+    "source": "furiosa-smi",
+    "interval_seconds": 0.4,
+    "samples": 15
+  },
+  "energy": {
+    "gross_average_power_watts": 230.0,
+    "idle_baseline_power_watts": 215.0,
+    "incremental_power_watts": 15.0,
+    "energy_joules_per_token": 0.08042,
+    "energy_joules_per_request": 20.5875,
+    "energy_joules_per_1k_tokens": 80.42,
+    "telemetry_source": "furiosa-smi",
+    "incremental_share_of_gross": 0.0652,
+    "incremental_is_robust": true,
+    "caveat": null,
+    "idle_power_spread_watts": 1.0,
+    "idle_baseline": {
+      "power_watts": 215.0,
+      "temperature_c": 49.34
+    }
+  },
+  "thermal": {
+    "samples": 15,
+    "duration_s": 4.205,
+    "max_temperature_c": 47.3,
+    "final_temperature_c": 47.3,
+    "temperature_slope_c_per_min": 0.5,
+    "time_to_throttle_s": null,
+    "throttle_threshold_c": 85.0,
+    "throttled": false,
+    "reason": null
+  },
+  "quality": {
+    "output_hash": "sha256:0dfd5d73d061decfd13f1d41bcf1b057533776ede4c6b9072c6e0c45561fdb2c",
+    "deterministic": true,
+    "distinct_outputs": 1,
+    "iterations_captured": 5,
+    "output_chars": 1024,
+    "mean_score": 0.9756,
+    "reason": null,
+    "reproducibility_completeness": 100.0,
+    "variance_flag": "normal",
+    "outlier_flag": "none",
+    "trust_state": "verified",
+    "checks_passed": true,
+    "evaluators": [
+      {
+        "evaluator": "exact_match",
+        "mean_score": 1.0,
+        "scored_items": 2,
+        "total_items": 2
+      },
+      {
+        "evaluator": "json_validity",
+        "mean_score": 1.0,
+        "scored_items": 2,
+        "total_items": 2
+      },
+      {
+        "evaluator": "rouge_l",
+        "mean_score": 0.878,
+        "scored_items": 1,
+        "total_items": 1
+      },
+      {
+        "evaluator": "token_f1",
+        "mean_score": 1.0,
+        "scored_items": 1,
+        "total_items": 1
+      },
+      {
+        "evaluator": "multiple_choice",
+        "mean_score": 1.0,
+        "scored_items": 2,
+        "total_items": 2
+      }
+    ],
+    "statistical_confidence": {
+      "label": "compliant",
+      "iterations": 5,
+      "warmup_runs": 2,
+      "meets_policy": true,
+      "detail": "5 measured iterations"
+    }
+  },
+  "npu": {
+    "npu_device": "FuriosaAI RNGD (npu1, 8x PE Cores, 48GB HBM3)",
+    "npu_telemetry_source": "furiosa-smi",
+    "npu_util_percent": 67.52,
+    "npu_power_watts": 230.0,
+    "npu_memory_used_mb": 44686.47,
+    "npu_util_percent_peak": 87.67
+  },
+  "modality_benchmark": {
+    "modality": "vision_language",
+    "unit": "tokens per second",
+    "primary_axis": "image_resolution",
+    "resolutions": [
+      {
+        "resolution": "224x224",
+        "pixels": 50176,
+        "output_tokens": 128,
+        "vision_ttft_p50_ms": 9.07,
+        "e2e_latency_p50_ms": 668.84,
+        "decode_tokens_per_second": 192.49,
+        "effective_tokens_per_second": 191.38
+      },
+      {
+        "resolution": "448x448",
+        "pixels": 200704,
+        "output_tokens": 128,
+        "vision_ttft_p50_ms": 9.32,
+        "e2e_latency_p50_ms": 671.66,
+        "decode_tokens_per_second": 191.74,
+        "effective_tokens_per_second": 190.57
+      },
+      {
+        "resolution": "1024x1024",
+        "pixels": 1048576,
+        "output_tokens": 128,
+        "vision_ttft_p50_ms": 10.37,
+        "e2e_latency_p50_ms": 686.33,
+        "decode_tokens_per_second": 187.88,
+        "effective_tokens_per_second": 186.5
+      }
+    ]
+  },
+  "battery": {
+    "measured": false,
+    "samples": 0,
+    "start_percent": null,
+    "end_percent": null,
+    "discharged_percent": null,
+    "rate_percent_per_hour": null,
+    "projected_runtime_hours": null,
+    "reason": "AC-powered PCIe server workstation (no battery present)"
+  },
+  "capacity": {
+    "sustainable_concurrency": 16,
+    "sustainability_factor": 2.0,
+    "rule": "sustainable = max concurrency with error_rate == 0 and p95 <= 2x best-level p95",
+    "peak_concurrency_tested": 64,
+    "peak_aggregate_tokens_per_second": 2225.06,
+    "levels": [
+      {
+        "concurrency": 1,
+        "requests": 1,
+        "errors": 0,
+        "requests_per_second": 0.705,
+        "throughput_tokens_per_second": 180.55,
+        "ttft_ms_mean": 42.26,
+        "p95_latency_ms": 1417.67,
+        "p99_latency_ms": 1417.67,
+        "mean_queue_latency_ms": null
+      },
+      {
+        "concurrency": 4,
+        "requests": 4,
+        "errors": 0,
+        "requests_per_second": 2.375,
+        "throughput_tokens_per_second": 607.9,
+        "ttft_ms_mean": 171.79,
+        "p95_latency_ms": 1680.55,
+        "p99_latency_ms": 1680.55,
+        "mean_queue_latency_ms": null
+      },
+      {
+        "concurrency": 8,
+        "requests": 8,
+        "errors": 0,
+        "requests_per_second": 4.038,
+        "throughput_tokens_per_second": 1033.75,
+        "ttft_ms_mean": 270.04,
+        "p95_latency_ms": 1975.81,
+        "p99_latency_ms": 1975.81,
+        "mean_queue_latency_ms": null
+      },
+      {
+        "concurrency": 16,
+        "requests": 16,
+        "errors": 0,
+        "requests_per_second": 5.852,
+        "throughput_tokens_per_second": 1498.2,
+        "ttft_ms_mean": 398.98,
+        "p95_latency_ms": 2718.9,
+        "p99_latency_ms": 2718.9,
+        "mean_queue_latency_ms": null
+      },
+      {
+        "concurrency": 32,
+        "requests": 32,
+        "errors": 0,
+        "requests_per_second": 7.084,
+        "throughput_tokens_per_second": 1813.58,
+        "ttft_ms_mean": 796.44,
+        "p95_latency_ms": 4496.71,
+        "p99_latency_ms": 4496.71,
+        "mean_queue_latency_ms": null
+      },
+      {
+        "concurrency": 64,
+        "requests": 64,
+        "errors": 0,
+        "requests_per_second": 8.692,
+        "throughput_tokens_per_second": 2225.06,
+        "ttft_ms_mean": 1564.37,
+        "p95_latency_ms": 7314.89,
+        "p99_latency_ms": 7314.89,
+        "mean_queue_latency_ms": null
+      }
+    ]
+  },
+  "provenance": {
+    "hash_algorithm": "sha256",
+    "result_hash": "18246f4402a350479cf197f8e6211d92b77dcfd95247ffa22dc824ba092fe835",
+    "environment_hash": "47efe59119945d3ee47177b0bd7eb52704079254a9ebaa8313b93e6550da9a57",
+    "workload_hash": "8ab2bba241a789586347bc79f275cbb97856468ff11623625621c6ef51fdb20a",
+    "model_identity_hash": "42d5cb4db7edd8c2d59ca3d160bac31febfae2094812a4410aa9b922f133ec04"
+  }
+}

@@ -1,10 +1,154 @@
 # AIHWBench Leaderboard
 
-Generated from 9 validated result(s) in `results/published`.
+Generated from 27 validated result(s) in `D:/GitHubRepos/local-ai-hardware-bench/results/published`.
 
 Results are grouped by the comparison-safety classifier (`aihwbench/comparability.py`), and **ranking is meaningful only within a group**. Putting every result in one table under a shared throughput column invites a comparison the classifier rejects for most pairs, and a footnote does not undo the claim the column makes.
 
-8 comparable group(s); 1 contain more than one result and can be ranked.
+26 comparable group(s); 1 contain more than one result and can be ranked.
+
+## furiosa-ai/bge-m3 FP32 on furiosa-llm (furiosa-llm-pooling/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-bge-m3-standard | FuriosaAI RNGD (48GB HBM3 NPU) | not measured | not measured | 3.849 | inf/s/W | 5 | verified |
+
+## RedHatAI/DeepSeek-R1-Distill-Llama-8B-FP8-dynamic FP8-Dynamic on furiosa-llm (furiosa-llm-engine/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-deepseek-r1-distill-llama-8b-fp8-standard | FuriosaAI RNGD (48GB HBM3 NPU) | 109.83 | 62.59 | 0.777 | tok/s/W | 5 | verified |
+
+## RedHatAI/DeepSeek-R1-Distill-Llama-8B-FP8-dynamic FP8-Dynamic on furiosa-llm (furiosa-llm-engine/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-deepseek-r1-distill-llama-8b-fp8-sustained | FuriosaAI RNGD (48GB HBM3 NPU) | 110.13 | 62.57 | 0.772 | tok/s/W | 5 | verified |
+
+## furiosa-ai/gpt-oss-20b MXFP4 on furiosa-llm (furiosa-llm-engine/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-gpt-oss-20b-standard | FuriosaAI RNGD (48GB HBM3 NPU) | 136.19 | 121.55 | 1.157 | tok/s/W | 5 | verified |
+
+## furiosa-ai/gpt-oss-20b MXFP4 on furiosa-llm (furiosa-llm-engine/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-gpt-oss-20b-sustained | FuriosaAI RNGD (48GB HBM3 NPU) | 135.73 | 118.93 | 1.119 | tok/s/W | 5 | verified |
+
+## furiosa-ai/harrier-oss-v1-0.6b BF16 on furiosa-llm (furiosa-llm-pooling/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-harrier-oss-v1-0.6b-standard | FuriosaAI RNGD (48GB HBM3 NPU) | not measured | not measured | 6.649 | inf/s/W | 5 | verified |
+
+## furiosa-ai/Meta-Llama-3.1-8B-Instruct-FP8-dynamic FP8-Dynamic on furiosa-llm (furiosa-llm-engine/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-llama31-8b-fp8-standard | FuriosaAI RNGD (48GB HBM3 NPU) | 110.03 | 62.61 | 0.791 | tok/s/W | 5 | verified |
+
+## furiosa-ai/Meta-Llama-3.1-8B-Instruct-FP8-dynamic FP8-Dynamic on furiosa-llm (furiosa-llm-engine/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-llama31-8b-fp8-sustained | FuriosaAI RNGD (48GB HBM3 NPU) | 109.62 | 63.46 | 0.772 | tok/s/W | 5 | verified |
+
+## furiosa-ai/Qwen3-4B-FP8 FP8 on furiosa-llm (furiosa-llm-engine/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-qwen3-4b-fp8-standard | FuriosaAI RNGD (48GB HBM3 NPU) | 142.6 | 61.54 | 1.205 | tok/s/W | 5 | verified |
+
+## furiosa-ai/Qwen3-4B-FP8 FP8 on furiosa-llm (furiosa-llm-engine/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-qwen3-4b-fp8-sustained | FuriosaAI RNGD (48GB HBM3 NPU) | 142.31 | 61.63 | 1.173 | tok/s/W | 5 | verified |
+
+## furiosa-ai/Qwen3-8B-FP8 FP8 on furiosa-llm (furiosa-llm-engine/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-qwen3-8b-fp8-standard | FuriosaAI RNGD (48GB HBM3 NPU) | 103.33 | 75.61 | 0.733 | tok/s/W | 5 | verified |
+
+## furiosa-ai/Qwen3-8B-FP8 FP8 on furiosa-llm (furiosa-llm-engine/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-qwen3-8b-fp8-sustained | FuriosaAI RNGD (48GB HBM3 NPU) | 103.46 | 75.76 | 0.739 | tok/s/W | 5 | verified |
+
+## furiosa-ai/Qwen3-Reranker-0.6B BF16 on furiosa-llm (furiosa-llm-pooling/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-qwen3-reranker-0.6b-standard | FuriosaAI RNGD (48GB HBM3 NPU) | not measured | not measured | 3.045 | inf/s/W | 5 | verified |
+
+## furiosa-ai/Qwen3-Reranker-4B BF16 on furiosa-llm (furiosa-llm-pooling/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-qwen3-reranker-4b-standard | FuriosaAI RNGD (48GB HBM3 NPU) | not measured | not measured | 0.677 | inf/s/W | 5 | verified |
+
+## furiosa-ai/Qwen3-VL-2B-Instruct BF16 on furiosa-llm (furiosa-llm-engine/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-qwen3-vl-2b-instruct-standard | FuriosaAI RNGD (48GB HBM3 NPU) | 186.52 | 37.18 | 0.811 | tok/s/W | 5 | verified |
+
+## furiosa-ai/Qwen3-VL-2B-Instruct BF16 on furiosa-llm (furiosa-llm-engine/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-qwen3-vl-2b-instruct-sustained | FuriosaAI RNGD (48GB HBM3 NPU) | 185.58 | 37.77 | 0.807 | tok/s/W | 5 | verified |
+
+## furiosa-ai/Qwen3-VL-4B-Instruct BF16 on furiosa-llm (furiosa-llm-engine/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-qwen3-vl-4b-instruct-standard | FuriosaAI RNGD (48GB HBM3 NPU) | 103.73 | 66.24 | 0.769 | tok/s/W | 5 | verified |
+
+## furiosa-ai/Qwen3-VL-4B-Instruct BF16 on furiosa-llm (furiosa-llm-engine/npu1 (FuriosaAI RNGD TP=8))
+
+*Single result — nothing to compare it against yet.*
+
+| Run | GPU | Gen tok/s | TTFT ms | Perf/W | Perf/W unit | Runs | Trust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| furiosa-rngd-qwen3-vl-4b-instruct-sustained | FuriosaAI RNGD (48GB HBM3 NPU) | 103.47 | 66.79 | 0.749 | tok/s/W | 5 | verified |
 
 ## qwen2.5-0.5b-instruct-q4_k_m.gguf on llama.cpp (llama-server/cuda)
 

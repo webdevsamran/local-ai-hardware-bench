@@ -70,7 +70,6 @@ undocumented is one nobody knows to try.
 | `sycl` | llama.cpp build variant | Experimental | Intel Iris Xe present; oneAPI absent, so nothing can reach it |
 | `webgpu` | llama.cpp Dawn / browser | Supported (native) | The native Dawn path is implemented and fully measurable. The in-browser path stays unimplemented: the sandbox exposes no power, VRAM or temperature, and those nulls would read to the classifier as agreeing with a native result's |
 | `exllamav2` | In-process (CUDA) | Supported | Implemented over the dynamic generator; needs PyTorch+CUDA, `exllamav2` and EXL2 weights. Its fractional bits-per-weight do not map onto GGUF quantization labels |
-| `furiosa_llm` | In-process / vLLM-compatible NPU (`furiosa-llm`) | **Tested** | Published results across 11 models on FuriosaAI RNGD (48GB HBM3, 8x TCP PE cores, SDK 2026.4.0) |
 | `jetson` | llama.cpp on L4T | Hardware Needed | aarch64 + Tegra; unified memory, and the `nvpmodel` power mode must be recorded or results are not comparable |
 | `arm_sbc` | llama.cpp CPU | Hardware Needed | Raspberry Pi and similar, identified by device-tree model; throttling and power-delivery flags recorded because both present as "slow board" |
 
@@ -78,25 +77,9 @@ undocumented is one nobody knows to try.
 present and refuses to benchmark, rather than pretending. `aihwbench doctor
 --json` prints this table's live equivalent for any machine.
 
-## FuriosaAI RNGD PCIe Server (1x RNGD 48GB HBM3 NPU, TP=8, PP=1)
-
-| Model / Workload | Runtime | Status | Evidence |
-| --- | --- | --- | --- |
-| `furiosa-ai/Qwen3-4B-FP8` (4.0B FP8 LLM) | `furiosa-llm` 2026.4.0 | **Tested** | `results/published/furiosa-rngd-qwen3-4b-fp8-standard.json`, `results/published/furiosa-rngd-qwen3-4b-fp8-sustained.json` |
-| `furiosa-ai/Meta-Llama-3.1-8B-Instruct-FP8-dynamic` (8.0B FP8-Dynamic LLM) | `furiosa-llm` 2026.4.0 | **Tested** | `results/published/furiosa-rngd-llama31-8b-fp8-standard.json`, `results/published/furiosa-rngd-llama31-8b-fp8-sustained.json` |
-| `furiosa-ai/Qwen3-8B-FP8` (8.2B FP8 LLM) | `furiosa-llm` 2026.4.0 | **Tested** | `results/published/furiosa-rngd-qwen3-8b-fp8-standard.json`, `results/published/furiosa-rngd-qwen3-8b-fp8-sustained.json` |
-| `furiosa-ai/gpt-oss-20b` (20.9B MXFP4 MoE LLM) | `furiosa-llm` 2026.4.0 | **Tested** | `results/published/furiosa-rngd-gpt-oss-20b-standard.json`, `results/published/furiosa-rngd-gpt-oss-20b-sustained.json` |
-| `RedHatAI/DeepSeek-R1-Distill-Llama-8B-FP8-dynamic` (8.0B FP8-Dynamic Reasoning LLM) | `furiosa-llm` 2026.4.0 | **Tested** | `results/published/furiosa-rngd-deepseek-r1-distill-llama-8b-fp8-standard.json` |
-| `furiosa-ai/Qwen3-VL-2B-Instruct` (2.1B BF16 Multimodal VLM) | `furiosa-llm` 2026.4.0 | **Tested** | `results/published/furiosa-rngd-qwen3-vl-2b-instruct-standard.json`, `results/published/furiosa-rngd-qwen3-vl-2b-instruct-sustained.json` |
-| `furiosa-ai/Qwen3-VL-4B-Instruct` (4.4B BF16 Multimodal VLM) | `furiosa-llm` 2026.4.0 | **Tested** | `results/published/furiosa-rngd-qwen3-vl-4b-instruct-standard.json`, `results/published/furiosa-rngd-qwen3-vl-4b-instruct-sustained.json` |
-| `furiosa-ai/harrier-oss-v1-0.6b` (0.6B BF16 Embedding) | `furiosa-llm` 2026.4.0 | **Tested** | `results/published/furiosa-rngd-harrier-oss-v1-0.6b-standard.json` |
-| `furiosa-ai/bge-m3` (0.57B FP32 Embedding) | `furiosa-llm` 2026.4.0 | **Tested** | `results/published/furiosa-rngd-bge-m3-standard.json` |
-| `furiosa-ai/Qwen3-Reranker-0.6B` (0.6B BF16 Reranker) | `furiosa-llm` 2026.4.0 | **Tested** | `results/published/furiosa-rngd-qwen3-reranker-0.6b-standard.json` |
-| `furiosa-ai/Qwen3-Reranker-4B` (4.0B BF16 Reranker) | `furiosa-llm` 2026.4.0 | **Tested** | `results/published/furiosa-rngd-qwen3-reranker-4b-standard.json` |
-
 ## Rules for updating this matrix
 
 1. A cell may move to **Tested** only when a result file exists in
    `results/published/` produced by a real benchmark on that platform.
 2. Detection status alone never upgrades a cell to Tested.
-3. Cross-vendor cells (e.g., ROCm on NVIDIA) are marked `n/a`, not failed.
+3. Cross-vendor cells (e.g., ROCm on NVIDIA) are marked `n/a`, not failed.

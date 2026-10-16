@@ -14,7 +14,6 @@ from typing import Any
 from . import (
     arm_sbc,
     exllamav2,
-    furiosa_llm,
     hailo,
     jetson,
     lemonade,
@@ -59,7 +58,6 @@ BACKENDS: dict[str, Any] = {
     "qnn": qnn,
     "tensorrt": tensorrt,
     "hailo": hailo,
-    "furiosa_llm": furiosa_llm,
     "vllm": vllm,
     "sglang": sglang,
     "vulkan": vulkan,
@@ -77,8 +75,6 @@ ALIASES: dict[str, str] = {
     "trt": "tensorrt",
     "hailort": "hailo",
     "lms": "lmstudio",
-    "furiosa": "furiosa_llm",
-    "furiosa-llm": "furiosa_llm",
 }
 
 ENTRY_POINT_GROUP = "aihwbench.backends"

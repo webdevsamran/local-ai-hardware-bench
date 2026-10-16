@@ -1,33 +1,5 @@
 [
   {
-    "cpu": "AMD EPYC 9354 32-Core Processor",
-    "fingerprint": "hwfp-v2-8f0ebb84dd0130fc",
-    "gpu": "FuriosaAI RNGD (48GB HBM3 NPU)",
-    "npu": "FuriosaAI RNGD (npu1, 8x PE TCP Cores, 48GB HBM3)",
-    "os": "Linux (Ubuntu 24.04 LTS)",
-    "ram_gb": 1007.4,
-    "result_ids": [
-      "furiosa-rngd-bge-m3-standard",
-      "furiosa-rngd-deepseek-r1-distill-llama-8b-fp8-standard",
-      "furiosa-rngd-deepseek-r1-distill-llama-8b-fp8-sustained",
-      "furiosa-rngd-gpt-oss-20b-standard",
-      "furiosa-rngd-gpt-oss-20b-sustained",
-      "furiosa-rngd-harrier-oss-v1-0.6b-standard",
-      "furiosa-rngd-llama31-8b-fp8-standard",
-      "furiosa-rngd-llama31-8b-fp8-sustained",
-      "furiosa-rngd-qwen3-4b-fp8-standard",
-      "furiosa-rngd-qwen3-4b-fp8-sustained",
-      "furiosa-rngd-qwen3-8b-fp8-standard",
-      "furiosa-rngd-qwen3-8b-fp8-sustained",
-      "furiosa-rngd-qwen3-reranker-0.6b-standard",
-      "furiosa-rngd-qwen3-reranker-4b-standard",
-      "furiosa-rngd-qwen3-vl-2b-instruct-standard",
-      "furiosa-rngd-qwen3-vl-2b-instruct-sustained",
-      "furiosa-rngd-qwen3-vl-4b-instruct-standard",
-      "furiosa-rngd-qwen3-vl-4b-instruct-sustained"
-    ]
-  },
-  {
     "cpu": "12th Gen Intel(R) Core(TM) i9-12900H",
     "fingerprint": "hwfp-v2-b9384139a0793fe1",
     "gpu": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",

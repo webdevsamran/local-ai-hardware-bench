@@ -428,15 +428,21 @@ aihwbench evaluate --evaluator rouge_l --dataset responses.jsonl
 # and reports an answer it cannot read as unknown rather than as wrong.
 aihwbench evaluate --evaluator multiple_choice --dataset mmlu-subset.jsonl
 
-# Export via the exporter plugin API (json/csv/markdown/sqlite built-in)
+# Export via the exporter plugin API (json/csv/markdown/html/sqlite/huggingface built-in)
 aihwbench export-as --format csv --results-dir results/published --output out.csv
+aihwbench export-as --format html --results-dir results/published --output out.html
 
 # Generate dataset views from published results
 aihwbench export results/published --output results/dataset
 
-# Validate and report on any result file
+# Validate and report on any result file (compact, full 54-metric, HTML, or PDF)
 aihwbench validate results/raw/<run_id>.json
 aihwbench report results/raw/<run_id>.json
+aihwbench report results/raw/<run_id>.json --full
+aihwbench report results/raw/<run_id>.json --format pdf --output report.pdf
+
+# Build a multi-model evaluation & pre-publication review package (MD + HTML + PDF + ZIP)
+aihwbench review-package --results-dir results/published --output results/review-package --zip results/review-package.zip
 
 # Compare two runs (refuses to compare incompatible workloads)
 aihwbench compare results/raw/<a>.json results/raw/<b>.json
@@ -447,6 +453,30 @@ aihwbench suite smoke --runtime ollama --model qwen2.5:0.5b-instruct-q4_K_M
 # Full detection dump (JSON)
 aihwbench detect
 ```
+
+### Full-metric reports and pre-publication review packages
+
+Every benchmark result is evaluated against the 54 canonical metrics defined in
+[`aihwbench/metrics.py`](aihwbench/metrics.py). Passing `--full` to
+`aihwbench report` renders an exhaustive per-model Markdown report that lists all
+54 canonical metrics alongside unit, polarity, measurement definition, model
+architecture metadata, system/runtime profile, concurrency scaling, hardware
+telemetry, statistical rigor, and quality evaluation — explicitly marking any
+uncollected metric as `not measured` rather than omitting it or substituting zero.
+
+When preparing multi-model hardware evaluations or sharing results with silicon
+and runtime maintainers for pre-publication verification, `aihwbench review-package`
+assembles a self-contained directory (and optional `.zip` archive) containing:
+
+- `00_Executive_Summary_All_Models.md` — cross-model executive summary, hardware
+  and software stack profile, throughput/latency/power/thermal summary tables,
+  multi-stream concurrency scaling, and a full 54-metric coverage matrix;
+- `00_Executive_Summary_All_Models.html` and `00_Executive_Summary_All_Models.pdf` —
+  print-ready HTML report and automatic PDF compilation when a local Chromium-based
+  browser (`msedge`, `google-chrome`, or `chromium`) is available;
+- `models/<idx>_<model_slug>.md` — exhaustive 54-metric Markdown reports for each
+  evaluated model;
+- `raw_results/*.json` — the validated Schema 2.1 JSON result documents.
 
 ## How a benchmark run is put together
 
@@ -510,7 +540,7 @@ Plugin entry points:
 | --- | --- |
 | `aihwbench.workloads` | third-party workload definitions |
 | `aihwbench.evaluators` | quality evaluators |
-| `aihwbench.exporters` | export formats (JSON/CSV/Markdown/SQLite built in; Parquet behind an extra) |
+| `aihwbench.exporters` | export formats (JSON/CSV/Markdown/HTML/SQLite/HuggingFace built in; Parquet behind an extra) |
 
 ## Automation & CI
 

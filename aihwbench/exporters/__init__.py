@@ -25,6 +25,7 @@ __all__ = [
     "JsonExporter",
     "CsvExporter",
     "MarkdownExporter",
+    "HtmlExporter",
     "SqliteExporter",
     "ParquetExporter",
     "HuggingFaceExporter",
@@ -151,6 +152,16 @@ class MarkdownExporter:
             cells = ["" if row.get(c) is None else str(row[c]) for c in cols]
             lines.append("| " + " | ".join(cells) + " |")
         out_path.write_text(chr(10).join(lines) + chr(10), encoding="utf-8")
+        return out_path
+
+
+class HtmlExporter:
+    name = "html"
+
+    def export(self, results: list[dict[str, Any]], out_path: Path) -> Path:
+        from ..review_package import render_executive_summary_html
+
+        out_path.write_text(render_executive_summary_html(results), encoding="utf-8")
         return out_path
 
 
@@ -324,6 +335,7 @@ _BUILTIN_EXPORTER_CLASSES = (
     JsonExporter,
     CsvExporter,
     MarkdownExporter,
+    HtmlExporter,
     SqliteExporter,
     HuggingFaceExporter,
 )

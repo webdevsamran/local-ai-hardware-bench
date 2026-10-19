@@ -47,10 +47,52 @@ def cmd_report(args: argparse.Namespace) -> int:
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         fail(str(exc))
         return EXIT_VALIDATION_ERROR
-    if args.output:
-        Path(args.output).write_text(render_report(result), encoding="utf-8")
+
+    fmt = getattr(args, "format", "markdown") or "markdown"
+    full = bool(getattr(args, "full", False))
+
+    if fmt == "pdf":
+        if not args.output:
+            fail("--output <file.pdf> is required when --format pdf is used")
+            return EXIT_USAGE_ERROR
+        import tempfile
+
+        from ..review_package import compile_html_to_pdf, render_executive_summary_html
+
+        out_pdf = Path(args.output)
+        out_pdf.parent.mkdir(parents=True, exist_ok=True)
+        html_text = render_executive_summary_html([result])
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".html", encoding="utf-8", delete=False
+        ) as tmp_html:
+            tmp_html.write(html_text)
+            tmp_html_path = Path(tmp_html.name)
+        try:
+            compiled = compile_html_to_pdf(tmp_html_path, out_pdf)
+        finally:
+            tmp_html_path.unlink(missing_ok=True)
+        if not compiled:
+            fail(
+                "PDF compilation requires a local Chromium-based browser "
+                "(Microsoft Edge, Google Chrome, or Chromium); use --format html instead"
+            )
+            return EXIT_USAGE_ERROR
+        print(f"PDF report written: {out_pdf}")
+        return EXIT_OK
+
+    if fmt == "html":
+        from ..review_package import render_executive_summary_html
+
+        rendered = render_executive_summary_html([result])
     else:
-        print(render_report(result))
+        rendered = render_report(result, full=full)
+
+    if args.output:
+        out_path = Path(args.output)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(rendered, encoding="utf-8")
+    else:
+        print(rendered)
     return EXIT_OK
 
 
@@ -254,6 +296,47 @@ def cmd_score(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def cmd_review_package(args: argparse.Namespace) -> int:
+    """Build a multi-model pre-publication or evaluation review package."""
+    from ..review_package import build_review_package
+
+    results_dir = Path(args.results_dir)
+    if not results_dir.is_dir():
+        fail(f"results directory not found: {results_dir}")
+        return EXIT_USAGE_ERROR
+
+    output_dir = Path(args.output)
+    zip_path = Path(args.zip) if args.zip else None
+    try:
+        manifest = build_review_package(
+            results_dir,
+            output_dir,
+            zip_path=zip_path,
+            title=args.title,
+            subtitle=args.subtitle,
+            prepared_for=args.prepared_for,
+            confidential=bool(args.confidential),
+        )
+    except ValueError as exc:
+        fail(str(exc))
+        return EXIT_VALIDATION_ERROR
+
+    if args.json:
+        echo_json(manifest)
+    else:
+        print(f"Review package generated: {manifest['output_dir']}")
+        print(f"  Models evaluated: {manifest['model_count']}")
+        print(f"  Summary Markdown: {manifest['summary_markdown']}")
+        print(f"  Summary HTML:     {manifest['summary_html']}")
+        if manifest["summary_pdf"]:
+            print(f"  Summary PDF:      {manifest['summary_pdf']}")
+        else:
+            print("  Summary PDF:      skipped (no local headless browser found)")
+        if manifest["zip_path"]:
+            print(f"  ZIP archive:      {manifest['zip_path']}")
+    return EXIT_OK
+
+
 def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     val = sub.add_parser("validate", help="Validate a result JSON file")
     val.add_argument("result")
@@ -267,10 +350,67 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     )
     val.set_defaults(func=cmd_validate)
 
-    rep = sub.add_parser("report", help="Render a markdown report")
+    rep = sub.add_parser("report", help="Render a markdown, HTML, or PDF report")
     rep.add_argument("result")
-    rep.add_argument("--output", default=None, help="Write report to file")
+    rep.add_argument("--output", default=None, help="Write report to file path")
+    rep.add_argument(
+        "--full",
+        action="store_true",
+        help="Render exhaustive report listing all 54 canonical metrics in METRIC_REGISTRY",
+    )
+    rep.add_argument(
+        "--format",
+        choices=("markdown", "html", "pdf"),
+        default="markdown",
+        help="Output format (markdown, html, or pdf)",
+    )
     rep.set_defaults(func=cmd_report)
+
+    rev = sub.add_parser(
+        "review-package",
+        help="Build a multi-model evaluation report package (Markdown, HTML, PDF, per-model reports, ZIP)",
+    )
+    rev.add_argument(
+        "--results-dir",
+        default="results/published",
+        help="Directory containing validated benchmark result JSON files",
+    )
+    rev.add_argument(
+        "--output",
+        required=True,
+        help="Output directory path for the generated review package",
+    )
+    rev.add_argument(
+        "--zip",
+        default=None,
+        help="Optional .zip archive file path to create from the generated package",
+    )
+    rev.add_argument(
+        "--title",
+        default="AIHWBench Hardware Evaluation Report",
+        help="Custom report title",
+    )
+    rev.add_argument(
+        "--subtitle",
+        default=None,
+        help="Optional report subtitle",
+    )
+    rev.add_argument(
+        "--prepared-for",
+        default=None,
+        help="Optional recipient or vendor review attribution",
+    )
+    rev.add_argument(
+        "--confidential",
+        action="store_true",
+        help="Include pre-publication confidential review banner",
+    )
+    rev.add_argument(
+        "--json",
+        action="store_true",
+        help="Print structured JSON manifest of generated artifacts",
+    )
+    rev.set_defaults(func=cmd_review_package)
 
     cmp_ = sub.add_parser("compare", help="Compare two result files")
     cmp_.add_argument("result_a")

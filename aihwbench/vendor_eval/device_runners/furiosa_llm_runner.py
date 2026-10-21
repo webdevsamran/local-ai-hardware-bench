@@ -625,11 +625,14 @@ def _model_meta(model_id: str) -> dict[str, Any]:
     if fxbs:
         f = fxbs[0]
         h = hashlib.sha256()
-        with f.resolve().open("rb") as fh:
-            for chunk in iter(lambda: fh.read(16 * 2**20), b""):
-                h.update(chunk)
+        try:
+            with f.resolve().open("rb") as fh:
+                for chunk in iter(lambda: fh.read(16 * 2**20), b""):
+                    h.update(chunk)
+            meta["checksum"] = "sha256:" + h.hexdigest()
+        except OSError:
+            meta["checksum"] = None
         meta["artifact_file"] = f.name
-        meta["checksum"] = "sha256:" + h.hexdigest()
         meta["format"] = "fxb"
     return meta
 
@@ -785,6 +788,13 @@ def main() -> int:
     args = ap.parse_args()
 
     slug = args.model.split("/")[-1].lower()
+    try:
+        from huggingface_hub import snapshot_download
+        print(f"[prep] Ensuring model artifacts are present for {args.model}...", flush=True)
+        snapshot_download(args.model)
+    except Exception as e:
+        print(f"[warn] snapshot_download for {args.model}: {e}", flush=True)
+
     canon = tuple(int(x) for x in args.canonical.split("/"))
     result: dict[str, Any] = {
         "schema_version": "2.1",

@@ -51,6 +51,53 @@ def _fmt(value: Any, unit: str = "") -> str:
     return f"{value}{unit}"
 
 
+def _format_npu_info(npu: Any) -> str:
+    if not npu:
+        return "none detected"
+    if isinstance(npu, dict):
+        card = npu.get("card") or npu.get("device_name") or npu.get("npu_device") or "NPU"
+        pes = npu.get("processing_elements") or npu.get("cores")
+        tdp = npu.get("configurable_tdp_watts") or npu.get("tdp_watts")
+        peak_pwr = npu.get("peak_power_rating_watts") or npu.get("power_limit_reported")
+        telem = npu.get("telemetry_tool") or npu.get("npu_telemetry_source")
+        parts = [str(card)]
+        if pes is not None:
+            parts.append(f"{pes} PEs")
+        if tdp is not None:
+            parts.append(f"TDP {tdp} W")
+        if peak_pwr is not None:
+            parts.append(f"Peak {peak_pwr} W")
+        if telem:
+            parts.append(f"telemetry: {telem}")
+        return ", ".join(parts)
+    return str(npu)
+
+
+def _workload_shape_label(result: dict[str, Any]) -> str:
+    workload = result.get("workload") or {}
+    repro = result.get("reproducibility") or {}
+    isl = workload.get("input_tokens") or repro.get("input_tokens")
+    osl = workload.get("output_tokens") or repro.get("max_tokens")
+    vtok = workload.get("vision_tokens") or workload.get("image_tokens")
+    runs = workload.get("measured_runs") or repro.get("iterations")
+    warm = workload.get("warmup_runs")
+    parts: list[str] = []
+    if isl is not None and osl is not None:
+        parts.append(f"{isl} in / {osl} out")
+    elif isl is not None:
+        parts.append(f"{isl} input tokens")
+    elif osl is not None:
+        parts.append(f"{osl} output tokens")
+    if vtok is not None:
+        parts.append(f"{vtok} image tokens")
+    if runs is not None:
+        run_s = f"{runs} runs"
+        if warm is not None:
+            run_s += f" (+{warm} warmup)"
+        parts.append(run_s)
+    return " | ".join(parts) if parts else "standard"
+
+
 def _resolve_result_metric(result: dict[str, Any], key: str) -> Any:
     """Resolve a canonical metric from `metrics` (or `energy` for published_in=energy)."""
     metrics = result.get("metrics") or {}
@@ -85,6 +132,7 @@ def render_detailed_report(result: dict[str, Any]) -> str:
     run_id = result.get("run_id", "unknown")
     model_name = model.get("name") or model.get("id") or run_id
     runtime_name = runtime.get("name") or runtime.get("backend") or "unknown"
+    shape_label = _workload_shape_label(result)
 
     lines: list[str] = [
         f"# Benchmark Evaluation Report: {model_name}",
@@ -93,6 +141,7 @@ def render_detailed_report(result: dict[str, Any]) -> str:
         f"- **Timestamp:** {result.get('timestamp', 'unknown')}",
         f"- **Schema Version:** `{result.get('schema_version', '?')}`",
         f"- **Git Commit:** `{result.get('git_commit', 'unknown')}`",
+        f"- **Workload Shape & Runs:** `{shape_label}`",
         "",
         "## 1. Model & Architecture Metadata",
         "",
@@ -105,7 +154,13 @@ def render_detailed_report(result: dict[str, Any]) -> str:
         f"| **Architecture / Family** | `{_fmt(model.get('architecture') or model.get('family'))}` |",
         f"| **License** | `{_fmt(model.get('license'))}` |",
         f"| **Checksum / Weights Digest** | `{_fmt(model.get('checksum') or model.get('weights_hash'))}` |",
+        f"| **Canonical Workload Shape** | `{shape_label}` |",
     ]
+    if model.get("note") or model.get("tuning_note") or model.get("notes"):
+        notes_val = model.get("note") or model.get("tuning_note") or model.get("notes")
+        if isinstance(notes_val, list):
+            notes_val = "; ".join(str(n) for n in notes_val)
+        lines.append(f"| **Model / Artifact Note** | {notes_val} |")
 
     attention = model.get("attention")
     if isinstance(attention, dict) and attention:
@@ -120,6 +175,12 @@ def render_detailed_report(result: dict[str, Any]) -> str:
         )
         lines.append(f"| **Max Context Length** | {_fmt(ctx_len, ' tokens')} |")
 
+    flags_str = runtime.get("flags")
+    if isinstance(flags_str, dict):
+        flags_str = ", ".join(f"{k}={v}" for k, v in flags_str.items() if k != "scheduler_config_repr")
+    elif not flags_str and ("enable_overlap_scheduling" in runtime or "prefix_caching_requested" in runtime):
+        flags_str = f"overlap_scheduling={runtime.get('enable_overlap_scheduling')}, prefix_caching={runtime.get('prefix_caching_requested')}"
+
     lines.extend(
         [
             "",
@@ -131,14 +192,21 @@ def render_detailed_report(result: dict[str, Any]) -> str:
             f"| **Platform** | {_fmt(system.get('platform_name') or system.get('device'))} |",
             f"| **CPU** | {_fmt(system.get('cpu'))} ({_fmt(system.get('cpu_cores_physical') or system.get('cpu_cores'))} cores) |",
             f"| **GPU** | {_fmt(system.get('gpu'))} ({_fmt(system.get('gpu_vram_mb'), ' MB')}) |",
-            f"| **NPU** | {_fmt(system.get('npu') or 'none detected')} |",
+            f"| **NPU** | {_format_npu_info(system.get('npu') or result.get('npu'))} |",
             f"| **System RAM** | {_fmt(system.get('ram_gb'), ' GB')} |",
             f"| **Runtime** | `{_fmt(runtime_name)}` ({_fmt(runtime.get('version'))}) |",
             f"| **Backend / Device** | `{_fmt(runtime.get('backend'))}` on `{_fmt(runtime.get('device') or system.get('device_type'))}` |",
+        ]
+    )
+    if flags_str:
+        lines.append(f"| **Runtime / Scheduler Flags** | `{flags_str}` |")
+
+    lines.extend(
+        [
             "",
             "## 3. Complete Metric Specification (All 54 Repository Metrics)",
             "",
-            "The table below enumerates **100% of the canonical benchmark metrics** registered in `aihwbench.metrics.METRIC_REGISTRY`. Metrics that were not measured on this platform/workload are explicitly shown as `not measured` and never fabricated as zero:",
+            f"Workload baseline: `{shape_label}`. The table below enumerates **100% of the canonical benchmark metrics** registered in `aihwbench.metrics.METRIC_REGISTRY`. Metrics that were not measured on this platform/workload are explicitly shown as `not measured` and never fabricated as zero:",
             "",
             "| # | Canonical Metric Key | Family | Measured Value | Unit | Definition & Measurement Basis |",
             "| :---: | :--- | :--- | :---: | :---: | :--- |",
@@ -161,6 +229,37 @@ def render_detailed_report(result: dict[str, Any]) -> str:
             val_str = f"**{val}**"
         lines.append(f"| {idx} | `{key}` | {family} | {val_str} | `{unit}` | {desc} |")
 
+    isl_osl_matrix = result.get("single_stream_isl_osl_matrix") or result.get("isl_osl_matrix")
+    if isinstance(isl_osl_matrix, list) and isl_osl_matrix:
+        lines.extend(
+            [
+                "",
+                "### 3b. Single-Stream Input/Output Length Matrix (`ISL / OSL` Grid)",
+                "",
+                "| Input Tokens (`ISL`) | Output Tokens (`OSL`) | Runs | TTFT Mean / p50 (ms) | Prefill (tok/s) | Decode (tok/s) | TPOT Mean / p50 (ms) | Accelerator Power (W) | Gross Efficiency (tok/s/W) |",
+                "| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |",
+            ]
+        )
+        for row in isl_osl_matrix:
+            if not isinstance(row, dict):
+                continue
+            r_isl = row.get("input_tokens") or row.get("isl")
+            r_osl = row.get("output_tokens") or row.get("osl")
+            r_runs = row.get("runs", workload.get("measured_runs", 3))
+            r_ttft = row.get("ttft_mean_ms") or row.get("ttft_ms")
+            r_ptps = row.get("prompt_tps") or row.get("prefill_tps") or row.get("prefill_tps_mean")
+            r_dtps = row.get("decode_tps_mean") or row.get("decode_tps")
+            r_tpot = row.get("tpot_mean_ms") or row.get("tpot_ms")
+            r_pwr = row.get("avg_power_w") or row.get("power_w")
+            r_eff = row.get("tokens_per_watt") or row.get("efficiency_tok_s_per_w") or (
+                round(float(r_dtps) / float(r_pwr), 2)
+                if isinstance(r_dtps, (int, float)) and isinstance(r_pwr, (int, float)) and r_pwr > 0
+                else None
+            )
+            lines.append(
+                f"| {_fmt(r_isl)} | {_fmt(r_osl)} | {_fmt(r_runs)} | **{_fmt(r_ttft, ' ms')}** | {_fmt(r_ptps)} | **{_fmt(r_dtps)}** | {_fmt(r_tpot, ' ms')} | {_fmt(r_pwr, ' W')} | {_fmt(r_eff)} |"
+            )
+
     if isinstance(capacity, dict) and capacity:
         lines.extend(
             [
@@ -173,6 +272,90 @@ def render_detailed_report(result: dict[str, Any]) -> str:
         )
         for k, v in capacity.items():
             lines.append(f"| `{k}` | {_fmt(v)} |")
+
+    conc_sweep = result.get("concurrency_scaling_sweep") or result.get("concurrency_sweep")
+    if isinstance(conc_sweep, list) and conc_sweep:
+        lines.extend(
+            [
+                "",
+                "### 4b. Multi-Stream Concurrency Scaling Sweep & Per-User SLO Capacity",
+                "",
+                "| Concurrency (`C`) | Shape (`ISL/OSL`) | Aggregate Output (tok/s) | Per-Stream Decode (tok/s) | 40 tok/s User SLO | Mean TTFT (ms) | Mean TPOT (ms) | Accelerator Power (W) | Gross Efficiency (tok/s/W) |",
+                "| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |",
+            ]
+        )
+        for crow in conc_sweep:
+            if not isinstance(crow, dict):
+                continue
+            c_val = crow.get("concurrency")
+            c_isl = crow.get("input_tokens", 1024)
+            c_osl = crow.get("output_tokens", 1024)
+            c_mod = f" ({crow['modality']})" if crow.get("modality") else ""
+            c_agg = crow.get("aggregate_output_tps")
+            c_pst = crow.get("per_user_decode_tps_mean") or crow.get("per_stream_decode_tps_p50") or crow.get("per_stream_tps")
+            c_slo = crow.get("meets_slo") if crow.get("meets_slo") is not None else crow.get("meets_40tps_per_user_slo")
+            if c_slo is None and isinstance(c_pst, (int, float)):
+                c_slo = c_pst >= 40.0
+            slo_str = "PASS" if c_slo else ("FAIL" if c_slo is False else "n/a")
+            c_ttft = crow.get("ttft_mean_ms") or crow.get("ttft_p50_ms")
+            c_tpot = crow.get("tpot_mean_ms") or crow.get("tpot_p50_ms") or crow.get("tpot_ms") or (
+                round(1000.0 / float(c_pst), 2) if isinstance(c_pst, (int, float)) and c_pst > 0 else None
+            )
+            c_pwr = crow.get("avg_power_w")
+            c_eff = crow.get("efficiency_tok_s_per_w") or crow.get("efficiency_tok_per_s_per_w") or (
+                round(float(c_agg) / float(c_pwr), 2)
+                if isinstance(c_agg, (int, float)) and isinstance(c_pwr, (int, float)) and c_pwr > 0
+                else None
+            )
+            lines.append(
+                f"| $C = {_fmt(c_val)}$ | `{c_isl}/{c_osl}{c_mod}` | **{_fmt(c_agg)}** | {_fmt(c_pst)} | `{slo_str}` | {_fmt(c_ttft, ' ms')} | {_fmt(c_tpot, ' ms')} | {_fmt(c_pwr, ' W')} | **{_fmt(c_eff)}** |"
+            )
+
+    pool_sweep = result.get("pooling_batch_sweep")
+    if isinstance(pool_sweep, list) and pool_sweep:
+        lines.extend(
+            [
+                "",
+                "### 4c. Embedding & Reranker Batch / Sequence-Length Sweep",
+                "",
+                "| Input Tokens (`SeqLen`) | Batch Size (`B`) | Batch Latency p50 (ms) | Single-Req Latency (`B=1` ms/req) | Requests / Sec | Processed Tokens / Sec | Accelerator Power (W) |",
+                "| :---: | :---: | :---: | :---: | :---: | :---: | :---: |",
+            ]
+        )
+        for prow in pool_sweep:
+            if not isinstance(prow, dict):
+                continue
+            p_seq = prow.get("seq_len") or prow.get("input_tokens_per_item")
+            p_bs = prow.get("batch_size")
+            p_lat = prow.get("latency_p50_ms") or prow.get("latency_mean_ms")
+            p_sreq = prow.get("single_request_latency_ms") or (p_lat if p_bs == 1 else None)
+            p_reqs = prow.get("requests_per_second") or prow.get("inferences_per_second")
+            p_toks = prow.get("tokens_per_second") or prow.get("tokens_processed_per_second")
+            p_pwr = prow.get("avg_power_w")
+            lines.append(
+                f"| {_fmt(p_seq)} | $B = {_fmt(p_bs)}$ | **{_fmt(p_lat, ' ms')}** | {_fmt(p_sreq, ' ms/req')} | **{_fmt(p_reqs)}** | **{_fmt(p_toks)}** | {_fmt(p_pwr, ' W')} |"
+            )
+
+    vis_sweep = result.get("vision_resolution_sweep")
+    if isinstance(vis_sweep, list) and vis_sweep:
+        lines.extend(
+            [
+                "",
+                "### 4d. Multimodal Vision-Language Resolution Sweep",
+                "",
+                "| Resolution | Vision Tokens | Concurrency | Output Tokens (`OSL`) | Vision + Prefill TTFT (ms) | End-to-End Latency (ms) | Decode Throughput (tok/s) |",
+                "| :---: | :---: | :---: | :---: | :---: | :---: | :---: |",
+            ]
+        )
+        for vrow in vis_sweep:
+            if not isinstance(vrow, dict):
+                continue
+            v_ttft = vrow.get("vision_ttft_p50_ms") or vrow.get("ttft_mean_ms") or vrow.get("ttft_p50_ms")
+            v_e2e = vrow.get("e2e_latency_p50_ms") or vrow.get("e2e_mean_ms")
+            v_tps = vrow.get("decode_tokens_per_second") or vrow.get("effective_tokens_per_second") or vrow.get("per_user_decode_tps_mean") or vrow.get("aggregate_output_tps")
+            lines.append(
+                f"| `{vrow.get('resolution', 'n/a')}` | {_fmt(vrow.get('vision_tokens', 256))} | $C = {_fmt(vrow.get('concurrency', 1))}$ | {_fmt(vrow.get('output_tokens', 128))} | **{_fmt(v_ttft, ' ms')}** | {_fmt(v_e2e, ' ms')} | **{_fmt(v_tps)}** |"
+            )
 
     lines.extend(
         [
@@ -309,7 +492,7 @@ def render_report(result: dict[str, Any], *, full: bool = False) -> str:
         f"- **GPU:** {_fmt(system.get('gpu'))} ({_fmt(system.get('gpu_vram_mb'), ' MB')} VRAM)"
     )
     npu = system.get("npu") or "none detected"
-    lines.append(f"- **NPU:** {npu}")
+    lines.append(f"- **NPU:** {_format_npu_info(npu)}")
     lines.append(f"- **RAM:** {_fmt(system.get('ram_gb'), ' GB')}")
     lines.append("")
     lines.append("## Runtime & Model")
@@ -384,4 +567,3 @@ def write_report(result: dict[str, Any], path: Any, *, full: bool = False) -> An
     """Write a markdown report to a path."""
     path.write_text(render_report(result, full=full), encoding="utf-8")
     return path
-

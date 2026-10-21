@@ -478,6 +478,20 @@ assembles a self-contained directory (and optional `.zip` archive) containing:
   evaluated model;
 - `raw_results/*.json` — the validated Schema 2.1 JSON result documents.
 
+### On-device vendor hardware evaluations & pre-publication reviews
+
+For silicon evaluation agreements and remote workstation testbeds (e.g. FuriosaAI RNGD, Tenstorrent, Intel Gaudi, Groq, SambaNova):
+
+- **Self-contained device runners (`aihwbench/vendor_eval/device_runners/`)**: Standalone runner scripts (e.g. `furiosa_llm_runner.py`) and plan orchestrators (`run_plan.py`) that run on the target hardware using native vendor runtimes without requiring a full repository install.
+- **Strict pre-publication review standards**:
+  - **Overlap scheduling & loop modes**: Multi-stream sweeps measure overlap scheduling (`SchedulingLoop.OVERLAP`) up to 256 concurrent requests for generative LLMs, and deterministic eager execution for pooling models.
+  - **Zero cache leakage**: Prefix caching is explicitly turned off (`PrefixCacheConfig(enabled=False)`) and prompt tokens are randomized to prevent KV-cache sharing across streams or batch items.
+  - **Explicit shape attribution**: Every row in the ISL/OSL matrix explicitly identifies prompt length and generated token length (`1K in / 1K out`, `128 in / 128 out`).
+  - **Conversational SLO tracking**: Verifies per-user decode speed against the standard 40 tok/s conversational reading threshold.
+  - **Gross accelerator power & efficiency**: Telemetry is measured during active load windows via vendor tools (e.g. `furiosa-smi`) with efficiency defined as gross output tok/s divided by total accelerator power, with no artificial idle subtractions.
+  - **Disjoint pooling metrics**: Embeddings and rerankers report single-request latency (ms/req), batch p50 latency, request throughput, and token processing throughput in separate, unambiguous columns.
+
+
 ## How a benchmark run is put together
 
 One loadgen drives every backend, so a number from ONNX Runtime and a number
